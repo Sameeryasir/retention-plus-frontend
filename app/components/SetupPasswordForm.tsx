@@ -1,20 +1,22 @@
 "use client";
 
 import {
-  AUTH_PASSWORD_MIN,
-  createSetupPasswordSchema,
-  type SetupPasswordFormValues,
-} from "@/app/lib/auth-form-schemas";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
   AlertCircle,
   Eye,
   EyeOff,
   Loader2,
   Lock,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+
+const AUTH_PASSWORD_MIN = 8;
+
+type SetupPasswordFormValues = {
+  currentPassword: string;
+  newPassword: string;
+  confirm: string;
+};
 
 export type SetupPasswordFormProps = {
   currentPasswordFromLogin: string;
@@ -44,18 +46,13 @@ export default function SetupPasswordForm({
   const requireTypedCurrent =
     currentPasswordFromLogin.trim().length < AUTH_PASSWORD_MIN;
 
-  const schema = useMemo(
-    () => createSetupPasswordSchema(requireTypedCurrent),
-    [requireTypedCurrent],
-  );
-
   const {
     register,
     handleSubmit,
     setValue,
+    setError,
     formState: { errors },
   } = useForm<SetupPasswordFormValues>({
-    resolver: zodResolver(schema),
     defaultValues: {
       currentPassword: "",
       newPassword: "",
@@ -91,14 +88,36 @@ export default function SetupPasswordForm({
         action="/"
         className="flex w-full flex-col gap-5 font-sans"
         noValidate
-        onSubmit={handleSubmit((data) =>
-          onSavePasswords(
-            requireTypedCurrent
-              ? data.currentPassword.trim()
-              : currentPasswordFromLogin.trim(),
-            data.newPassword,
-          ),
-        )}
+        onSubmit={handleSubmit((data) => {
+          const current = requireTypedCurrent
+            ? data.currentPassword.trim()
+            : currentPasswordFromLogin.trim();
+          if (
+            requireTypedCurrent &&
+            current.length < AUTH_PASSWORD_MIN
+          ) {
+            setError("currentPassword", {
+              type: "manual",
+              message: `Current password must be at least ${AUTH_PASSWORD_MIN} characters.`,
+            });
+            return;
+          }
+          if (data.newPassword.length < AUTH_PASSWORD_MIN) {
+            setError("newPassword", {
+              type: "manual",
+              message: `New password must be at least ${AUTH_PASSWORD_MIN} characters.`,
+            });
+            return;
+          }
+          if (data.newPassword !== data.confirm) {
+            setError("confirm", {
+              type: "manual",
+              message: "New passwords do not match.",
+            });
+            return;
+          }
+          void onSavePasswords(current, data.newPassword);
+        })}
       >
         {requireTypedCurrent ? (
           <div className="flex flex-col gap-1.5">

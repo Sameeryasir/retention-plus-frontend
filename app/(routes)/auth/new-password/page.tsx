@@ -1,48 +1,54 @@
 "use client";
 
 import SetupPasswordForm from "@/app/components/SetupPasswordForm";
-import { useAuth } from "@/app/contexts/auth-context";
-import { useAuthFlow } from "@/app/contexts/auth-flow-context";
+import { useCredentialContext } from "@/app/contexts/credential-context";
+import { getSetupAccessToken } from "@/app/lib/setup-access-token";
 import { setupPassword } from "@/app/services/auth/setup-password";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return "Something went wrong. Please try again.";
-}
-
 export default function NewPasswordPage() {
   const router = useRouter();
-  const { login } = useAuth();
-  const { pendingLoginPassword, setPendingLoginPassword } = useAuthFlow();
+  const { password, clearPassword } = useCredentialContext();
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [tokenReady, setTokenReady] = useState(false);
+  const [accessToken, setAccessToken] = useState("");
 
   useEffect(() => {
-    if (!pendingLoginPassword) {
-      router.replace("/auth/login");
+    setAccessToken(getSetupAccessToken());
+    setTokenReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!tokenReady) return;
+    if (!password || !accessToken) {
+      router.replace("/auth/2fa");
     }
-  }, [pendingLoginPassword, router]);
+  }, [tokenReady, password, accessToken, router]);
 
   const onSavePasswords = useCallback(
     async (currentPassword: string, newPassword: string) => {
       setErrorMessage(null);
       setSubmitting(true);
       try {
-        const data = await setupPassword(currentPassword, newPassword);
-        setPendingLoginPassword(null);
-        login(data.token, data.user);
-      } catch (err) {
-        setErrorMessage(getErrorMessage(err));
+        await setupPassword(accessToken, currentPassword, newPassword);
+        clearPassword();
+        router.push("/auth/2fa");
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Could not update password. Try again.";
+        setErrorMessage(message);
       } finally {
         setSubmitting(false);
       }
     },
-    [login, setPendingLoginPassword],
+    [router, accessToken, clearPassword],
   );
 
-  if (!pendingLoginPassword) {
+  if (!tokenReady || !password || !accessToken) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50">
         <p className="text-sm text-zinc-500">Loading…</p>
@@ -67,7 +73,7 @@ export default function NewPasswordPage() {
 
       <main className="relative z-10 flex w-full max-w-lg flex-col items-center">
         <SetupPasswordForm
-          currentPasswordFromLogin={pendingLoginPassword}
+          currentPasswordFromLogin={password}
           submitting={submitting}
           errorMessage={errorMessage}
           onSavePasswords={onSavePasswords}

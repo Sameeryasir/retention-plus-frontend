@@ -1,19 +1,14 @@
 "use client";
 
 import LoginForm from "@/app/components/LoginForm";
-import { useAuthFlow } from "@/app/contexts/auth-flow-context";
-import { login as loginRequest } from "@/app/services/auth/login";
+import { useCredentialContext } from "@/app/contexts/credential-context";
+import { login } from "@/app/services/auth/login";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return "Something went wrong. Please try again.";
-}
-
 export default function LoginPage() {
   const router = useRouter();
-  const { setPendingLoginEmail, setPendingLoginPassword } = useAuthFlow();
+  const { setCredentials } = useCredentialContext();
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -22,17 +17,20 @@ export default function LoginPage() {
       setErrorMessage(null);
       setSubmitting(true);
       try {
-        await loginRequest(email, password);
-        setPendingLoginEmail(email);
-        setPendingLoginPassword(password);
+        await login(email, password);
+        setCredentials(email, password);
         router.push("/auth/verify-otp");
-      } catch (err) {
-        setErrorMessage(getErrorMessage(err));
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Login failed. Please try again.";
+        setErrorMessage(message);
       } finally {
         setSubmitting(false);
       }
     },
-    [router, setPendingLoginEmail, setPendingLoginPassword],
+    [router, setCredentials],
   );
 
   return (

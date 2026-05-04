@@ -1,11 +1,6 @@
 "use client";
 
 import {
-  loginSchema,
-  type LoginFormValues,
-} from "@/app/lib/auth-form-schemas";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
   AlertCircle,
   Eye,
   EyeOff,
@@ -16,6 +11,11 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+
+type LoginFormValues = {
+  email: string;
+  password: string;
+};
 
 export type LoginFormProps = {
   submitting: boolean;
@@ -45,7 +45,6 @@ export default function LoginForm({
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 
@@ -89,7 +88,13 @@ export default function LoginForm({
             aria-invalid={!!errors.email}
             className={`${inputBase} py-2 read-only:bg-zinc-50/50 ${fieldRing(!!errors.email)}`}
             placeholder="Enter email"
-            {...register("email")}
+            {...register("email", {
+              required: "Enter your email.",
+              pattern: {
+                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                message: "Enter a valid email.",
+              },
+            })}
           />
           {errors.email && (
             <p className="text-sm text-red-600">{errors.email.message}</p>
@@ -125,7 +130,9 @@ export default function LoginForm({
               aria-invalid={!!errors.password}
               className={`${inputBase} py-2 pl-4 pr-11 read-only:bg-zinc-50/50 ${fieldRing(!!errors.password)}`}
               placeholder="Enter password"
-              {...register("password")}
+              {...register("password", {
+                required: "Enter your password.",
+              })}
             />
 
             <button

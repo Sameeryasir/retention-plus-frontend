@@ -1,56 +1,32 @@
 "use client";
 
 import OtpForm from "@/app/components/OtpForm";
-import {
-  ACCESS_TOKEN_STORAGE_KEY,
-  USER_STORAGE_KEY,
-} from "@/app/lib/auth-storage";
-import { useAuthFlow } from "@/app/contexts/auth-flow-context";
-import { sendOtp } from "@/app/services/auth/send-otp";
-import verifyOtp from "@/app/services/auth/verify-otp";
+import { useCredentialContext } from "@/app/contexts/credential-context";
+import { setSetupAccessToken } from "@/app/lib/setup-access-token";
+import { setSetupUser } from "@/app/lib/setup-user";
+import { verifyOtp } from "@/app/services/auth/verify-otp";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 
 export default function VerifyOtpPage() {
   const router = useRouter();
-  const { pendingLoginEmail, setPendingLoginEmail } = useAuthFlow();
-
-  useEffect(() => {
-    if (!pendingLoginEmail) {
-      router.replace("/auth/login");
-    }
-  }, [pendingLoginEmail, router]);
+  const { email } = useCredentialContext();
 
   const onVerifyOtp = useCallback(
     async (otp: number) => {
-      if (!pendingLoginEmail) {
-        throw new Error("Missing email. Go back to log in and try again.");
-      }
-      const data = await verifyOtp(pendingLoginEmail, otp);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, data.token);
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
-      }
-      setPendingLoginEmail(null);
+      const { token, user } = await verifyOtp(email, otp);
+      setSetupAccessToken(token);
+      setSetupUser(user);
       router.push("/auth/new-password");
     },
-    [pendingLoginEmail, router, setPendingLoginEmail],
+    [email, router],
   );
 
   const onResendOtp = useCallback(async () => {
-    if (!pendingLoginEmail) {
+    if (!email) {
       throw new Error("Missing email. Go back to log in and try again.");
     }
-    await sendOtp(pendingLoginEmail);
-  }, [pendingLoginEmail]);
-
-  if (!pendingLoginEmail) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
-        <p className="text-sm text-zinc-500">Loading…</p>
-      </div>
-    );
-  }
+  }, [email]);
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-zinc-100 via-white to-zinc-50 px-4 py-12 sm:px-6">
@@ -69,7 +45,7 @@ export default function VerifyOtpPage() {
 
       <main className="relative z-10 flex w-full max-w-lg flex-col items-center">
         <OtpForm
-          pendingLoginEmail={pendingLoginEmail}
+          email={email}
           onVerifyOtp={onVerifyOtp}
           onResendOtp={onResendOtp}
         />
