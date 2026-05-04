@@ -59,7 +59,6 @@ export default function RegisterRestaurantPage() {
             ? error.message
             : "Could not register restaurant. Try again.",
         );
-      } finally {
         setSubmitting(false);
       }
     },

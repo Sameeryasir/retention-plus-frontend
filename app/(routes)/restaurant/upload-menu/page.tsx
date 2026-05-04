@@ -47,7 +47,6 @@ export default function UploadMenuPage() {
             ? error.message
             : "Could not upload menu. Try again.",
         );
-      } finally {
         setSubmitting(false);
       }
     },

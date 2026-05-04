@@ -1,20 +1,31 @@
 "use client";
 
+import SearchBar from "@/app/components/SearchBar";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function Home() {
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center gap-6 bg-gradient-to-br from-zinc-100 via-white to-zinc-50 px-6 text-center">
-      <div className="flex max-w-md flex-col items-center gap-4">
+      <div className="flex w-full max-w-md flex-col items-center gap-4">
         <h1 className="text-xl font-semibold tracking-tight text-zinc-900">
           Welcome
         </h1>
         <p className="text-sm leading-relaxed text-zinc-600">
           You&apos;re signed in.
         </p>
+
+        <SearchBar
+          id="home-search"
+          className="w-full"
+          value={searchQuery}
+          onChange={setSearchQuery}
+        />
+
         <button
           type="button"
           onClick={() => router.push("/auth/login")}

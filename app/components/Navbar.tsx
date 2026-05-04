@@ -1,0 +1,100 @@
+"use client";
+
+import { useCredentialContext } from "@/app/contexts/credential-context";
+import { clearSetupAccessToken } from "@/app/lib/setup-access-token";
+import { clearSetupUser, getSetupUser } from "@/app/lib/setup-user";
+import type { VerifyOtpUser } from "@/app/services/auth/verify-otp";
+import { LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+function initialsFromUser(user: VerifyOtpUser | null): string {
+  if (!user?.name?.trim()) return "?";
+  const parts = user.name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  const a = parts[0][0];
+  const b = parts[parts.length - 1][0];
+  return `${a}${b}`.toUpperCase();
+}
+
+export default function Navbar() {
+  const router = useRouter();
+  const { clearPassword } = useCredentialContext();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState<VerifyOtpUser | null>(null);
+  const menuRootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setUser(getSetupUser());
+    });
+  }, []);
+
+  const initials = useMemo(() => initialsFromUser(user), [user]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const el = menuRootRef.current;
+      if (el && !el.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
+  const handleLogout = useCallback(() => {
+    clearSetupAccessToken();
+    clearSetupUser();
+    clearPassword();
+    setMenuOpen(false);
+    router.push("/auth/login");
+  }, [clearPassword, router]);
+
+  return (
+    <nav
+      className="sticky top-0 z-40 flex w-full items-center justify-end border-b border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6"
+      aria-label="Main"
+    >
+      <div ref={menuRootRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setMenuOpen((o) => !o)}
+          className={`flex size-10 shrink-0 items-center justify-center rounded-full border bg-gradient-to-b from-zinc-800 to-black text-xs font-semibold uppercase tracking-tight text-white shadow-md outline-none ring-offset-2 transition-all hover:brightness-110 focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-white active:scale-[0.98] ${
+            menuOpen ? "ring-2 ring-zinc-400 ring-offset-2" : "border-zinc-700"
+          }`}
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+          aria-label="Account menu"
+        >
+          {initials}
+        </button>
+
+        {menuOpen ? (
+          <div
+            role="menu"
+            aria-label="Account actions"
+            className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-zinc-200/80 bg-white py-1 shadow-xl shadow-zinc-900/10 ring-1 ring-zinc-900/[0.04]"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={handleLogout}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-black"
+            >
+              <LogOut className="size-4 shrink-0 text-zinc-500" aria-hidden strokeWidth={2} />
+              Logout
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </nav>
+  );
+}

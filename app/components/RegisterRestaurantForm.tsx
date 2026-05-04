@@ -21,6 +21,7 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -70,7 +71,6 @@ function optionalUrlRule(value: string) {
   }
 }
 
-/** Same image size cap as menu upload (images only). */
 const MAX_LOGO_BYTES = 10 * 1024 * 1024;
 const ACCEPT_IMAGES = "image/png,image/jpeg,image/webp";
 
@@ -109,6 +109,7 @@ const CUISINE_OPTIONS = [
   { value: "mexican", label: "Mexican" },
   { value: "american", label: "American" },
   { value: "indian", label: "Indian" },
+  { value: "pakistani", label: "Pakistani" },
   { value: "chinese", label: "Chinese" },
   { value: "japanese", label: "Japanese" },
   { value: "french", label: "French" },
@@ -139,7 +140,6 @@ type LogoDropProps = {
   onFile: (file: File | null) => void;
 };
 
-/** Logo picker UI aligned with menu image upload: preview, metadata, replace, clear, drag-to-replace. */
 function RestaurantLogoDropField({
   id,
   label,
@@ -248,12 +248,13 @@ function RestaurantLogoDropField({
           <div className="flex w-full min-w-0 items-stretch gap-3 p-3 sm:gap-4">
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
               {imagePreviewUrl ? (
-                // Local blob preview; `next/image` is not used for object URLs.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={imagePreviewUrl}
                   alt=""
+                  width={64}
+                  height={64}
                   className="h-full w-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-zinc-600">
