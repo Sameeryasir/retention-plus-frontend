@@ -4,7 +4,7 @@ import { useCredentialContext } from "@/app/contexts/credential-context";
 import { clearSetupAccessToken } from "@/app/lib/setup-access-token";
 import { clearSetupUser, getSetupUser } from "@/app/lib/setup-user";
 import type { VerifyOtpUser } from "@/app/services/auth/verify-otp";
-import { LayoutDashboard, LogOut, Settings, Store, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, Settings, Store, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -40,6 +40,11 @@ export default function AdminPanelSidebar() {
   }, []);
 
   const initials = useMemo(() => initialsFromUser(user), [user]);
+  const displayName = useMemo(() => {
+    const n = user?.name?.trim();
+    if (n) return n;
+    return "Admin";
+  }, [user]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -61,7 +66,7 @@ export default function AdminPanelSidebar() {
 
   return (
     <aside
-      className="relative flex h-screen w-64 shrink-0 flex-col border-r border-zinc-200 bg-white shadow-[4px_0_24px_-4px_rgba(0,0,0,0.06)]"
+      className="relative flex min-h-0 w-[17rem] shrink-0 flex-col border-r border-zinc-200 bg-gradient-to-b from-white via-zinc-50/40 to-white shadow-[6px_0_32px_-8px_rgba(0,0,0,0.06)]"
       aria-label="Admin navigation"
     >
       <div
@@ -69,30 +74,29 @@ export default function AdminPanelSidebar() {
         aria-hidden
       />
 
-      <div className="border-b border-zinc-200 px-5 pb-5 pt-6">
+      <div className="border-b border-zinc-100 px-5 pb-6 pt-7">
         <Link
           href="/dashboard"
-          className="group flex items-center gap-3 outline-none ring-offset-2 ring-offset-white focus-visible:ring-2 focus-visible:ring-black/20"
+          className="group flex items-center gap-3.5 outline-none ring-offset-2 ring-offset-white focus-visible:ring-2 focus-visible:ring-black/20"
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 transition-transform duration-200 group-hover:scale-[1.02] group-hover:border-zinc-300">
-            <LayoutDashboard
-              className="h-5 w-5 text-zinc-700 transition-colors group-hover:text-black group-active:text-black"
-              aria-hidden
-              strokeWidth={2}
-            />
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-zinc-800 to-black text-sm font-semibold uppercase tracking-tight text-white shadow-md shadow-black/20 ring-1 ring-white/10 transition-transform duration-200 group-hover:scale-[1.03] group-hover:shadow-lg group-hover:shadow-black/25"
+            aria-hidden
+          >
+            {initials}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold tracking-tight text-zinc-800 transition-colors group-hover:text-black group-active:text-black">
-              RetentionPlus
+            <p className="truncate text-sm font-semibold tracking-tight text-black">
+              {displayName}
             </p>
-            <p className="text-xs font-medium text-zinc-500 transition-colors group-hover:text-black group-active:text-black">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500 transition-colors group-hover:text-zinc-700">
               Admin panel
             </p>
           </div>
         </Link>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 p-3">
+      <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
         {nav.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/dashboard"
@@ -104,14 +108,14 @@ export default function AdminPanelSidebar() {
               href={href}
               className={`group relative flex items-center gap-3 rounded-xl py-2.5 pl-3 pr-3 text-sm font-medium transition-all duration-200 outline-none ring-offset-2 ring-offset-white focus-visible:ring-2 focus-visible:ring-black/20 ${
                 active
-                  ? "bg-zinc-100 text-black shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9)] ring-1 ring-zinc-200/80 before:absolute before:left-0 before:top-1/2 before:h-7 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-black before:content-['']"
-                  : "text-zinc-600 hover:bg-zinc-50 hover:text-black active:text-black"
+                  ? "bg-white text-black shadow-sm shadow-black/[0.04] ring-1 ring-zinc-200 before:absolute before:left-0 before:top-1/2 before:h-8 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-black before:content-['']"
+                  : "text-zinc-600 hover:bg-white/80 hover:text-black hover:shadow-sm hover:shadow-black/[0.03] active:text-black"
               }`}
             >
               <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
                   active
-                    ? "bg-zinc-200/90 text-black"
+                    ? "bg-zinc-100 text-black ring-1 ring-zinc-200"
                     : "bg-transparent text-zinc-500 group-hover:bg-zinc-100 group-hover:text-black group-active:text-black"
                 }`}
               >
@@ -123,32 +127,38 @@ export default function AdminPanelSidebar() {
         })}
       </nav>
 
-      <div className="border-t border-zinc-200 p-3">
-        <div ref={menuRootRef} className="relative flex justify-center">
+      <div className="border-t border-zinc-100 bg-gradient-to-t from-zinc-100/30 to-transparent px-3 py-4">
+        <div ref={menuRootRef} className="relative ml-3 w-fit">
           <button
             type="button"
             onClick={() => setMenuOpen((o) => !o)}
-            className={`flex h-11 w-11 items-center justify-center rounded-full border bg-zinc-100 text-sm font-semibold uppercase tracking-tight outline-none ring-offset-2 ring-offset-white transition-colors hover:border-zinc-400 hover:bg-zinc-200/80 hover:text-black focus-visible:ring-2 focus-visible:ring-black/20 active:text-black ${
-              menuOpen ? "border-zinc-500 text-black" : "border-zinc-200 text-zinc-700"
+            className={`flex size-11 shrink-0 items-center justify-center rounded-full border bg-gradient-to-b from-white to-zinc-50 text-black shadow-sm outline-none ring-1 ring-zinc-100 transition-all hover:border-zinc-400 hover:bg-zinc-100 hover:shadow-md focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] ${
+              menuOpen
+                ? "border-zinc-900 bg-zinc-100 shadow-md"
+                : "border-zinc-200"
             }`}
             aria-expanded={menuOpen}
             aria-haspopup="menu"
             aria-label="Account menu"
           >
-            {initials}
+            <User
+              className="size-[1.15rem] translate-y-px text-zinc-700"
+              aria-hidden
+              strokeWidth={2}
+            />
           </button>
 
           {menuOpen ? (
             <div
               role="menu"
               aria-label="Account actions"
-              className="absolute bottom-full left-1/2 z-50 mb-2 w-44 -translate-x-1/2 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg shadow-zinc-900/10 ring-1 ring-zinc-900/5"
+              className="absolute bottom-full left-0 z-50 mb-2 w-44 overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 py-1 shadow-xl shadow-zinc-900/10 ring-1 ring-zinc-900/[0.04] backdrop-blur-sm"
             >
               <button
                 type="button"
                 role="menuitem"
                 onClick={handleLogout}
-                className="group/logout flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-black active:text-black"
+                className="group/logout flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-black active:text-black"
               >
                 <LogOut
                   className="h-4 w-4 shrink-0 text-zinc-500 transition-colors group-hover/logout:text-black group-active/logout:text-black"

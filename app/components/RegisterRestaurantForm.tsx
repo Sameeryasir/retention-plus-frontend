@@ -19,8 +19,9 @@ import {
   Store,
   Upload,
   UtensilsCrossed,
+  X,
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
 export type RegisterRestaurantFormValues = {
@@ -69,8 +70,38 @@ function optionalUrlRule(value: string) {
   }
 }
 
-const MAX_FILE_BYTES = 2 * 1024 * 1024;
+/** Same image size cap as menu upload (images only). */
+const MAX_LOGO_BYTES = 10 * 1024 * 1024;
 const ACCEPT_IMAGES = "image/png,image/jpeg,image/webp";
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function fileKindLabel(mime: string): string {
+  if (mime === "image/png") return "PNG";
+  if (mime === "image/jpeg") return "JPG";
+  if (mime === "image/webp") return "WEBP";
+  return "Image";
+}
+
+function shortenFileName(name: string, max = 44): string {
+  if (name.length <= max) return name;
+  const lastDot = name.lastIndexOf(".");
+  const ext = lastDot > 0 ? name.slice(lastDot) : "";
+  const stem = lastDot > 0 ? name.slice(0, lastDot) : name;
+  const budget = max - ext.length - 1;
+  if (budget < 10) return `${name.slice(0, max - 1)}…`;
+  const head = Math.ceil(budget * 0.55);
+  const tail = budget - head;
+  return `${stem.slice(0, head)}…${stem.slice(-tail)}${ext}`;
+}
+
+function isImageMime(mime: string): boolean {
+  return mime === "image/png" || mime === "image/jpeg" || mime === "image/webp";
+}
 
 const CUISINE_OPTIONS = [
   { value: "", label: "Select cuisine type" },
@@ -98,7 +129,7 @@ function RequiredStar() {
   return <span className="text-red-500">*</span>;
 }
 
-type DropFieldProps = {
+type LogoDropProps = {
   id: string;
   label: string;
   labelIcon?: LucideIcon;
@@ -108,7 +139,8 @@ type DropFieldProps = {
   onFile: (file: File | null) => void;
 };
 
-function ImageDropField({
+/** Logo picker UI aligned with menu image upload: preview, metadata, replace, clear, drag-to-replace. */
+function RestaurantLogoDropField({
   id,
   label,
   labelIcon: LabelIcon,
@@ -116,9 +148,19 @@ function ImageDropField({
   file,
   error,
   onFile,
-}: DropFieldProps) {
+}: LogoDropProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [localError, setLocalError] = useState<string | undefined>();
+
+  const imagePreviewUrl = useMemo(() => {
+    if (!file || !isImageMime(file.type)) return null;
+    return URL.createObjectURL(file);
+  }, [file]);
+
+  useEffect(() => {
+    if (!imagePreviewUrl) return;
+    return () => URL.revokeObjectURL(imagePreviewUrl);
+  }, [imagePreviewUrl]);
 
   const pick = useCallback(() => {
     if (!disabled) inputRef.current?.click();
@@ -136,8 +178,8 @@ function ImageDropField({
         if (inputEl) inputEl.value = "";
         return;
       }
-      if (f.size > MAX_FILE_BYTES) {
-        setLocalError("File must be 2MB or smaller.");
+      if (f.size > MAX_LOGO_BYTES) {
+        setLocalError("File must be 10MB or smaller.");
         if (inputEl) inputEl.value = "";
         return;
       }
@@ -164,51 +206,127 @@ function ImageDropField({
     [disabled, validateAndSet],
   );
 
+  const clearFile = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setLocalError(undefined);
+      if (inputRef.current) inputRef.current.value = "";
+      onFile(null);
+    },
+    [onFile],
+  );
+
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-700">
+    <div className="flex w-full min-w-0 flex-col gap-2">
+      <label
+        htmlFor={id}
+        className="flex items-center gap-1.5 text-sm font-medium text-zinc-700"
+      >
         {LabelIcon ? (
           <LabelIcon className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />
         ) : null}
         {label}
       </label>
-      <div
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            pick();
-          }
-        }}
-        onClick={pick}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={onDrop}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-8 text-center transition hover:border-zinc-300 hover:bg-zinc-50 ${disabled ? "pointer-events-none opacity-60" : ""}`}
-      >
-        <input
-          ref={inputRef}
-          id={id}
-          type="file"
-          accept={ACCEPT_IMAGES}
-          className="sr-only"
-          disabled={disabled}
-          onChange={onChange}
-        />
-        <Upload className="h-8 w-8 text-zinc-400" strokeWidth={1.5} aria-hidden />
-        <span className="text-sm font-medium text-zinc-700">
-          Click to upload or drag and drop
-        </span>
-        <span className="text-xs text-zinc-500">PNG, JPG or WEBP (Max. 2MB)</span>
-        {file && (
-          <span className="mt-1 max-w-full truncate text-xs text-zinc-600">
-            {file.name}
+
+      <input
+        ref={inputRef}
+        id={id}
+        type="file"
+        accept={ACCEPT_IMAGES}
+        className="sr-only"
+        disabled={disabled}
+        onChange={onChange}
+      />
+
+      {file ? (
+        <div
+          className={`w-full min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/40 shadow-sm ring-1 ring-black/[0.03] ${disabled ? "pointer-events-none opacity-60" : ""}`}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={onDrop}
+        >
+          <div className="flex w-full min-w-0 items-stretch gap-3 p-3 sm:gap-4">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
+              {imagePreviewUrl ? (
+                // Local blob preview; `next/image` is not used for object URLs.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imagePreviewUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-zinc-600">
+                  <ImageIcon className="h-7 w-7" aria-hidden strokeWidth={1.75} />
+                </div>
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1 overflow-hidden py-0.5">
+              <p
+                className="break-all text-sm font-semibold leading-snug text-zinc-900 sm:break-normal sm:truncate"
+                title={file.name}
+              >
+                {shortenFileName(file.name)}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                {fileKindLabel(file.type)} · {formatFileSize(file.size)}
+              </p>
+              {!disabled ? (
+                <button
+                  type="button"
+                  onClick={pick}
+                  className="mt-2 text-left text-xs font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition hover:text-black hover:decoration-zinc-500"
+                >
+                  Replace file…
+                </button>
+              ) : null}
+            </div>
+
+            <div className="flex shrink-0 flex-col justify-between gap-2 sm:flex-row sm:items-start">
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={clearFile}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition hover:border-zinc-300 hover:bg-white hover:text-zinc-900 disabled:pointer-events-none disabled:opacity-50"
+                aria-label={`Remove ${file.name}`}
+              >
+                <X className="h-4 w-4" aria-hidden strokeWidth={2} />
+              </button>
+            </div>
+          </div>
+          {!disabled ? (
+            <p className="border-t border-zinc-200/80 bg-white/60 px-3 py-2 text-center text-[11px] text-zinc-500">
+              Drag a new image here to replace
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              pick();
+            }
+          }}
+          onClick={pick}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={onDrop}
+          className={`flex min-h-[160px] min-w-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-8 text-center transition hover:border-zinc-300 hover:bg-zinc-50 ${disabled ? "pointer-events-none opacity-60" : ""}`}
+        >
+          <Upload className="h-8 w-8 text-zinc-400" strokeWidth={1.5} aria-hidden />
+          <span className="text-sm font-medium text-zinc-700">
+            Click to upload or drag and drop
           </span>
-        )}
-      </div>
-      {(error ?? localError) && (
-        <p className="text-sm text-red-600">{error ?? localError}</p>
+          <span className="text-xs text-zinc-500">PNG, JPG or WEBP (max 10MB)</span>
+        </div>
       )}
+
+      {(error ?? localError) ? (
+        <p className="text-sm text-red-600">{error ?? localError}</p>
+      ) : null}
     </div>
   );
 }
@@ -531,9 +649,9 @@ export default function RegisterRestaurantForm({
           </h2>
 
           <div className="max-w-md">
-            <ImageDropField
+            <RestaurantLogoDropField
               id="restaurant-logo-file"
-              label="Restaurant Logo"
+              label="Restaurant logo"
               labelIcon={ImageIcon}
               disabled={submitting}
               file={logoFile}
