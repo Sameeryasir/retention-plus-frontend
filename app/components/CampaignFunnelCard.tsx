@@ -1,0 +1,113 @@
+"use client";
+
+import type { Funnel } from "@/app/services/funnel/get-funnels-by-restaurant";
+import { Megaphone } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
+type Props = {
+  funnel: Funnel;
+};
+
+function formatPrice(amount: number): string {
+  if (Number.isInteger(amount)) return `$${amount}`;
+  return `$${amount.toFixed(2)}`;
+}
+
+function formatCreatedDate(iso: string | undefined): string | null {
+  if (!iso?.trim()) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function normalizeImgSrc(raw: string): string {
+  const t = raw.trim();
+  if (!t.startsWith("data:")) return t;
+  const comma = t.indexOf(",");
+  if (comma === -1) return t;
+  return t.slice(0, comma + 1) + t.slice(comma + 1).replace(/\s+/g, "");
+}
+
+function statusFromFunnel(f: Funnel): string {
+  const raw = f.status?.trim();
+  if (raw) return raw;
+  if (f.published === true) return "Published";
+  if (f.published === false) return "Unpublished";
+  return "—";
+}
+
+function statusBadgeLabel(f: Funnel): string {
+  const s = statusFromFunnel(f);
+  if (s === "—") return "";
+  return s
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
+export default function CampaignFunnelCard({ funnel }: Props) {
+  const imageSrc = useMemo(
+    () => normalizeImgSrc(funnel.imageUrl?.trim() ?? ""),
+    [funnel.imageUrl],
+  );
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => {
+    setImageFailed(false);
+  }, [funnel.id, imageSrc]);
+
+  const priceText =
+    funnel.price != null && Number.isFinite(funnel.price)
+      ? formatPrice(funnel.price)
+      : null;
+  const created = formatCreatedDate(funnel.createdAt);
+  const badgeLabel = statusBadgeLabel(funnel);
+  const isPublished = funnel.published === true;
+
+  return (
+    <article className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:shadow-md">
+      <div className="relative h-44 w-full shrink-0 bg-zinc-100">
+        {imageSrc && !imageFailed ? (
+          <img
+            src={imageSrc}
+            alt={`Campaign ${funnel.id}`}
+            className="h-full w-full object-cover"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <div
+            className="flex h-full w-full items-center justify-center text-zinc-400"
+            aria-hidden
+          >
+            <Megaphone className="h-10 w-10" strokeWidth={1.5} />
+          </div>
+        )}
+        {badgeLabel ? (
+          <span
+            className={
+              isPublished
+                ? "absolute right-2 top-2 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-emerald-700 shadow-sm ring-1 ring-black/5"
+                : "absolute right-2 top-2 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-zinc-800 shadow-sm ring-1 ring-black/5"
+            }
+          >
+            {badgeLabel}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="flex flex-1 flex-col gap-2 p-4 text-sm text-zinc-700">
+        {priceText ? (
+          <p>
+            <span className="font-medium text-zinc-900">Price:</span>{" "}
+            {priceText}
+          </p>
+        ) : null}
+        {created ? (
+          <p className="text-xs text-zinc-500">Created {created}</p>
+        ) : null}
+      </div>
+    </article>
+  );
+}

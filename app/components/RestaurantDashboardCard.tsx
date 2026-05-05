@@ -29,6 +29,10 @@ export default function RestaurantDashboardCard({ restaurant }: Props) {
 
   const location = [city, state, country].filter(Boolean).join(", ");
   const logoSrc = logoUrl?.trim() ?? "";
+  const dashboardHref =
+    typeof restaurant.id === "number" && restaurant.id >= 1
+      ? `/restaurant/${restaurant.id}/dashboard`
+      : "/dashboard";
 
   const detailRows: { key: string; icon: LucideIcon; label: string }[] = [];
   if (cuisineType?.trim()) {
@@ -51,7 +55,7 @@ export default function RestaurantDashboardCard({ restaurant }: Props) {
 
   return (
     <Link
-      href="/restaurant/dashboard"
+      href={dashboardHref}
       className="block h-full w-full rounded-xl outline-none ring-offset-2 ring-offset-white transition duration-200 ease-out hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-black/20"
     >
       <article className="flex h-full w-full min-h-0 cursor-pointer flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition duration-200 ease-out hover:shadow-md">

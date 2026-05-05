@@ -2,6 +2,8 @@
 
 import {
   Activity,
+  ChevronsLeft,
+  ChevronsRight,
   Gift,
   Home,
   LayoutTemplate,
@@ -11,35 +13,122 @@ import {
   ScanLine,
   ShoppingBag,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-const HOME_HREF = "/restaurant/dashboard" as const;
+const SIDEBAR_COLLAPSED_KEY = "admin-sidebar-collapsed";
 
-const nav = [
-  { href: HOME_HREF, label: "Home", icon: Home },
-  { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag },
-  { href: "/dashboard/activity", label: "Activity", icon: Activity },
-  {
-    href: "/dashboard/website-builder",
-    label: "Website builder",
-    icon: LayoutTemplate,
-  },
-  { href: "/dashboard/scanning", label: "Scanning", icon: ScanLine },
-  { href: "/restaurant/dashboard/campaigns", label: "Campaigns", icon: Megaphone },
-  { href: "/dashboard/ad-library", label: "Ad library", icon: Library },
-  { href: "/dashboard/members", label: "Members", icon: Users },
-  { href: "/dashboard/program", label: "Program", icon: Gift },
-  { href: "/dashboard/chats", label: "Chats", icon: MessageSquare },
-] as const;
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  activeMatch: "exact" | "prefix";
+};
 
 export default function AdminPanelSidebar() {
   const pathname = usePathname();
+  const params = useParams();
+  const [collapsed, setCollapsed] = useState(false);
+
+  const restaurantIdParam = params?.restaurantId;
+  const restaurantId =
+    typeof restaurantIdParam === "string" && /^\d+$/.test(restaurantIdParam)
+      ? restaurantIdParam
+      : null;
+
+  const restaurantHomeHref = restaurantId
+    ? `/restaurant/${restaurantId}/dashboard`
+    : "/dashboard";
+
+  const nav = useMemo<NavItem[]>(
+    () => [
+      {
+        href: restaurantHomeHref,
+        label: "Home",
+        icon: Home,
+        activeMatch: "exact",
+      },
+      {
+        href: "/dashboard/orders",
+        label: "Orders",
+        icon: ShoppingBag,
+        activeMatch: "prefix",
+      },
+      {
+        href: "/dashboard/activity",
+        label: "Activity",
+        icon: Activity,
+        activeMatch: "prefix",
+      },
+      {
+        href: "/dashboard/website-builder",
+        label: "Website builder",
+        icon: LayoutTemplate,
+        activeMatch: "prefix",
+      },
+      {
+        href: "/dashboard/scanning",
+        label: "Scanning",
+        icon: ScanLine,
+        activeMatch: "prefix",
+      },
+      {
+        href: `${restaurantHomeHref}/campaigns`,
+        label: "Campaigns",
+        icon: Megaphone,
+        activeMatch: "prefix",
+      },
+      {
+        href: "/dashboard/ad-library",
+        label: "Ad library",
+        icon: Library,
+        activeMatch: "prefix",
+      },
+      {
+        href: "/dashboard/members",
+        label: "Members",
+        icon: Users,
+        activeMatch: "prefix",
+      },
+      {
+        href: "/dashboard/program",
+        label: "Program",
+        icon: Gift,
+        activeMatch: "prefix",
+      },
+      {
+        href: "/dashboard/chats",
+        label: "Chats",
+        icon: MessageSquare,
+        activeMatch: "prefix",
+      },
+    ],
+    [restaurantHomeHref],
+  );
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1") {
+        setCollapsed(true);
+      }
+    } catch {}
+  }, []);
+
+  const setCollapsedPersist = useCallback((next: boolean) => {
+    setCollapsed(next);
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
+    } catch {}
+  }, []);
 
   return (
     <aside
-      className="relative flex min-h-0 w-[17rem] shrink-0 flex-col border-r border-zinc-200 bg-gradient-to-b from-white via-zinc-50/40 to-white shadow-[6px_0_32px_-8px_rgba(0,0,0,0.06)]"
+      className={`relative flex min-h-0 shrink-0 flex-col border-r border-zinc-200 bg-gradient-to-b from-white via-zinc-50/40 to-white shadow-[6px_0_32px_-8px_rgba(0,0,0,0.06)] transition-[width] duration-300 ease-out ${
+        collapsed ? "w-12" : "w-[17rem]"
+      }`}
       aria-label="Admin navigation"
     >
       <div
@@ -47,13 +136,66 @@ export default function AdminPanelSidebar() {
         aria-hidden
       />
 
-      <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 pb-4 pt-7">
-        {nav.map(({ href, label, icon: Icon }) => {
-          // Home is only `/restaurant/dashboard`; deeper routes (e.g. campaigns) use their own nav item.
+      <div
+        className={`flex shrink-0 border-b border-zinc-100/80 py-2.5 ${
+          collapsed ? "justify-center px-0" : "justify-end px-2"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => setCollapsedPersist(!collapsed)}
+          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <ChevronsRight
+              className="h-[18px] w-[18px]"
+              aria-hidden
+              strokeWidth={2.25}
+            />
+          ) : (
+            <ChevronsLeft
+              className="h-[18px] w-[18px]"
+              aria-hidden
+              strokeWidth={2.25}
+            />
+          )}
+        </button>
+      </div>
+
+      <nav
+        className={`flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto pb-4 ${
+          collapsed
+            ? "items-center px-1 pt-2"
+            : "px-3 pt-3"
+        }`}
+      >
+        {nav.map(({ href, label, icon: Icon, activeMatch }) => {
           const active =
-            href === HOME_HREF
-              ? pathname === HOME_HREF
+            activeMatch === "exact"
+              ? pathname === href
               : pathname === href || pathname.startsWith(`${href}/`);
+
+          if (collapsed) {
+            return (
+              <Link
+                key={href}
+                href={href}
+                title={label}
+                aria-label={label}
+                aria-current={active ? "page" : undefined}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-200 outline-none ring-offset-2 ring-offset-white focus-visible:ring-2 focus-visible:ring-black/20 ${
+                  active
+                    ? "bg-black text-white shadow-sm shadow-black/25 ring-1 ring-white/15"
+                    : "text-zinc-600 hover:bg-black hover:text-white hover:shadow-sm hover:shadow-black/20 active:bg-black active:text-white"
+                }`}
+              >
+                <Icon className="h-4 w-4" aria-hidden strokeWidth={2} />
+              </Link>
+            );
+          }
+
           return (
             <Link
               key={href}
