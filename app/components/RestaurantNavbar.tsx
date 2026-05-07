@@ -5,8 +5,10 @@ import { clearSetupAccessToken } from "@/app/lib/setup-access-token";
 import { clearSetupUser, getSetupUser } from "@/app/lib/setup-user";
 import type { VerifyOtpUser } from "@/app/services/auth/verify-otp";
 import RestaurantSettingsDialog from "@/app/components/RestaurantSettingsDialog";
-import { LogOut, Settings } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { shouldHideRestaurantNavbarHome } from "@/app/lib/restaurant-dashboard-pathname";
+import { Home, LogOut, Settings } from "lucide-react";
+import Link from "next/link";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function initialsFromUser(user: VerifyOtpUser | null): string {
@@ -20,7 +22,15 @@ function initialsFromUser(user: VerifyOtpUser | null): string {
 }
 
 export default function RestaurantNavbar() {
+  const params = useParams();
+  const pathname = usePathname();
   const router = useRouter();
+  const restaurantId = params?.restaurantId;
+  const homeHref =
+    typeof restaurantId === "string" && restaurantId.trim() !== ""
+      ? `/restaurant/${restaurantId}/dashboard`
+      : "/dashboard";
+  const hideHome = shouldHideRestaurantNavbarHome(pathname);
   const { clearPassword } = useCredentialContext();
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -69,51 +79,75 @@ export default function RestaurantNavbar() {
   return (
     <>
     <nav
-      className="sticky top-0 z-40 flex w-full shrink-0 items-center justify-end gap-2 border-b border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:gap-3 sm:px-6"
+      className="sticky top-0 z-40 w-full shrink-0 border-b border-white/10 bg-[#0c152f] px-4 py-3 sm:px-6"
       aria-label="Restaurant dashboard"
     >
-      <button
-        type="button"
-        onClick={openSettingsDialog}
-        className="flex size-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm outline-none ring-offset-2 transition-all hover:border-zinc-300 hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-zinc-900/20 focus-visible:ring-offset-white active:scale-[0.98]"
-        aria-label="Settings"
-        aria-haspopup="dialog"
-        aria-expanded={settingsOpen}
-      >
-        <Settings className="size-[1.125rem]" aria-hidden strokeWidth={2} />
-      </button>
-
-      <div ref={menuRootRef} className="relative">
-        <button
-          type="button"
-          onClick={() => setMenuOpen((o) => !o)}
-          className={`flex size-10 shrink-0 items-center justify-center rounded-full border bg-gradient-to-b from-zinc-800 to-black text-xs font-semibold uppercase tracking-tight text-white shadow-md outline-none ring-offset-2 transition-all hover:brightness-110 focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-white active:scale-[0.98] ${
-            menuOpen ? "ring-2 ring-zinc-400 ring-offset-2" : "border-zinc-700"
-          }`}
-          aria-expanded={menuOpen}
-          aria-haspopup="menu"
-          aria-label="Account menu"
-        >
-          {initials}
-        </button>
-
-        {menuOpen ? (
-          <div
-            role="menu"
-            aria-label="Account actions"
-            className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-zinc-200/80 bg-white py-1 shadow-xl shadow-zinc-900/10 ring-1 ring-zinc-900/[0.04]"
+      <div className="flex w-full items-center justify-between gap-3 bg-[#0c152f] sm:gap-4">
+        {hideHome ? (
+          <span className="inline-flex size-10 shrink-0" aria-hidden />
+        ) : (
+          <Link
+            href={homeHref}
+            className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-white outline-none ring-offset-2 ring-offset-[#0c152f] transition-colors hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-[#0c152f]"
+            aria-label="Home"
           >
+            <Home className="size-5 shrink-0 text-white" aria-hidden strokeWidth={2} />
+          </Link>
+        )}
+
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={openSettingsDialog}
+            className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-[#0c152f] text-white outline-none ring-offset-2 ring-offset-[#0c152f] transition-all hover:border-white/35 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-[#0c152f] active:scale-[0.98]"
+            aria-label="Settings"
+            aria-haspopup="dialog"
+            aria-expanded={settingsOpen}
+          >
+            <Settings
+              className="size-[1.125rem] text-white"
+              aria-hidden
+              strokeWidth={2}
+            />
+          </button>
+
+          <div ref={menuRootRef} className="relative bg-[#0c152f]">
             <button
               type="button"
-              role="menuitem"
-              onClick={handleLogout}
-              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-black"
+              onClick={() => setMenuOpen((o) => !o)}
+              className={`flex size-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-[#0c152f] text-xs font-semibold uppercase tracking-tight text-white outline-none ring-offset-2 ring-offset-[#0c152f] transition-all hover:border-white/35 focus-visible:ring-2 focus-visible:ring-white/35 focus-visible:ring-offset-[#0c152f] active:scale-[0.98] ${
+                menuOpen ? "ring-2 ring-white/50 ring-offset-2 ring-offset-[#0c152f]" : ""
+              }`}
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              aria-label="Account menu"
             >
-              <LogOut className="size-4 shrink-0 text-zinc-500" aria-hidden strokeWidth={2} />
-              Logout
+              {initials}
             </button>
+
+            {menuOpen ? (
+              <div
+                role="menu"
+                aria-label="Account actions"
+                className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-zinc-200/80 bg-white py-1 shadow-xl shadow-zinc-900/10 ring-1 ring-zinc-900/[0.04]"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-black"
+                >
+                  <LogOut
+                    className="size-4 shrink-0 text-zinc-500"
+                    aria-hidden
+                    strokeWidth={2}
+                  />
+                  Logout
+                </button>
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
       </div>
     </nav>
 

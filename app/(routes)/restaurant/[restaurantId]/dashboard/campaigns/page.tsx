@@ -195,7 +195,11 @@ export default function RestaurantCampaignsPage() {
       ) : filteredFunnels.length > 0 && !showCreateCampaign ? (
         <div className="mx-auto grid w-full max-w-[min(100%,77.62rem)] grid-cols-1 gap-6 md:grid-cols-3">
           {filteredFunnels.map((f) => (
-            <CampaignFunnelCard key={f.id} funnel={f} />
+            <CampaignFunnelCard
+              key={f.id}
+              funnel={f}
+              restaurantId={restaurantId}
+            />
           ))}
         </div>
       ) : null}

@@ -2,10 +2,12 @@
 
 import type { Funnel } from "@/app/services/funnel/get-campaigns-by-restaurant";
 import { Megaphone } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type Props = {
   funnel: Funnel;
+  restaurantId: number;
 };
 
 function formatPrice(amount: number): string {
@@ -55,7 +57,7 @@ function statusBadgeLabel(f: Funnel): string {
     .replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
-export default function CampaignFunnelCard({ funnel }: Props) {
+export default function CampaignFunnelCard({ funnel, restaurantId }: Props) {
   const imageSrc = useMemo(
     () => normalizeImgSrc(funnel.imageUrl?.trim() ?? ""),
     [funnel.imageUrl],
@@ -71,8 +73,18 @@ export default function CampaignFunnelCard({ funnel }: Props) {
   const badgeLabel = statusBadgeLabel(funnel);
   const isPublished = funnel.published === true;
 
+  const campaignHref = `/restaurant/${restaurantId}/dashboard/campaigns/${funnel.id}`;
+  const openLabel =
+    funnel.campaignName?.trim() ||
+    `Campaign ${funnel.id}`;
+
   return (
-    <article className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:shadow-md">
+    <Link
+      href={campaignHref}
+      aria-label={`Open ${openLabel}`}
+      className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm outline-none transition hover:shadow-md focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2"
+    >
+    <article className="flex min-h-0 flex-1 flex-col">
       <div className="relative h-44 w-full shrink-0 bg-zinc-100">
         {imageSrc && !imageFailed ? (
           <img
@@ -114,5 +126,6 @@ export default function CampaignFunnelCard({ funnel }: Props) {
         ) : null}
       </div>
     </article>
+    </Link>
   );
 }

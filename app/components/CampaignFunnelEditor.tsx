@@ -1,106 +1,213 @@
 "use client";
 
-import Link from "next/link";
-import { AlertCircle } from "lucide-react";
-import { useMemo, useState } from "react";
+import { AlertCircle, ImagePlus, Pencil } from "lucide-react";
+import { type ChangeEvent, useCallback, useMemo, useState } from "react";
 
 export type CampaignFunnelEditorProps = {
   restaurantId: number;
   campaignId: number;
 };
 
-type FunnelStep = {
+type FunnelPage = {
   id: string;
   label: string;
-  hasError: boolean;
+  pageTitle: string;
+  headline: string;
+  subheadline: string;
+  body: string;
+  ctaLabel: string;
+  heroImageSrc?: string | null;
+  signupFirstNameLabel: string;
+  signupLastNameLabel: string;
+  signupPhoneLabel: string;
 };
 
-const STEPS: FunnelStep[] = [
-  { id: "landing", label: "Landing Page", hasError: true },
-  { id: "signup", label: "Sign Up", hasError: false },
-  { id: "prepay", label: "Prepay Offer", hasError: false },
-  { id: "payment", label: "Payment", hasError: false },
-  { id: "confirmation", label: "Payment Confirmation", hasError: true },
+const INITIAL_PAGES: FunnelPage[] = [
+  {
+    id: "landing",
+    label: "Landing Page",
+    pageTitle: "Union",
+    headline: "Union Pub & Social",
+    subheadline: "Special Daily Deal…",
+    body: "BADGER BITES — JUST $4\n\nNormally $12 — You save $8 instantly (67% off).\n\nThat is $8 staying in your pocket — for real food, full sized, not a sample plate.\n\nGolden fried cheese curds — hot and oozing — piled high with sweet, smoky bacon jam that melts into every crispy edge, finished with cool ranch for the perfect dunk.\n\nShow up hungry. Walk out smiling. This deal is for today only while supplies last.\n\nCrunch. Melt. Sweet. Savory. Repeat.",
+    ctaLabel: "Claim",
+    signupFirstNameLabel: "",
+    signupLastNameLabel: "",
+    signupPhoneLabel: "",
+  },
+  {
+    id: "signup",
+    label: "Sign Up",
+    pageTitle: "Sign up",
+    headline: "Create your account",
+    subheadline: "",
+    body: "Enter your details so we can send your reward and reminders.",
+    ctaLabel: "Continue",
+    signupFirstNameLabel: "First name *",
+    signupLastNameLabel: "Last name *",
+    signupPhoneLabel: "Phone *",
+  },
+  {
+    id: "prepay",
+    label: "Prepay Offer",
+    pageTitle: "Prepay",
+    headline: "Lock in your price",
+    subheadline: "",
+    body: "Complete prepayment to secure this offer before it expires.",
+    ctaLabel: "Pay now",
+    signupFirstNameLabel: "",
+    signupLastNameLabel: "",
+    signupPhoneLabel: "",
+  },
+  {
+    id: "payment",
+    label: "Payment",
+    pageTitle: "Payment",
+    headline: "Payment details",
+    subheadline: "",
+    body: "Use a saved card or enter a new one to finish checkout.",
+    ctaLabel: "Submit payment",
+    signupFirstNameLabel: "",
+    signupLastNameLabel: "",
+    signupPhoneLabel: "",
+  },
+  {
+    id: "confirmation",
+    label: "Payment Confirmation",
+    pageTitle: "Confirmation",
+    headline: "You're all set",
+    subheadline: "",
+    body: "We sent a confirmation to your phone. Show your pass at the restaurant.",
+    ctaLabel: "View pass",
+    signupFirstNameLabel: "",
+    signupLastNameLabel: "",
+    signupPhoneLabel: "",
+  },
 ];
 
-export default function CampaignFunnelEditor({
-  restaurantId,
-  campaignId,
-}: CampaignFunnelEditorProps) {
-  const [activeStepId, setActiveStepId] = useState(STEPS[0].id);
+function pageNeedsAttention(p: FunnelPage): boolean {
+  if (p.id === "signup") {
+    return (
+      !p.signupFirstNameLabel.trim() ||
+      !p.signupLastNameLabel.trim() ||
+      !p.signupPhoneLabel.trim()
+    );
+  }
+  if (
+    !p.pageTitle.trim() ||
+    !p.headline.trim() ||
+    !p.body.trim() ||
+    !p.ctaLabel.trim()
+  ) {
+    return true;
+  }
+  if (p.id === "landing" && !p.subheadline.trim()) return true;
+  return false;
+}
 
-  const experienceHref = useMemo(
-    () =>
-      `/restaurant/${restaurantId}/dashboard/campaigns/${campaignId}/experience`,
-    [restaurantId, campaignId],
+export default function CampaignFunnelEditor({
+  restaurantId: _restaurantId,
+  campaignId: _campaignId,
+}: CampaignFunnelEditorProps) {
+  const [pages, setPages] = useState<FunnelPage[]>(() =>
+    INITIAL_PAGES.map((p) => ({ ...p })),
+  );
+  const [activePageId, setActivePageId] = useState(INITIAL_PAGES[0].id);
+
+  const activePage = useMemo(
+    () => pages.find((p) => p.id === activePageId) ?? pages[0],
+    [pages, activePageId],
   );
 
-  const campaignsHref = useMemo(
-    () => `/restaurant/${restaurantId}/dashboard/campaigns`,
-    [restaurantId],
+  const updateActivePage = useCallback(
+    (patch: Partial<FunnelPage>) => {
+      setPages((prev) =>
+        prev.map((p) =>
+          p.id === activePageId ? { ...p, ...patch } : p,
+        ),
+      );
+    },
+    [activePageId],
+  );
+
+  const setLandingHeroImage = useCallback((src: string | null) => {
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === "landing" ? { ...p, heroImageSrc: src } : p,
+      ),
+    );
+  }, []);
+
+  const handleLandingImageFile = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file || !file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const out = reader.result;
+        if (typeof out === "string") setLandingHeroImage(out);
+      };
+      reader.readAsDataURL(file);
+    },
+    [setLandingHeroImage],
   );
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col bg-white lg:flex-row lg:items-stretch">
-      <aside className="flex w-full shrink-0 flex-col border-zinc-200/90 bg-zinc-50/40 lg:w-64 lg:border-r lg:bg-white">
-        <div className="border-b border-zinc-200/80 px-5 pb-5 pt-5">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-zinc-500">
-            Funnel
-          </p>
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-            <Link
-              href={experienceHref}
-              className="font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-4 transition hover:decoration-zinc-900"
-            >
-              Guest experience
-            </Link>
-            <Link
-              href={campaignsHref}
-              className="text-zinc-500 transition hover:text-zinc-900"
-            >
-              All campaigns
-            </Link>
-          </div>
-        </div>
-
+    <div className="flex min-h-0 w-full flex-1 flex-col bg-zinc-50 lg:flex-row lg:items-stretch">
+      <aside className="flex min-h-0 w-full shrink-0 flex-col border-zinc-200 bg-white lg:w-64 lg:self-stretch lg:border-r">
         <nav
-          className="flex flex-1 flex-col gap-1.5 p-3 lg:p-4"
-          aria-label="Funnel steps"
+          className="flex min-h-0 flex-1 flex-col gap-1 p-3 pt-4 lg:p-4 lg:pt-5"
+          aria-label="Funnel pages"
         >
-          {STEPS.map((step, i) => {
-            const selected = step.id === activeStepId;
+          {pages.map((page, i) => {
+            const selected = page.id === activePageId;
+            const warn = pageNeedsAttention(page);
             return (
               <button
-                key={step.id}
+                key={page.id}
                 type="button"
-                onClick={() => setActiveStepId(step.id)}
+                onClick={() => setActivePageId(page.id)}
                 className={`group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition ${
                   selected
-                    ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200/90"
-                    : "text-zinc-600 hover:bg-white/80 hover:text-zinc-900"
+                    ? "bg-zinc-900 text-white shadow-md ring-1 ring-zinc-900/20"
+                    : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
                 }`}
               >
                 <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums transition ${
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums ${
                     selected
-                      ? "bg-zinc-900 text-white"
-                      : "bg-zinc-200/90 text-zinc-600 group-hover:bg-zinc-300/80 group-hover:text-zinc-800"
+                      ? "bg-white/15 text-white"
+                      : "bg-zinc-200 text-zinc-700 group-hover:bg-zinc-300"
                   }`}
                 >
                   {i + 1}
                 </span>
-                <span
-                  className={`min-w-0 flex-1 text-[0.8125rem] leading-snug ${
-                    selected ? "font-semibold" : "font-medium"
-                  }`}
-                >
-                  {step.label}
-                </span>
-                {step.hasError ? (
-                  <AlertCircle
-                    className="h-[1.125rem] w-[1.125rem] shrink-0 text-red-600"
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <span
+                    className={`min-w-0 flex-1 truncate text-[0.8125rem] leading-snug ${
+                      selected ? "font-semibold" : "font-medium"
+                    }`}
+                  >
+                    {page.label}
+                  </span>
+                  <Pencil
+                    className={`size-3.5 shrink-0 ${
+                      selected
+                        ? "text-white/70"
+                        : "text-zinc-400 group-hover:text-zinc-600"
+                    }`}
                     strokeWidth={2}
-                    aria-label="Has issues"
+                    aria-hidden
+                  />
+                </span>
+                {warn ? (
+                  <AlertCircle
+                    className={`h-[1.125rem] w-[1.125rem] shrink-0 ${
+                      selected ? "text-amber-300" : "text-amber-600"
+                    }`}
+                    strokeWidth={2}
+                    aria-label="Incomplete fields"
                   />
                 ) : null}
               </button>
@@ -109,188 +216,306 @@ export default function CampaignFunnelEditor({
         </nav>
       </aside>
 
-      <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6 lg:justify-start lg:pt-8">
-        <p className="mb-3 w-full max-w-[20rem] text-xs font-medium text-zinc-500">
-          Preview
-          {activeStepId === "signup" ? (
-            <span className="text-zinc-400"> · Sign up</span>
-          ) : null}
-        </p>
-        <div className="w-full max-w-[20rem] overflow-hidden rounded-2xl border border-zinc-300 bg-white shadow-sm">
-          <div
-            className={
-              activeStepId === "signup"
-                ? ""
-                : "max-h-[min(36rem,75vh)] overflow-y-auto"
-            }
-          >
-            {activeStepId === "signup" ? (
-              <>
-                <div className="flex items-center gap-3 bg-zinc-950 px-3 py-3">
-                  <div
-                    className="h-11 w-11 shrink-0 rounded-md bg-zinc-700 bg-[length:cover] bg-center"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(135deg, rgb(161 98 7), rgb(87 83 78))",
-                    }}
-                    aria-hidden
-                  />
-                  <div className="min-w-0 text-left text-white">
-                    <p className="text-[0.65rem] font-medium leading-tight text-zinc-300">
-                      You&apos;re claiming:
-                    </p>
-                    <p className="text-sm font-semibold leading-tight">test</p>
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6 lg:min-h-0 lg:flex-row lg:items-stretch lg:gap-8">
+          <div className="min-w-0 flex-1 space-y-4">
+            <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                Page settings
+              </p>
+              <div className="mt-4 space-y-4">
+                {activePage.id !== "signup" ? (
+                  <label className="block">
+                    <span className="text-sm font-medium text-zinc-800">
+                      Page title <span className="text-red-600">*</span>
+                    </span>
+                    <input
+                      type="text"
+                      value={activePage.pageTitle}
+                      onChange={(e) =>
+                        updateActivePage({ pageTitle: e.target.value })
+                      }
+                      className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/15"
+                    />
+                  </label>
+                ) : null}
+                {activePage.id === "landing" ? (
+                  <div className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50/80 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-zinc-800">
+                          Hero image
+                        </p>
+                        <p className="mt-0.5 text-xs text-zinc-500">
+                          Shown at the top of the landing preview for guests.
+                        </p>
+                      </div>
+                      <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800">
+                        <ImagePlus className="size-3.5" aria-hidden strokeWidth={2} />
+                        Upload
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={handleLandingImageFile}
+                        />
+                      </label>
+                    </div>
+                    {activePage.heroImageSrc ? (
+                      <div className="mt-3 space-y-2">
+                        <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
+                          <img
+                            src={activePage.heroImageSrc}
+                            alt=""
+                            className="h-28 w-full object-cover"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setLandingHeroImage(null)}
+                          className="text-xs font-medium text-red-700 underline-offset-2 hover:underline"
+                        >
+                          Remove image
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
-                </div>
-                <div className="space-y-4 bg-white px-4 pb-5 pt-4">
-                  <div
-                    className="flex h-36 w-full items-center justify-center rounded-lg bg-zinc-100 text-xs text-zinc-400"
-                    aria-hidden
-                  >
-                    Image
-                  </div>
-                  <div className="space-y-3">
+                ) : null}
+                {activePage.id === "landing" ? (
+                  <>
                     <label className="block">
-                      <span className="text-xs font-medium text-zinc-700">
+                      <span className="text-sm font-medium text-zinc-800">
+                        Headline <span className="text-red-600">*</span>
+                      </span>
+                      <input
+                        type="text"
+                        value={activePage.headline}
+                        onChange={(e) =>
+                          updateActivePage({ headline: e.target.value })
+                        }
+                        className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/15"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm font-medium text-zinc-800">
+                        Subheadline <span className="text-red-600">*</span>
+                      </span>
+                      <input
+                        type="text"
+                        value={activePage.subheadline}
+                        onChange={(e) =>
+                          updateActivePage({ subheadline: e.target.value })
+                        }
+                        className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/15"
+                      />
+                    </label>
+                  </>
+                ) : activePage.id === "signup" ? null : (
+                  <label className="block">
+                    <span className="text-sm font-medium text-zinc-800">
+                      Headline <span className="text-red-600">*</span>
+                    </span>
+                    <textarea
+                      value={activePage.headline}
+                      onChange={(e) =>
+                        updateActivePage({ headline: e.target.value })
+                      }
+                      rows={2}
+                      className="mt-1.5 w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/15"
+                    />
+                  </label>
+                )}
+                {activePage.id === "signup" ? (
+                  <div className="space-y-4 rounded-lg bg-white p-4">
+                    <label className="block">
+                      <span className="text-sm font-medium text-zinc-800">
                         First name <span className="text-red-600">*</span>
                       </span>
                       <input
                         type="text"
-                        readOnly
-                        className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-950 focus:ring-2"
-                        aria-label="First name"
+                        value={activePage.signupFirstNameLabel}
+                        onChange={(e) =>
+                          updateActivePage({
+                            signupFirstNameLabel: e.target.value,
+                          })
+                        }
+                        placeholder="First name *"
+                        className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/15"
                       />
                     </label>
                     <label className="block">
-                      <span className="text-xs font-medium text-zinc-700">
+                      <span className="text-sm font-medium text-zinc-800">
                         Last name <span className="text-red-600">*</span>
                       </span>
                       <input
                         type="text"
-                        readOnly
-                        className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-950 focus:ring-2"
-                        aria-label="Last name"
+                        value={activePage.signupLastNameLabel}
+                        onChange={(e) =>
+                          updateActivePage({
+                            signupLastNameLabel: e.target.value,
+                          })
+                        }
+                        placeholder="Last name *"
+                        className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/15"
                       />
                     </label>
                     <label className="block">
-                      <span className="text-xs font-medium text-zinc-700">
-                        Phone <span className="text-red-600">*</span>
+                      <span className="text-sm font-medium text-zinc-800">
+                        Phone number <span className="text-red-600">*</span>
                       </span>
-                      <div className="mt-1 flex rounded-md border border-zinc-300 bg-white focus-within:ring-2 focus-within:ring-zinc-950">
-                        <span className="flex shrink-0 items-center gap-1 border-r border-zinc-200 px-2 py-2 text-sm text-zinc-700">
-                          <span aria-hidden>🇺🇸</span>
-                          <span className="font-medium">+1</span>
-                        </span>
-                        <input
-                          type="tel"
-                          readOnly
-                          className="min-w-0 flex-1 border-0 bg-transparent px-2 py-2 text-sm text-zinc-900 outline-none"
-                          aria-label="Phone number"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        value={activePage.signupPhoneLabel}
+                        onChange={(e) =>
+                          updateActivePage({
+                            signupPhoneLabel: e.target.value,
+                          })
+                        }
+                        placeholder="Phone *"
+                        className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/15"
+                      />
                     </label>
                   </div>
-                  <label className="flex cursor-pointer gap-2 text-left">
-                    <input
-                      type="checkbox"
-                      defaultChecked
-                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-amber-800 text-amber-800 accent-amber-800"
-                    />
-                    <span className="text-[0.7rem] leading-snug text-zinc-600">
-                      The Pour Market can text me rewards, offers, invites, and
-                      more. Message and data rates may apply. Text STOP to opt
-                      out.*
-                    </span>
-                  </label>
-                  <div className="flex flex-col items-center gap-1 text-center text-[0.7rem]">
-                    <button
-                      type="button"
-                      className="font-medium text-amber-900 underline-offset-2 hover:underline"
-                    >
-                      Terms and Conditions
-                    </button>
-                    <button
-                      type="button"
-                      className="font-medium text-amber-900 underline-offset-2 hover:underline"
-                    >
-                      Privacy Policy
-                    </button>
+                ) : null}
+                {activePage.id !== "signup" ? (
+                  <>
+                    <label className="block">
+                      <span className="text-sm font-medium text-zinc-800">
+                        Body copy <span className="text-red-600">*</span>
+                      </span>
+                      <textarea
+                        value={activePage.body}
+                        onChange={(e) =>
+                          updateActivePage({ body: e.target.value })
+                        }
+                        rows={5}
+                        className="mt-1.5 w-full resize-y rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/15"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm font-medium text-zinc-800">
+                        Button label <span className="text-red-600">*</span>
+                      </span>
+                      <input
+                        type="text"
+                        value={activePage.ctaLabel}
+                        onChange={(e) =>
+                          updateActivePage({ ctaLabel: e.target.value })
+                        }
+                        className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/15"
+                      />
+                    </label>
+                  </>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex min-h-0 w-full shrink-0 flex-col self-stretch lg:w-[18.5rem]">
+            <p className="mb-2 shrink-0 text-xs font-medium text-zinc-500">
+              Preview
+            </p>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-300 bg-zinc-900 shadow-lg ring-1 ring-black/10">
+              <div className="border-b border-zinc-700 bg-zinc-900 px-2 py-1.5 text-center text-[0.6rem] font-medium text-zinc-400">
+                Guest view · mobile
+              </div>
+              {activePage.id === "landing" ? (
+                <div className="flex min-h-0 flex-1 flex-col bg-white">
+                  <div className="min-h-[12rem] shrink-0 border-b-2 border-black bg-zinc-200 sm:min-h-[14rem] lg:min-h-[16rem]">
+                    {activePage.heroImageSrc ? (
+                      <img
+                        src={activePage.heroImageSrc}
+                        alt=""
+                        className="min-h-[12rem] w-full object-cover sm:min-h-[14rem] lg:min-h-[16rem]"
+                      />
+                    ) : (
+                      <div className="flex min-h-[12rem] flex-col items-center justify-center gap-1 bg-zinc-100 px-3 py-8 text-center text-[0.65rem] text-zinc-500 sm:min-h-[14rem] lg:min-h-[16rem]">
+                        <span>Hero image</span>
+                        <span className="text-zinc-400">Upload in Page settings</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="flex gap-2 border-t border-zinc-200 bg-white p-4">
-                  <button
-                    type="button"
-                    className="flex-1 rounded-lg border border-zinc-300 bg-white py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-50"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    className="flex-1 rounded-lg bg-amber-800 py-2.5 text-sm font-medium text-white transition hover:bg-amber-900"
-                  >
-                    Next
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="border-b border-zinc-200 px-4 py-3 text-center">
-                  <p className="text-sm text-zinc-800">
-                    You&apos;re claiming:{" "}
-                    <span className="font-semibold text-zinc-900">test</span>
-                  </p>
-                </div>
-                <div className="flex border-b border-zinc-200 bg-zinc-50/80 px-2 text-xs font-medium text-zinc-500">
-                  {["Overview", "Menu", "Photos", "Review"].map((tab, i) => (
-                    <span
-                      key={tab}
-                      className={
-                        i === 0
-                          ? "flex-1 border-b-2 border-zinc-900 py-2 text-center text-zinc-900"
-                          : "flex-1 border-b-2 border-transparent py-2 text-center"
-                      }
-                    >
-                      {tab}
-                    </span>
-                  ))}
-                </div>
-                <div className="space-y-4 bg-white px-4 py-5">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 text-xs font-medium text-zinc-500">
-                    Logo
-                  </div>
-                  <p className="text-center text-sm text-zinc-600">
-                    <span className="text-zinc-400">★★★★★</span> 4.7
-                  </p>
-                  <div>
-                    <p className="text-sm font-medium text-zinc-900">
-                      How our offer works:
+                  <div className="shrink-0 border-b border-zinc-100 px-4 py-4 text-center">
+                    <p className="text-[0.95rem] font-bold leading-snug text-zinc-900">
+                      {activePage.headline.trim() || "\u00a0"}
                     </p>
-                    <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-xs leading-relaxed text-zinc-600">
-                      <li>Tap Claim to reserve your spot.</li>
-                      <li>Prepay to lock in today&apos;s price.</li>
-                      <li>Show your pass when you visit.</li>
-                    </ol>
+                    <p className="mt-1 text-xs font-medium leading-snug text-zinc-600">
+                      {activePage.subheadline.trim() || "\u00a0"}
+                    </p>
                   </div>
-                  <div className="flex min-h-[5.5rem] items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50">
-                    <button
-                      type="button"
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-300 bg-white text-lg text-zinc-500 shadow-sm transition hover:border-zinc-400 hover:text-zinc-700"
-                      aria-label="Add block"
-                    >
-                      +
-                    </button>
+                  <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 text-center">
+                    {activePage.body.split(/\n\n+/).map((para, i) => (
+                      <p
+                        key={i}
+                        className={
+                          i === 0
+                            ? "text-[0.8rem] font-extrabold uppercase leading-snug tracking-wide text-zinc-900"
+                            : "text-[0.7rem] leading-relaxed text-zinc-600"
+                        }
+                      >
+                        {para.trim().split("\n").map((line, j) => (
+                          <span key={j}>
+                            {j > 0 ? <br /> : null}
+                            {line}
+                          </span>
+                        ))}
+                      </p>
+                    ))}
+                  </div>
+                  <div className="mt-auto shrink-0 border-t border-zinc-200 bg-black px-4 py-3">
+                    <p className="text-center text-sm font-semibold tracking-wide text-white">
+                      {activePage.ctaLabel || "Claim"}
+                    </p>
                   </div>
                 </div>
-                <div className="border-t border-zinc-200 bg-white p-4">
+              ) : activePage.id === "signup" ? (
+                <div className="flex min-h-0 flex-1 flex-col justify-between gap-3 bg-white p-4">
+                  <div className="space-y-2 pt-1">
+                    <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-left text-xs text-zinc-400">
+                      {activePage.signupFirstNameLabel.trim() || "First name *"}
+                    </div>
+                    <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-left text-xs text-zinc-400">
+                      {activePage.signupLastNameLabel.trim() || "Last name *"}
+                    </div>
+                    <div className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs text-zinc-400">
+                      <span className="text-base leading-none" aria-hidden>
+                        🇺🇸
+                      </span>
+                      <span className="font-medium text-zinc-500">+1</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {activePage.signupPhoneLabel.trim() || "Phone *"}
+                      </span>
+                    </div>
+                  </div>
                   <button
                     type="button"
-                    className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800"
+                    className="mt-auto w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white"
                   >
-                    Claim
+                    {activePage.ctaLabel || "…"}
                   </button>
                 </div>
-              </>
-            )}
+              ) : (
+                <div className="flex min-h-0 flex-1 flex-col justify-between gap-3 bg-white p-4">
+                  <p className="text-center text-sm font-semibold leading-snug text-zinc-900">
+                    {activePage.headline || "…"}
+                  </p>
+                  {activePage.subheadline.trim() ? (
+                    <p className="text-center text-xs font-medium leading-snug text-zinc-600">
+                      {activePage.subheadline}
+                    </p>
+                  ) : null}
+                  <p className="text-center text-xs leading-relaxed text-zinc-600">
+                    {activePage.body || "…"}
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-auto w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white"
+                  >
+                    {activePage.ctaLabel || "…"}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

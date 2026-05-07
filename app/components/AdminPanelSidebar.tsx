@@ -15,11 +15,10 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { isRestaurantSidebarChromeMinimal } from "@/app/lib/restaurant-dashboard-pathname";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-
-const SIDEBAR_COLLAPSED_KEY = "admin-sidebar-collapsed";
+import { useLayoutEffect, useMemo, useState } from "react";
 
 type NavItem = {
   href: string;
@@ -32,6 +31,12 @@ export default function AdminPanelSidebar() {
   const pathname = usePathname();
   const params = useParams();
   const [collapsed, setCollapsed] = useState(false);
+
+  const sidebarChromeMinimal = isRestaurantSidebarChromeMinimal(pathname);
+
+  useLayoutEffect(() => {
+    if (sidebarChromeMinimal) setCollapsed(true);
+  }, [sidebarChromeMinimal]);
 
   const restaurantIdParam = params?.restaurantId;
   const restaurantId =
@@ -109,21 +114,6 @@ export default function AdminPanelSidebar() {
     [restaurantHomeHref],
   );
 
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1") {
-        setCollapsed(true);
-      }
-    } catch {}
-  }, []);
-
-  const setCollapsedPersist = useCallback((next: boolean) => {
-    setCollapsed(next);
-    try {
-      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
-    } catch {}
-  }, []);
-
   return (
     <aside
       className={`relative flex min-h-0 shrink-0 flex-col border-r border-zinc-200 bg-gradient-to-b from-white via-zinc-50/40 to-white shadow-[6px_0_32px_-8px_rgba(0,0,0,0.06)] transition-[width] duration-300 ease-out ${
@@ -136,38 +126,42 @@ export default function AdminPanelSidebar() {
         aria-hidden
       />
 
-      <div
-        className={`flex shrink-0 border-b border-zinc-100/80 py-2.5 ${
-          collapsed ? "justify-center px-0" : "justify-end px-2"
-        }`}
-      >
-        <button
-          type="button"
-          onClick={() => setCollapsedPersist(!collapsed)}
-          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-          aria-expanded={!collapsed}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      {!sidebarChromeMinimal ? (
+        <div
+          className={`flex shrink-0 border-b border-zinc-100/80 py-2.5 ${
+            collapsed ? "justify-center px-0" : "justify-end px-2"
+          }`}
         >
-          {collapsed ? (
-            <ChevronsRight
-              className="h-[18px] w-[18px]"
-              aria-hidden
-              strokeWidth={2.25}
-            />
-          ) : (
-            <ChevronsLeft
-              className="h-[18px] w-[18px]"
-              aria-hidden
-              strokeWidth={2.25}
-            />
-          )}
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => setCollapsed((current) => !current)}
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <ChevronsRight
+                className="h-[18px] w-[18px]"
+                aria-hidden
+                strokeWidth={2.25}
+              />
+            ) : (
+              <ChevronsLeft
+                className="h-[18px] w-[18px]"
+                aria-hidden
+                strokeWidth={2.25}
+              />
+            )}
+          </button>
+        </div>
+      ) : null}
 
       <nav
         className={`flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto pb-4 ${
           collapsed
-            ? "items-center px-1 pt-2"
+            ? sidebarChromeMinimal
+              ? "items-center px-1 pt-3"
+              : "items-center px-1 pt-2"
             : "px-3 pt-3"
         }`}
       >

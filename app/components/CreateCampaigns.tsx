@@ -23,9 +23,7 @@ export type CreateCampaignsProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   variant?: "modal" | "inline";
-  /** Used with `onComplete` to send the user to guest experience after the offer step saves. */
   restaurantId?: number;
-  /** Return the new campaign id when create succeeds so we can navigate from the offer step. */
   onComplete?: (
     payload: CreateCampaignCompletePayload,
   ) =>
@@ -60,6 +58,8 @@ export default function CreateCampaigns({
     null,
   );
   const [isCompletingOffer, setIsCompletingOffer] = useState(false);
+  const [isRedirectingToExperience, setIsRedirectingToExperience] =
+    useState(false);
 
   useEffect(() => {
     if (isModal) setMounted(true);
@@ -76,6 +76,7 @@ export default function CreateCampaigns({
     setShowOfferStep(false);
     setPendingWebsiteUrl(null);
     setIsCompletingOffer(false);
+    setIsRedirectingToExperience(false);
     queueMicrotask(() => nameInputRef.current?.focus());
   }, [open, dispatch]);
 
@@ -313,10 +314,14 @@ export default function CreateCampaigns({
             restaurantId != null &&
             restaurantId >= 1
           ) {
+            setIsRedirectingToExperience(true);
+            setShowOfferStep(false);
+            setPendingWebsiteUrl(null);
             router.push(
               `/restaurant/${restaurantId}/dashboard/campaigns/${createdId}/experience`,
             );
             navigatedToExperience = true;
+            return;
           }
         } catch {
           setIsCompletingOffer(false);
@@ -330,6 +335,16 @@ export default function CreateCampaigns({
         }
       }}
     />
+  );
+
+  const redirectingPanel = (
+    <div
+      className="w-full max-w-2xl rounded-2xl border border-zinc-200 bg-white p-6 text-center text-sm text-zinc-600 shadow-sm"
+      role="status"
+      aria-live="polite"
+    >
+      Opening campaign experience…
+    </div>
   );
 
   if (isModal) {
@@ -347,10 +362,16 @@ export default function CreateCampaigns({
         }}
       >
         <div
-          className={`flex w-full justify-center ${showOfferStep ? "max-w-5xl" : "max-w-2xl"}`}
+          className={`flex w-full justify-center ${
+            showOfferStep ? "max-w-5xl" : "max-w-2xl"
+          }`}
           onClick={(e) => e.stopPropagation()}
         >
-          {showOfferStep ? offerForm : panel}
+          {isRedirectingToExperience
+            ? redirectingPanel
+            : showOfferStep
+              ? offerForm
+              : panel}
         </div>
       </div>,
       document.body,
@@ -363,7 +384,11 @@ export default function CreateCampaigns({
         showOfferStep ? "max-w-5xl mx-auto" : ""
       }`}
     >
-      {showOfferStep ? offerForm : panel}
+      {isRedirectingToExperience
+        ? redirectingPanel
+        : showOfferStep
+          ? offerForm
+          : panel}
     </div>
   );
 }
