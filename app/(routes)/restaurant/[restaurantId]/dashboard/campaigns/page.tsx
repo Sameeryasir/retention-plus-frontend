@@ -6,17 +6,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CampaignFunnelCard from "@/app/components/CampaignFunnelCard";
 import CreateCampaigns from "@/app/components/CreateCampaigns";
 import SearchBar from "@/app/components/SearchBar";
-import { Loader2, Plus } from "lucide-react";
+import SearchNoMatchFound from "@/app/components/SearchNoMatchFound";
+import { Plus } from "lucide-react";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
+import { parseOfferPrice } from "@/app/lib/campaign-form";
 import {
-  createFunnel,
-  fileToDataUrl,
-  parseOfferPrice,
-} from "@/app/services/funnel/create-funnel";
+  createCampaign,
+  extractCampaignIdFromCreateResponse,
+} from "@/app/services/funnel/create-campaign";
 import {
-  fetchFunnelsByRestaurant,
+  fetchCampaignsByRestaurant,
   type Funnel,
-} from "@/app/services/funnel/get-funnels-by-restaurant";
+} from "@/app/services/funnel/get-campaigns-by-restaurant";
 
 function parseRestaurantIdParam(raw: unknown): number | undefined {
   if (typeof raw !== "string" || !/^\d+$/.test(raw)) return undefined;
@@ -78,9 +79,10 @@ export default function RestaurantCampaignsPage() {
     setFunnelsLoading(true);
     setFunnelsError(null);
     try {
-      const data = await fetchFunnelsByRestaurant(token, restaurantId);
-      setFunnels(data);
-      setShowCreateCampaign(data.length === 0);
+      const data = await fetchCampaignsByRestaurant(token, restaurantId);
+      const list = Array.isArray(data) ? data : [];
+      setFunnels(list);
+      setShowCreateCampaign(list.length === 0);
     } catch (e) {
       setFunnels(undefined);
       setFunnelsError(
@@ -116,11 +118,6 @@ export default function RestaurantCampaignsPage() {
     );
   }
 
-  const showCampaignsHeader =
-    funnelsLoading ||
-    funnelsError != null ||
-    (funnels !== undefined && funnels.length > 0);
-
   const centerEmptyCreateFlow =
     !funnelsLoading &&
     funnelsError == null &&
@@ -145,49 +142,38 @@ export default function RestaurantCampaignsPage() {
           : "flex min-h-[calc(100dvh-8rem)] w-full flex-col px-4 py-8 sm:px-8 lg:px-10"
       }
     >
-      {showCampaignsHeader && !showCreateCampaign ? (
+      {!showCreateCampaign &&
+      !funnelsLoading &&
+      funnels !== undefined &&
+      funnels.length > 0 ? (
         <header className="mx-auto mb-8 w-full max-w-[min(100%,77.62rem)] text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 hover:cursor-pointer sm:text-3xl">
-            Campaigns
-          </h1>
-          {!funnelsLoading && funnels !== undefined && funnels.length > 0 ? (
-            <div className="mx-auto mt-5 flex w-full justify-center sm:mt-6">
-              <div className="flex w-full max-w-xl min-w-0 flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-3">
-                <SearchBar
-                  id="campaigns-search"
-                  className="min-w-0 w-full sm:w-72 md:w-80"
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Search…"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(true);
-                    setShowCreateCampaign(true);
-                  }}
-                  aria-label="Create campaign"
-                  title="Create campaign"
-                  className="mx-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-sm transition-colors hover:bg-black"
-                >
-                  <Plus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
-                </button>
-              </div>
+          <div className="mx-auto flex w-full justify-center sm:mt-1">
+            <div className="flex w-full max-w-xl min-w-0 flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-3">
+              <SearchBar
+                id="campaigns-search"
+                className="min-w-0 w-full sm:w-72 md:w-80"
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search…"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(true);
+                  setShowCreateCampaign(true);
+                }}
+                aria-label="Create campaign"
+                title="Create campaign"
+                className="mx-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-sm transition-colors hover:bg-black"
+              >
+                <Plus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
+              </button>
             </div>
-          ) : null}
+          </div>
         </header>
       ) : null}
 
-      {funnelsLoading ? (
-        <div
-          className="mx-auto flex w-full max-w-[min(100%,77.62rem)] flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-zinc-200 bg-white/80 py-20 text-zinc-500"
-          role="status"
-          aria-live="polite"
-        >
-          <Loader2 className="h-8 w-8 animate-spin text-zinc-400" aria-hidden />
-          <p className="text-sm font-medium">Loading campaigns…</p>
-        </div>
-      ) : funnelsError ? (
+      {funnelsLoading ? null : funnelsError ? (
         <div
           className="mx-auto w-full max-w-[min(100%,77.62rem)] rounded-2xl border border-red-200 bg-red-50/90 px-4 py-4 text-sm text-red-900 shadow-sm"
           role="alert"
@@ -205,13 +191,7 @@ export default function RestaurantCampaignsPage() {
         funnels.length > 0 &&
         filteredFunnels.length === 0 &&
         !showCreateCampaign ? (
-        <div className="mx-auto w-full max-w-[min(100%,77.62rem)] rounded-2xl border border-zinc-200 bg-white px-6 py-10 text-center text-sm text-zinc-600 shadow-sm">
-          <p className="font-medium text-zinc-900">No matches</p>
-          <p className="mt-2">
-            Nothing matches &quot;{searchQuery.trim()}&quot;. Try a different
-            search.
-          </p>
-        </div>
+        <SearchNoMatchFound className="mx-auto w-full max-w-[min(100%,77.62rem)]" />
       ) : filteredFunnels.length > 0 && !showCreateCampaign ? (
         <div className="mx-auto grid w-full max-w-[min(100%,77.62rem)] grid-cols-1 gap-6 md:grid-cols-3">
           {filteredFunnels.map((f) => (
@@ -259,6 +239,7 @@ export default function RestaurantCampaignsPage() {
           <CreateCampaigns
             variant="inline"
             open={open}
+            restaurantId={restaurantId}
             onOpenChange={(next) => {
               setOpen(next);
               if (!next) {
@@ -277,30 +258,53 @@ export default function RestaurantCampaignsPage() {
               setSubmitError(null);
               setSubmitting(true);
               try {
-                const imageUrl = await fileToDataUrl(payload.offerImage);
-                await createFunnel(getSetupAccessToken(), {
-                  restaurantId,
-                  campaignName: payload.campaignName,
-                  websiteUrl: payload.websiteUrl,
-                  imageUrl,
-                  offer: payload.offerName,
-                  price: parseOfferPrice(payload.offerPrice),
-                });
+                const createdBody = await createCampaign(
+                  getSetupAccessToken(),
+                  {
+                    restaurantId,
+                    campaignName: payload.campaignName,
+                    websiteUrl: payload.websiteUrl,
+                    image: payload.offerImage,
+                    offer: payload.offerName,
+                    price: parseOfferPrice(payload.offerPrice),
+                  },
+                );
                 skipPostCreateNavRef.current = true;
-                const next = await fetchFunnelsByRestaurant(
+                const next = await fetchCampaignsByRestaurant(
                   getSetupAccessToken(),
                   restaurantId,
                 );
-                setFunnels(next);
-                setShowCreateCampaign(next.length === 0);
+                const list = Array.isArray(next) ? next : [];
+                setFunnels(list);
+                const fromApi =
+                  extractCampaignIdFromCreateResponse(createdBody);
+                const name = payload.campaignName.trim();
+                const sameName = list.filter(
+                  (f) => f.campaignName.trim() === name,
+                );
+                const fallbackId =
+                  sameName.length === 1
+                    ? sameName[0].id
+                    : sameName.length > 1
+                      ? Math.max(...sameName.map((f) => f.id))
+                      : list.length > 0
+                        ? Math.max(...list.map((f) => f.id))
+                        : undefined;
+                const campaignId = fromApi ?? fallbackId;
+                // Do not hide the create flow here when we have an id: that would paint the
+                // campaigns list for a frame before `router.push` runs in CreateCampaigns.
+                if (campaignId == null) {
+                  setShowCreateCampaign(false);
+                }
+                return campaignId ?? undefined;
               } catch (e) {
-                setSubmitting(false);
                 setSubmitError(
                   e instanceof Error ? e.message : "Could not create campaign.",
                 );
                 throw e;
+              } finally {
+                setSubmitting(false);
               }
-              setSubmitting(false);
             }}
           />
         </div>

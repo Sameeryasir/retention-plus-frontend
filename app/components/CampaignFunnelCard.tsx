@@ -1,6 +1,6 @@
 "use client";
 
-import type { Funnel } from "@/app/services/funnel/get-funnels-by-restaurant";
+import type { Funnel } from "@/app/services/funnel/get-campaigns-by-restaurant";
 import { Megaphone } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -11,6 +11,13 @@ type Props = {
 function formatPrice(amount: number): string {
   if (Number.isInteger(amount)) return `$${amount}`;
   return `$${amount.toFixed(2)}`;
+}
+
+function parsePrice(raw: number | string | undefined): number | null {
+  if (raw == null) return null;
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  const n = Number.parseFloat(String(raw).replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(n) ? n : null;
 }
 
 function formatCreatedDate(iso: string | undefined): string | null {
@@ -58,10 +65,8 @@ export default function CampaignFunnelCard({ funnel }: Props) {
     setImageFailed(false);
   }, [funnel.id, imageSrc]);
 
-  const priceText =
-    funnel.price != null && Number.isFinite(funnel.price)
-      ? formatPrice(funnel.price)
-      : null;
+  const priceNum = parsePrice(funnel.price);
+  const priceText = priceNum != null ? formatPrice(priceNum) : null;
   const created = formatCreatedDate(funnel.createdAt);
   const badgeLabel = statusBadgeLabel(funnel);
   const isPublished = funnel.published === true;

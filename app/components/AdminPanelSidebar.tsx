@@ -127,7 +127,7 @@ export default function AdminPanelSidebar() {
   return (
     <aside
       className={`relative flex min-h-0 shrink-0 flex-col border-r border-zinc-200 bg-gradient-to-b from-white via-zinc-50/40 to-white shadow-[6px_0_32px_-8px_rgba(0,0,0,0.06)] transition-[width] duration-300 ease-out ${
-        collapsed ? "w-12" : "w-[17rem]"
+        collapsed ? "w-12" : "w-50"
       }`}
       aria-label="Admin navigation"
     >

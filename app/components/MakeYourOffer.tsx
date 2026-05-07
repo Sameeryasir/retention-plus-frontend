@@ -27,7 +27,7 @@ export type MakeYourOfferProps = {
   onOpenChange: (open: boolean) => void;
   onSave?: (
     payload: MakeYourOfferSavePayload,
-  ) => void | Promise<void>;
+  ) => void | Promise<void | number | undefined>;
   variant?: "modal" | "inline";
   isSaving?: boolean;
 };
@@ -190,7 +190,7 @@ export default function MakeYourOffer({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isSaving) return;
     const nameOk = offerName.trim().length > 0;
@@ -200,7 +200,7 @@ export default function MakeYourOffer({
     setPriceErr(!priceOk);
     setImageErr(!imageOk);
     if (!nameOk || !priceOk || !imageOk || !imageFile) return;
-    onSave?.({
+    await onSave?.({
       offerName: offerName.trim(),
       offerPrice: offerPrice.trim(),
       imageFile,
@@ -463,7 +463,7 @@ export default function MakeYourOffer({
                 aria-busy={isSaving}
                 className="min-w-56 rounded-xl bg-black px-10 py-3 text-sm font-semibold tracking-wide text-white shadow-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 enabled:cursor-pointer enabled:hover:-translate-y-0.5 enabled:hover:shadow-lg enabled:active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSaving ? "Creating funnel…" : "Create offer"}
+                {isSaving ? "Creating campaign…" : "Create Campaign"}
               </button>
             </div>
           </form>

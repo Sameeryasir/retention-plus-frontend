@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import MakeYourOffer from "@/app/components/MakeYourOffer";
 import {
@@ -22,29 +23,26 @@ export type CreateCampaignsProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   variant?: "modal" | "inline";
+  /** Used with `onComplete` to send the user to guest experience after the offer step saves. */
+  restaurantId?: number;
+  /** Return the new campaign id when create succeeds so we can navigate from the offer step. */
   onComplete?: (
     payload: CreateCampaignCompletePayload,
-  ) => void | Promise<void>;
+  ) =>
+    | void
+    | number
+    | undefined
+    | Promise<void | number | undefined>;
 };
-
-function isValidWebsiteUrl(raw: string): boolean {
-  const t = raw.trim();
-  if (!t) return false;
-  try {
-    const withProto = t.includes("://") ? t : `https://${t}`;
-    const u = new URL(withProto);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
 
 export default function CreateCampaigns({
   open,
   onOpenChange,
   variant = "modal",
+  restaurantId,
   onComplete,
 }: CreateCampaignsProps) {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const isModal = variant === "modal";
   const nameFieldId = useId();
@@ -123,15 +121,14 @@ export default function CreateCampaigns({
   const handleStep2Submit = (e: FormEvent) => {
     e.preventDefault();
     const trimmed = websiteUrl.trim();
-    if (!isValidWebsiteUrl(trimmed)) {
+    if (!trimmed) {
       setShowUrlError(true);
       urlInputRef.current?.focus();
       return;
     }
     setShowUrlError(false);
-    const normalized = trimmed.includes("://") ? trimmed : `https://${trimmed}`;
-    dispatch(setDraftWebsiteUrl(normalized));
-    setPendingWebsiteUrl(normalized);
+    dispatch(setDraftWebsiteUrl(trimmed));
+    setPendingWebsiteUrl(trimmed);
     setShowOfferStep(true);
   };
 
@@ -247,21 +244,22 @@ export default function CreateCampaigns({
             ref={urlInputRef}
             id={urlFieldId}
             name="websiteUrl"
-            type="url"
+            type="text"
             inputMode="url"
-            autoComplete="url"
+            autoComplete="off"
+            spellCheck={false}
             placeholder="e.g. https://yoursite.com or yoursite.com"
             value={websiteUrl}
             onChange={(e) => {
               setWebsiteUrl(e.target.value);
-              if (showUrlError && isValidWebsiteUrl(e.target.value))
+              if (showUrlError && e.target.value.trim())
                 setShowUrlError(false);
             }}
             aria-invalid={showUrlError}
             aria-describedby={
               showUrlError ? `${urlFieldId}-error` : undefined
             }
-            className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none ring-zinc-900/0 transition-[box-shadow] focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/15"
+            className="mt-2 w-full min-w-0 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none ring-zinc-900/0 transition-[box-shadow] focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/15"
           />
           {showUrlError ? (
             <p
@@ -269,7 +267,7 @@ export default function CreateCampaigns({
               className="mt-2 text-sm text-red-600"
               role="alert"
             >
-              Enter a valid website URL (http or https).
+              Enter a website URL to continue.
             </p>
           ) : null}
 
@@ -305,8 +303,21 @@ export default function CreateCampaigns({
           offerImage: payload.imageFile,
         };
         setIsCompletingOffer(true);
+        let navigatedToExperience = false;
         try {
-          await onComplete?.(completePayload);
+          const createdId = await onComplete?.(completePayload);
+          if (
+            typeof createdId === "number" &&
+            Number.isFinite(createdId) &&
+            createdId >= 1 &&
+            restaurantId != null &&
+            restaurantId >= 1
+          ) {
+            router.push(
+              `/restaurant/${restaurantId}/dashboard/campaigns/${createdId}/experience`,
+            );
+            navigatedToExperience = true;
+          }
         } catch {
           setIsCompletingOffer(false);
           return;
@@ -314,7 +325,9 @@ export default function CreateCampaigns({
         setIsCompletingOffer(false);
         setShowOfferStep(false);
         setPendingWebsiteUrl(null);
-        onOpenChange(false);
+        if (!navigatedToExperience) {
+          onOpenChange(false);
+        }
       }}
     />
   );

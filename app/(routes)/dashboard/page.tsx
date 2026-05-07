@@ -2,6 +2,7 @@
 
 import RestaurantDashboardCard from "@/app/components/RestaurantDashboardCard";
 import SearchBar from "@/app/components/SearchBar";
+import SearchNoMatchFound from "@/app/components/SearchNoMatchFound";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
 import {
   fetchMyRestaurants,
@@ -96,21 +97,30 @@ export default function DashboardPage() {
   const showCreateInHeader =
     !loading && !errorMessage && restaurants !== undefined;
 
+  const showDashboardSearch =
+    !loading &&
+    !errorMessage &&
+    restaurants !== undefined &&
+    restaurants.length > 0;
+
   return (
     <div className="w-full px-4 py-8 sm:px-8 lg:px-10">
-      <header className="mx-auto mb-8 w-full max-w-6xl text-center">
+      <header className="mx-auto mb-8 w-full max-w-[min(100%,77.62rem)] text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
           Your Restaurants
         </h1>
-        <div className="mx-auto mt-5 flex w-full justify-center sm:mt-6">
-          <div className="flex w-full max-w-xl min-w-0 flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-3">
-            <SearchBar
-              id="dashboard-search"
-              className="min-w-0 w-full sm:w-72 md:w-80"
-              value={searchQuery}
-              onChange={setSearchQuery}
-            />
-            {showCreateInHeader ? (
+        {showCreateInHeader ? (
+          <div className="mx-auto mt-5 flex w-full justify-center sm:mt-6">
+            <div className="flex w-full max-w-xl min-w-0 flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-3">
+              {showDashboardSearch ? (
+                <SearchBar
+                  id="dashboard-search"
+                  className="min-w-0 w-full sm:w-72 md:w-80"
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search…"
+                />
+              ) : null}
               <Link
                 href="/restaurant/register"
                 aria-label="Create restaurant"
@@ -119,12 +129,12 @@ export default function DashboardPage() {
               >
                 <Plus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
               </Link>
-            ) : null}
+            </div>
           </div>
-        </div>
+        ) : null}
       </header>
 
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[min(100%,77.62rem)]">
         {loading ? (
           <div
             className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-zinc-200 bg-white/80 py-20 text-zinc-500"
@@ -173,13 +183,7 @@ export default function DashboardPage() {
         ) : restaurants !== undefined &&
           restaurants.length > 0 &&
           filteredRestaurants.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-200 bg-white px-6 py-10 text-center text-sm text-zinc-600 shadow-sm">
-            <p className="font-medium text-zinc-900">No matches</p>
-            <p className="mt-2">
-              Nothing matches &quot;{searchQuery.trim()}&quot;. Try a different
-              search.
-            </p>
-          </div>
+          <SearchNoMatchFound />
         ) : filteredRestaurants.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredRestaurants.map((r, index) => (

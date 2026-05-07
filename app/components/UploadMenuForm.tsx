@@ -3,14 +3,15 @@
 import type { CreateMenuPayload } from "@/app/services/restaurant/upload-menu";
 import {
   AlertCircle,
+  FilePlus,
   FileText,
   Loader2,
+  Trash2,
   Type,
   Upload,
   UtensilsCrossed,
-  X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
 const inputBase =
@@ -32,32 +33,6 @@ const MENU_TYPE_OPTIONS = [
 
 const ACCEPT_MENU = "application/pdf,image/png,image/jpeg,image/webp";
 const MAX_MENU_BYTES = 10 * 1024 * 1024;
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function fileKindLabel(mime: string): string {
-  if (mime === "application/pdf") return "PDF";
-  if (mime === "image/png") return "PNG";
-  if (mime === "image/jpeg") return "JPG";
-  if (mime === "image/webp") return "WEBP";
-  return "File";
-}
-
-function shortenFileName(name: string, max = 44): string {
-  if (name.length <= max) return name;
-  const lastDot = name.lastIndexOf(".");
-  const ext = lastDot > 0 ? name.slice(lastDot) : "";
-  const stem = lastDot > 0 ? name.slice(0, lastDot) : name;
-  const budget = max - ext.length - 1;
-  if (budget < 10) return `${name.slice(0, max - 1)}…`;
-  const head = Math.ceil(budget * 0.55);
-  const tail = budget - head;
-  return `${stem.slice(0, head)}…${stem.slice(-tail)}${ext}`;
-}
 
 function isImageMime(mime: string): boolean {
   return mime === "image/png" || mime === "image/jpeg" || mime === "image/webp";
@@ -97,21 +72,17 @@ type MenuDropProps = {
 function MenuFileDropField({ id, disabled, file, error, onFile }: MenuDropProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [localError, setLocalError] = useState<string | undefined>();
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  useEffect(() => {
-    if (!file || !isImageMime(file.type)) {
-      setImagePreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setImagePreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
+  const imagePreviewUrl = useMemo(() => {
+    if (!file || !isImageMime(file.type)) return null;
+    return URL.createObjectURL(file);
   }, [file]);
 
-  const pick = useCallback(() => {
-    if (!disabled) inputRef.current?.click();
-  }, [disabled]);
+  useEffect(() => {
+    if (!imagePreviewUrl) return;
+    return () => URL.revokeObjectURL(imagePreviewUrl);
+  }, [imagePreviewUrl]);
 
   const validateAndSet = useCallback(
     (f: File | null, inputEl: HTMLInputElement | null) => {
@@ -144,9 +115,26 @@ function MenuFileDropField({ id, disabled, file, error, onFile }: MenuDropProps)
     [validateAndSet],
   );
 
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!disabled) setIsDragging(true);
+    },
+    [disabled],
+  );
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
   const onDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
       if (disabled) return;
       const f = e.dataTransfer.files?.[0] ?? null;
       validateAndSet(f, inputRef.current);
@@ -154,120 +142,130 @@ function MenuFileDropField({ id, disabled, file, error, onFile }: MenuDropProps)
     [disabled, validateAndSet],
   );
 
-  const clearFile = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setLocalError(undefined);
-      if (inputRef.current) inputRef.current.value = "";
-      onFile(null);
-    },
-    [onFile],
-  );
+  const clearFile = useCallback(() => {
+    setLocalError(undefined);
+    if (inputRef.current) inputRef.current.value = "";
+    onFile(null);
+  }, [onFile]);
+
+  const combinedError = error ?? localError;
+  const showErrorStyle = Boolean(combinedError);
+  const isPdf = file?.type === "application/pdf";
+
+  const previewShellClass = `overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-b from-zinc-50 to-white shadow-md shadow-zinc-900/10 ring-1 ring-black/[0.06] ${
+    disabled ? "pointer-events-none opacity-60" : ""
+  }`;
+
+  const previewActions = !disabled ? (
+    <div className="absolute inset-x-0 bottom-0 flex flex-wrap justify-center gap-2 bg-gradient-to-t from-black/60 to-transparent p-4 pt-12">
+      <button
+        type="button"
+        className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-zinc-900 shadow-md transition hover:bg-zinc-100"
+        onClick={() => inputRef.current?.click()}
+      >
+        <Upload className="h-4 w-4" aria-hidden />
+        Replace file
+      </button>
+      <button
+        type="button"
+        className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/20"
+        onClick={clearFile}
+      >
+        <Trash2 className="h-4 w-4" aria-hidden />
+        Remove
+      </button>
+    </div>
+  ) : null;
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-2">
-      <label
-        htmlFor={id}
-        className="flex items-center gap-1.5 text-sm font-medium text-zinc-700"
-      >
-        <FileText className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />
-        Menu file <RequiredStar />
-      </label>
-
       <input
         ref={inputRef}
         id={id}
         type="file"
         accept={ACCEPT_MENU}
-        className="sr-only"
+        className="hidden"
+        tabIndex={-1}
         disabled={disabled}
         onChange={onChange}
       />
 
-      {file ? (
-        <div
-          className={`w-full min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/40 shadow-sm ring-1 ring-black/[0.03] ${disabled ? "pointer-events-none opacity-60" : ""}`}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={onDrop}
-        >
-          <div className="flex w-full min-w-0 items-stretch gap-3 p-3 sm:gap-4">
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-              {imagePreviewUrl ? (
-                <img
-                  src={imagePreviewUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-zinc-600">
-                  <FileText className="h-7 w-7" aria-hidden strokeWidth={1.75} />
-                </div>
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1 overflow-hidden py-0.5">
-              <p
-                className="break-all text-sm font-semibold leading-snug text-zinc-900 sm:break-normal sm:truncate"
-                title={file.name}
-              >
-                {shortenFileName(file.name)}
-              </p>
-              <p className="mt-1 text-xs text-zinc-500">
-                {fileKindLabel(file.type)} · {formatFileSize(file.size)}
-              </p>
-              {!disabled ? (
-                <button
-                  type="button"
-                  onClick={pick}
-                  className="mt-2 text-left text-xs font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition hover:text-black hover:decoration-zinc-500"
-                >
-                  Replace file…
-                </button>
-              ) : null}
-            </div>
-
-            <div className="flex shrink-0 flex-col justify-between gap-2 sm:flex-row sm:items-start">
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={clearFile}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition hover:border-zinc-300 hover:bg-white hover:text-zinc-900 disabled:pointer-events-none disabled:opacity-50"
-                aria-label={`Remove ${file.name}`}
-              >
-                <X className="h-4 w-4" aria-hidden strokeWidth={2} />
-              </button>
-            </div>
+      {file && imagePreviewUrl ? (
+        <div className={previewShellClass}>
+          <div className="relative aspect-[16/10] max-h-72 w-full bg-zinc-100/80 shadow-inner">
+            <img
+              src={imagePreviewUrl}
+              alt="Menu preview"
+              className="h-full w-full object-contain"
+            />
+            {previewActions}
           </div>
-          {!disabled ? (
-            <p className="border-t border-zinc-200/80 bg-white/60 px-3 py-2 text-center text-[11px] text-zinc-500">
-              Drag a new file here to replace
+        </div>
+      ) : file && isPdf ? (
+        <div className={previewShellClass}>
+          <div className="relative flex aspect-[16/10] max-h-72 w-full flex-col items-center justify-center gap-2 bg-zinc-100/80 px-6 pt-8 pb-24 text-center shadow-inner">
+            <FileText className="h-14 w-14 text-zinc-400" strokeWidth={1.25} aria-hidden />
+            <p className="text-sm font-semibold text-zinc-800">PDF menu</p>
+            <p className="max-w-full truncate text-xs text-zinc-500" title={file.name}>
+              {file.name}
             </p>
-          ) : null}
+            {previewActions}
+          </div>
+        </div>
+      ) : file ? (
+        <div className={previewShellClass}>
+          <div className="relative flex aspect-[16/10] max-h-72 w-full items-center justify-center bg-zinc-100/80 p-6 shadow-inner">
+            <p className="text-sm text-zinc-600">Preview not available</p>
+            {previewActions}
+          </div>
         </div>
       ) : (
-        <div
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              pick();
-            }
-          }}
-          onClick={pick}
-          onDragOver={(e) => e.preventDefault()}
+        <label
+          htmlFor={id}
+          aria-label="Upload menu file"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
           onDrop={onDrop}
-          className={`flex min-h-[160px] min-w-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-8 text-center transition hover:border-zinc-300 hover:bg-zinc-50 ${disabled ? "pointer-events-none opacity-60" : ""}`}
+          className={`flex min-h-[240px] cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-all ${
+            disabled ? "pointer-events-none opacity-60" : ""
+          } ${
+            isDragging
+              ? "scale-[1.01] border-black bg-zinc-100 shadow-lg ring-2 ring-black/10"
+              : showErrorStyle
+                ? "border-red-300 bg-red-50/50 hover:border-red-400"
+                : "border-zinc-300 bg-white shadow-sm ring-1 ring-zinc-200/70 hover:border-zinc-400 hover:shadow-md"
+          }`}
         >
-          <Upload className="h-8 w-8 text-zinc-400" strokeWidth={1.5} aria-hidden />
-          <span className="text-sm font-medium text-zinc-700">Click to upload or drag and drop</span>
-          <span className="text-xs text-zinc-500">PDF, PNG, JPG or WEBP (max 10MB)</span>
-        </div>
+          <span
+            className={`flex h-14 w-14 items-center justify-center rounded-2xl transition-colors ${
+              isDragging
+                ? "bg-black text-white"
+                : "bg-white text-zinc-700 shadow-sm ring-1 ring-zinc-200"
+            }`}
+          >
+            <FilePlus
+              className={`h-7 w-7 ${isDragging ? "text-white" : "text-zinc-600"}`}
+              strokeWidth={1.5}
+              aria-hidden
+            />
+          </span>
+          <span className="max-w-[260px]">
+            <span className="block text-sm font-semibold text-zinc-900">
+              {isDragging ? "Drop file here" : "Choose a menu file"}
+            </span>
+            <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
+              Drag a file here or click to choose from your computer. PDF, PNG,
+              JPG, or WEBP (max 10MB).
+            </span>
+          </span>
+          <span className="rounded-full bg-zinc-900 px-4 py-2 text-xs font-medium text-white shadow-sm">
+            Browse files
+          </span>
+        </label>
       )}
 
-      {(error ?? localError) ? (
-        <p className="text-sm text-red-600">{error ?? localError}</p>
+      {combinedError ? (
+        <p className="text-sm text-red-600">{combinedError}</p>
       ) : null}
     </div>
   );
@@ -386,13 +384,20 @@ export default function UploadMenuForm({
           ) : null}
         </div>
 
-        <MenuFileDropField
-          id="menu-file"
-          disabled={submitting}
-          file={menuFile}
-          error={menuFileError}
-          onFile={setMenuFile}
-        />
+        <section className="flex flex-col gap-3 border-t border-zinc-100 pt-6">
+          <h2 className="flex flex-wrap items-center gap-2 text-base font-semibold text-zinc-900">
+            <FilePlus className="h-5 w-5 shrink-0 text-zinc-500" strokeWidth={2} aria-hidden />
+            Upload menu file
+            <RequiredStar />
+          </h2>
+          <MenuFileDropField
+            id="menu-file"
+            disabled={submitting}
+            file={menuFile}
+            error={menuFileError}
+            onFile={setMenuFile}
+          />
+        </section>
 
         {errorMessage ? (
           <div
@@ -410,20 +415,30 @@ export default function UploadMenuForm({
             disabled={submitting}
             aria-busy={submitting}
             aria-label={submitting ? "Saving menu" : "Save menu"}
-            className="group inline-flex h-12 w-fit cursor-pointer items-center justify-center gap-2 rounded-full bg-zinc-900 px-6 text-base font-medium text-white shadow-lg shadow-zinc-900/25 transition-all duration-200 ease-out hover:bg-zinc-800 hover:shadow-xl hover:shadow-zinc-900/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="group relative inline-flex h-12 min-h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-zinc-900 px-6 text-base font-medium text-white shadow-lg shadow-zinc-900/25 transition-all duration-200 ease-out hover:bg-zinc-800 hover:shadow-xl hover:shadow-zinc-900/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
+            <span
+              className={`inline-flex items-center justify-center gap-2 ${
+                submitting ? "invisible" : ""
+              }`}
+              aria-hidden={submitting}
+            >
+              <span>Save menu</span>
+              <Upload
+                className="h-5 w-5 opacity-90 transition-transform group-hover:-translate-y-0.5"
+                strokeWidth={2}
+                aria-hidden
+              />
+            </span>
             {submitting ? (
-              <Loader2 className="h-6 w-6 animate-spin text-white" strokeWidth={2.5} aria-hidden />
-            ) : (
-              <>
-                <span>Save menu</span>
-                <Upload
-                  className="h-5 w-5 opacity-90 transition-transform group-hover:-translate-y-0.5"
-                  strokeWidth={2}
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <Loader2
+                  className="h-6 w-6 animate-spin text-white"
+                  strokeWidth={2.5}
                   aria-hidden
                 />
-              </>
-            )}
+              </span>
+            ) : null}
           </button>
         </div>
       </form>
