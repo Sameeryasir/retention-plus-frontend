@@ -3,6 +3,7 @@
 import type { ChangeEvent } from "react";
 import Link from "next/link";
 import type { FunnelPage } from "@/app/components/campaign-funnel/funnel-data";
+import type { LandingSidebarSection } from "@/app/components/campaign-funnel/LandingHeroEditSidebar";
 import { LANDING_CTA_MAX } from "@/app/components/campaign-funnel/funnel-limits";
 import { LandingStoryPreview } from "@/app/components/campaign-funnel/LandingStoryPreview";
 
@@ -11,6 +12,10 @@ export function CampaignFunnelLandingPhone({
   editing,
   fullPage = false,
   ctaHref,
+  /** Pencil + split layout: preview is tap-only; fields live in LandingHeroEditSidebar. */
+  heroEditInSidebar = false,
+  activeLandingSection,
+  onSelectLandingSection,
   onPatch,
   onHeroFileChange,
   onClearHero,
@@ -19,11 +24,14 @@ export function CampaignFunnelLandingPhone({
   editing: boolean;
   fullPage?: boolean;
   ctaHref?: string;
+  heroEditInSidebar?: boolean;
+  activeLandingSection?: LandingSidebarSection;
+  onSelectLandingSection?: (section: LandingSidebarSection) => void;
   onPatch: (patch: Partial<FunnelPage>) => void;
   onHeroFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onClearHero: () => void;
 }) {
-  const ctaStripClass = `flex shrink-0 justify-center border-t border-zinc-200 bg-white ${
+  const ctaStripClass = `flex shrink-0 justify-center bg-white ${
     fullPage
       ? "px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-5"
       : "px-3 py-3"
@@ -33,6 +41,13 @@ export function CampaignFunnelLandingPhone({
     fullPage ? "text-base sm:text-lg" : "text-sm"
   }`;
 
+  const sidebarTapMode =
+    Boolean(editing && heroEditInSidebar && onSelectLandingSection);
+  const ctaRing =
+    sidebarTapMode && activeLandingSection === "cta"
+      ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white"
+      : "";
+
   const column = (
     <>
       <div className={fullPage ? "flex min-h-0 min-w-0 flex-1 flex-col" : "min-w-0"}>
@@ -40,27 +55,43 @@ export function CampaignFunnelLandingPhone({
           page={page}
           fullPage={fullPage}
           editable={editing}
-          onPatch={onPatch}
-          onHeroFileChange={onHeroFileChange}
-          onClearHero={onClearHero}
+          heroEditInSidebar={heroEditInSidebar}
+          activeLandingSection={activeLandingSection}
+          onSelectLandingSection={onSelectLandingSection}
+          onPatch={sidebarTapMode ? undefined : onPatch}
+          onHeroFileChange={sidebarTapMode ? undefined : onHeroFileChange}
+          onClearHero={sidebarTapMode ? undefined : onClearHero}
         />
       </div>
       {editing ? (
-        <div className={ctaStripClass}>
-          <input
-            type="text"
-            value={page.ctaLabel}
-            maxLength={LANDING_CTA_MAX}
-            onChange={(e) =>
-              onPatch({
-                ctaLabel: e.target.value.slice(0, LANDING_CTA_MAX),
-              })
-            }
-            placeholder="Button label"
-            aria-label="Button label"
-            className={`${pillClass} w-max max-w-[min(100%,18rem)] border border-zinc-800 placeholder:text-zinc-500 focus:ring-2 focus:ring-white/35`}
-          />
-        </div>
+        sidebarTapMode ? (
+          <div className={ctaStripClass}>
+            <button
+              type="button"
+              onClick={() => onSelectLandingSection?.("cta")}
+              aria-label="Edit button label in panel"
+              className={`${pillClass} ${ctaRing}`}
+            >
+              {page.ctaLabel.trim() || "Claim"}
+            </button>
+          </div>
+        ) : (
+          <div className={ctaStripClass}>
+            <input
+              type="text"
+              value={page.ctaLabel}
+              maxLength={LANDING_CTA_MAX}
+              onChange={(e) =>
+                onPatch({
+                  ctaLabel: e.target.value.slice(0, LANDING_CTA_MAX),
+                })
+              }
+              placeholder="Button label"
+              aria-label="Button label"
+              className={`${pillClass} w-max max-w-[min(100%,18rem)] border border-zinc-800 placeholder:text-zinc-500 focus:ring-2 focus:ring-white/35`}
+            />
+          </div>
+        )
       ) : ctaHref ? (
         <div className={ctaStripClass}>
           <Link href={ctaHref} className={pillClass}>

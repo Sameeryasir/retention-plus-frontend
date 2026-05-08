@@ -15,7 +15,19 @@ import {
   pageNeedsAttention,
 } from "@/app/components/campaign-funnel/funnel-data";
 import { ConfirmationFunnelPreview } from "@/app/components/campaign-funnel/ConfirmationFunnelPreview";
+import {
+  LandingHeroEditSidebar,
+  type LandingSidebarSection,
+} from "@/app/components/campaign-funnel/LandingHeroEditSidebar";
+import {
+  PaymentFunnelEditSidebar,
+  type PaymentSidebarFocus,
+} from "@/app/components/campaign-funnel/PaymentFunnelEditSidebar";
 import { PaymentCheckoutPreviewMock } from "@/app/components/campaign-funnel/PaymentCheckoutPreviewMock";
+import {
+  SignupFunnelEditSidebar,
+  type SignupSidebarFocus,
+} from "@/app/components/campaign-funnel/SignupFunnelEditSidebar";
 
 export type CampaignFunnelEditorProps = {
   restaurantId: number;
@@ -31,8 +43,14 @@ export default function CampaignFunnelEditor({
   );
   const [activePageId, setActivePageId] = useState(INITIAL_PAGES[0].id);
   const [landingPreviewEditing, setLandingPreviewEditing] = useState(false);
+  const [landingSidebarSection, setLandingSidebarSection] =
+    useState<LandingSidebarSection>("hero");
   const [signupPreviewEditing, setSignupPreviewEditing] = useState(false);
+  const [signupSidebarFocus, setSignupSidebarFocus] =
+    useState<SignupSidebarFocus>("intro");
   const [paymentPreviewEditing, setPaymentPreviewEditing] = useState(false);
+  const [paymentSidebarFocus, setPaymentSidebarFocus] =
+    useState<PaymentSidebarFocus>("intro");
 
   const selectPage = useCallback((pageId: string) => {
     setActivePageId(pageId);
@@ -44,6 +62,7 @@ export default function CampaignFunnelEditor({
     }
     if (pageId !== "payment") {
       setPaymentPreviewEditing(false);
+      setPaymentSidebarFocus("intro");
     }
   }, []);
 
@@ -64,6 +83,22 @@ export default function CampaignFunnelEditor({
 
   const hideLeftSettingsColumn =
     isPreviewOnlyStep || activePage.id === "landing";
+
+  // Landing pencil mode: dedicated hero/headline panel + tap-to-focus on the phone.
+  const showLandingHeroSidebar =
+    activePage.id === "landing" && landingPreviewEditing;
+
+  const showSignupEditSidebar =
+    activePage.id === "signup" && signupPreviewEditing;
+
+  const showPaymentEditSidebar =
+    activePage.id === "payment" && paymentPreviewEditing;
+
+  const compactPreviewLayout =
+    hideLeftSettingsColumn &&
+    !showLandingHeroSidebar &&
+    !showSignupEditSidebar &&
+    !showPaymentEditSidebar;
 
   const updateActivePage = useCallback(
     (patch: Partial<FunnelPage>) => {
@@ -428,7 +463,7 @@ export default function CampaignFunnelEditor({
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
         <div
           className={`mx-auto flex min-h-0 w-full max-w-3xl flex-1 p-4 sm:p-6 ${
-            hideLeftSettingsColumn
+            compactPreviewLayout
               ? "flex-col items-center justify-center"
               : "flex-col gap-6 lg:flex-row lg:gap-8"
           }`}
@@ -508,16 +543,19 @@ export default function CampaignFunnelEditor({
 
           <div
             className={
-              hideLeftSettingsColumn
+              compactPreviewLayout
                 ? "w-full max-w-[20rem] shrink-0"
                 : "w-full shrink-0 lg:min-h-0 lg:self-start lg:w-[18.5rem]"
             }
           >
-            <div className="overflow-hidden rounded-2xl border border-zinc-300 bg-zinc-900 shadow-lg ring-1 ring-black/10">
+            <div className="overflow-hidden rounded-2xl border-x border-zinc-300 border-y-0 bg-zinc-900 shadow-lg ring-1 ring-black/10">
               {activePage.id === "landing" ? (
                 <CampaignFunnelLandingPhone
                   page={activePage}
                   editing={landingPreviewEditing}
+                  heroEditInSidebar={showLandingHeroSidebar}
+                  activeLandingSection={landingSidebarSection}
+                  onSelectLandingSection={setLandingSidebarSection}
                   onPatch={updateActivePage}
                   onHeroFileChange={handleLandingImageFile}
                   onClearHero={() => setLandingHeroImage(null)}
@@ -527,6 +565,9 @@ export default function CampaignFunnelEditor({
                   signupPage={activePage}
                   landingPage={landingPage}
                   editing={signupPreviewEditing}
+                  signupEditInSidebar={showSignupEditSidebar}
+                  activeSignupFocus={signupSidebarFocus}
+                  onSelectSignupFocus={setSignupSidebarFocus}
                   onPatch={updateActivePage}
                 />
               ) : activePage.id === "payment" ? (
@@ -534,6 +575,9 @@ export default function CampaignFunnelEditor({
                   page={activePage}
                   heroImageSrc={landingPage.heroImageSrc}
                   editable={paymentPreviewEditing}
+                  paymentEditInSidebar={showPaymentEditSidebar}
+                  activePaymentFocus={paymentSidebarFocus}
+                  onSelectPaymentFocus={setPaymentSidebarFocus}
                   onPatch={updateActivePage}
                 />
               ) : activePage.id === "confirmation" ? (
@@ -564,6 +608,37 @@ export default function CampaignFunnelEditor({
               )}
             </div>
           </div>
+
+          {showLandingHeroSidebar ? (
+            <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4 lg:max-h-full lg:pb-2 lg:pl-1">
+              <LandingHeroEditSidebar
+                page={activePage}
+                activeSection={landingSidebarSection}
+                onSelectSection={setLandingSidebarSection}
+                onPatch={updateActivePage}
+                onHeroFileChange={handleLandingImageFile}
+                onClearHero={() => setLandingHeroImage(null)}
+              />
+            </div>
+          ) : showSignupEditSidebar ? (
+            <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4 lg:max-h-full lg:pb-2 lg:pl-1">
+              <SignupFunnelEditSidebar
+                signupPage={activePage}
+                activeFocus={signupSidebarFocus}
+                onSelectFocus={setSignupSidebarFocus}
+                onPatch={updateActivePage}
+              />
+            </div>
+          ) : showPaymentEditSidebar ? (
+            <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4 lg:max-h-full lg:pb-2 lg:pl-1">
+              <PaymentFunnelEditSidebar
+                page={activePage}
+                activeFocus={paymentSidebarFocus}
+                onSelectFocus={setPaymentSidebarFocus}
+                onPatch={updateActivePage}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

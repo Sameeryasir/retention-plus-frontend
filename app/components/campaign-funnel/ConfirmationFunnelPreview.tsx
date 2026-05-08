@@ -1,6 +1,7 @@
 "use client";
 
 import type { FunnelPage } from "@/app/components/campaign-funnel/funnel-data";
+import { heroImageTransformStyle } from "@/app/components/campaign-funnel/funnel-limits";
 
 const THANK_YOU_COPY =
   "Thanks for trusting us. Your payment was successful.";
@@ -8,20 +9,25 @@ const THANK_YOU_COPY =
 export function ConfirmationFunnelPreview({
   page,
   heroImageSrc,
+  heroImageScale,
 }: {
   page: FunnelPage;
   /** Same hero as the landing step so the confirmation screen feels connected. */
   heroImageSrc?: string | null;
+  heroImageScale?: number | null;
 }) {
   return (
     <div className="flex flex-col bg-white">
-      <div className="relative border-b-2 border-black bg-zinc-200">
+      <div className="relative overflow-hidden bg-zinc-200">
         {heroImageSrc ? (
-          <img
-            src={heroImageSrc}
-            alt=""
-            className="aspect-[4/3] w-full object-cover"
-          />
+          <div className="aspect-[4/3] w-full overflow-hidden">
+            <img
+              src={heroImageSrc}
+              alt=""
+              style={heroImageTransformStyle(heroImageScale)}
+              className="h-full w-full object-cover"
+            />
+          </div>
         ) : (
           <div className="flex aspect-[4/3] flex-col items-center justify-center gap-1 bg-zinc-100 px-3 text-center text-[0.65rem] text-zinc-500">
             <span>No hero image yet</span>
@@ -29,7 +35,7 @@ export function ConfirmationFunnelPreview({
           </div>
         )}
       </div>
-      <div className="space-y-3 border-b border-zinc-100 px-4 py-5 text-center">
+      <div className="space-y-3 px-4 py-5 text-center">
         <p className="text-base font-bold leading-snug text-zinc-900">
           {page.headline.trim() || "You're all set"}
         </p>

@@ -1,3 +1,121 @@
+/**
+ * Sign-up step: field order and grouping on the phone + editor preview.
+ * - stacked: first, last, phone (full width each)
+ * - name_row: first | last in one row, phone full width
+ * - phone_first: phone first, then first, then last (SMS-first style)
+ * - name_row_reverse: last | first in one row, then phone
+ */
+export type SignupFormLayout =
+  | "stacked"
+  | "name_row"
+  | "phone_first"
+  | "name_row_reverse";
+
+export function normalizeSignupFormLayout(
+  value: SignupFormLayout | null | undefined,
+): SignupFormLayout {
+  if (
+    value === "name_row" ||
+    value === "phone_first" ||
+    value === "name_row_reverse"
+  ) {
+    return value;
+  }
+  return "stacked";
+}
+
+/**
+ * Payment checkout mock: section order on the phone + editor.
+ * - standard: deal → pay link → contact → card (default Stripe-like flow)
+ * - contact_first: contact block before the pay-with-link step
+ * - card_first: card block before contact details
+ * - contact_inline: email + full name side by side, phone full width
+ */
+export type PaymentCheckoutLayout =
+  | "standard"
+  | "contact_first"
+  | "card_first"
+  | "contact_inline";
+
+export function normalizePaymentCheckoutLayout(
+  value: PaymentCheckoutLayout | null | undefined,
+): PaymentCheckoutLayout {
+  if (
+    value === "contact_first" ||
+    value === "card_first" ||
+    value === "contact_inline"
+  ) {
+    return value;
+  }
+  return "standard";
+}
+
+export type PaymentCheckoutSectionKey =
+  | "intro"
+  | "deal"
+  | "currency"
+  | "payLink"
+  | "or"
+  | "contactTitle"
+  | "contactFields"
+  | "methodTitle"
+  | "cardBlock"
+  | "billingExtra";
+
+export const PAYMENT_CHECKOUT_SECTION_ORDER: Record<
+  PaymentCheckoutLayout,
+  PaymentCheckoutSectionKey[]
+> = {
+  standard: [
+    "intro",
+    "deal",
+    "currency",
+    "payLink",
+    "or",
+    "contactTitle",
+    "contactFields",
+    "methodTitle",
+    "cardBlock",
+    "billingExtra",
+  ],
+  contact_first: [
+    "intro",
+    "deal",
+    "currency",
+    "contactTitle",
+    "contactFields",
+    "payLink",
+    "or",
+    "methodTitle",
+    "cardBlock",
+    "billingExtra",
+  ],
+  card_first: [
+    "intro",
+    "deal",
+    "currency",
+    "payLink",
+    "or",
+    "methodTitle",
+    "cardBlock",
+    "contactTitle",
+    "contactFields",
+    "billingExtra",
+  ],
+  contact_inline: [
+    "intro",
+    "deal",
+    "currency",
+    "payLink",
+    "or",
+    "contactTitle",
+    "contactFields",
+    "methodTitle",
+    "cardBlock",
+    "billingExtra",
+  ],
+};
+
 export type FunnelPage = {
   id: string;
   label: string;
@@ -7,9 +125,13 @@ export type FunnelPage = {
   body: string;
   ctaLabel: string;
   heroImageSrc?: string | null;
+  /** Zoom inside the hero frame (see funnel-limits `normalizeHeroImageScale`). */
+  heroImageScale?: number | null;
   signupFirstNameLabel: string;
   signupLastNameLabel: string;
   signupPhoneLabel: string;
+  /** Sign-up editor: field order / grouping (see SignupFormLayout). */
+  signupFormLayout?: SignupFormLayout | null;
   paymentMockContactTitle?: string;
   paymentMockMethodTitle?: string;
   paymentMockEmail?: string;
@@ -22,6 +144,8 @@ export type FunnelPage = {
   paymentMockNameOnCard?: string;
   paymentMockCountry?: string;
   paymentMockSaveLabel?: string;
+  /** Payment editor: checkout section order / contact grouping. */
+  paymentCheckoutLayout?: PaymentCheckoutLayout | null;
 };
 
 export const INITIAL_PAGES: FunnelPage[] = [
@@ -48,6 +172,7 @@ export const INITIAL_PAGES: FunnelPage[] = [
     signupFirstNameLabel: "First name *",
     signupLastNameLabel: "Last name *",
     signupPhoneLabel: "Phone *",
+    signupFormLayout: "stacked",
   },
   {
     id: "payment",
@@ -72,6 +197,7 @@ export const INITIAL_PAGES: FunnelPage[] = [
     paymentMockNameOnCard: "Full name on card",
     paymentMockCountry: "Pakistan ▾",
     paymentMockSaveLabel: "Save my information for faster checkout",
+    paymentCheckoutLayout: "standard",
   },
   {
     id: "confirmation",
