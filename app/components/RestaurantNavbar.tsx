@@ -5,10 +5,9 @@ import { clearSetupAccessToken } from "@/app/lib/setup-access-token";
 import { clearSetupUser, getSetupUser } from "@/app/lib/setup-user";
 import type { VerifyOtpUser } from "@/app/services/auth/verify-otp";
 import RestaurantSettingsDialog from "@/app/components/RestaurantSettingsDialog";
-import { shouldHideRestaurantNavbarHome } from "@/app/lib/restaurant-dashboard-pathname";
-import { Home, LogOut, Settings } from "lucide-react";
+import { ArrowBigLeft, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 function initialsFromUser(user: VerifyOtpUser | null): string {
@@ -22,15 +21,7 @@ function initialsFromUser(user: VerifyOtpUser | null): string {
 }
 
 export default function RestaurantNavbar() {
-  const params = useParams();
-  const pathname = usePathname();
   const router = useRouter();
-  const restaurantId = params?.restaurantId;
-  const homeHref =
-    typeof restaurantId === "string" && restaurantId.trim() !== ""
-      ? `/restaurant/${restaurantId}/dashboard`
-      : "/dashboard";
-  const hideHome = shouldHideRestaurantNavbarHome(pathname);
   const { clearPassword } = useCredentialContext();
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -83,17 +74,13 @@ export default function RestaurantNavbar() {
       aria-label="Restaurant dashboard"
     >
       <div className="flex w-full items-center justify-between gap-3 bg-[#0c152f] sm:gap-4">
-        {hideHome ? (
-          <span className="inline-flex size-10 shrink-0" aria-hidden />
-        ) : (
-          <Link
-            href={homeHref}
-            className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-white outline-none ring-offset-2 ring-offset-[#0c152f] transition-colors hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-[#0c152f]"
-            aria-label="Home"
-          >
-            <Home className="size-5 shrink-0 text-white" aria-hidden strokeWidth={2} />
-          </Link>
-        )}
+        <Link
+          href="/dashboard"
+          aria-label="Back to dashboard"
+          className="-ml-4 inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-white outline-none ring-offset-2 ring-offset-[#0c152f] transition-colors hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-[#0c152f] sm:-ml-6"
+        >
+          <ArrowBigLeft className="size-5 shrink-0 text-white" aria-hidden strokeWidth={2} />
+        </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
           <button

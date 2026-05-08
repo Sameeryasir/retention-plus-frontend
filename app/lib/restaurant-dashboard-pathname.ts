@@ -17,7 +17,3 @@ export function isRestaurantSidebarChromeMinimal(pathname: string): boolean {
     isRestaurantCampaignWorkspace(pathname)
   );
 }
-
-export function shouldHideRestaurantNavbarHome(pathname: string): boolean {
-  return isRestaurantCampaignWorkspace(pathname);
-}

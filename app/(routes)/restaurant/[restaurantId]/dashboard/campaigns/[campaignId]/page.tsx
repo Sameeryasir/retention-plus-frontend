@@ -68,16 +68,18 @@ export default function CampaignWelcomePage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-8rem)] w-full flex-col">
-      <CampaignHeader
-        restaurantId={restaurantId}
-        offer={campaign?.offer}
-        price={campaign?.price}
-        activeTabId={activeTabId}
-        onTabChange={setActiveTabId}
-      />
+    <div className="flex h-full min-h-0 w-full flex-col">
+      <div className="shrink-0">
+        <CampaignHeader
+          restaurantId={restaurantId}
+          offer={campaign?.offer}
+          price={campaign?.price}
+          activeTabId={activeTabId}
+          onTabChange={setActiveTabId}
+        />
+      </div>
       {activeTabId === "funnel" ? (
-        <div className="flex min-h-0 w-full flex-1 flex-col">
+        <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
           <CampaignFunnelEditor
             restaurantId={restaurantId}
             campaignId={campaignId}
