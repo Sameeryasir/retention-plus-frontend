@@ -1,6 +1,6 @@
 "use client";
 
-import CampaignFunnelEditor from "@/app/components/CampaignFunnelEditor";
+import { CrmTemplateEditor } from "@/app/components/crm-template-editor/CrmTemplateEditor";
 import CampaignHeader from "@/app/components/CampaignHeader";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
 import {
@@ -72,6 +72,7 @@ export default function CampaignWelcomePage() {
       <div className="shrink-0">
         <CampaignHeader
           restaurantId={restaurantId}
+          campaignId={campaignId}
           offer={campaign?.offer}
           price={campaign?.price}
           activeTabId={activeTabId}
@@ -80,7 +81,7 @@ export default function CampaignWelcomePage() {
       </div>
       {activeTabId === "funnel" ? (
         <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-          <CampaignFunnelEditor
+          <CrmTemplateEditor
             restaurantId={restaurantId}
             campaignId={campaignId}
           />

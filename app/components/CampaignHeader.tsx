@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowLeft, Circle, Link2, Pencil } from "lucide-react";
+import { ArrowLeft, Check, Circle, Copy, Link2, Pencil, X } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 function parsePrice(raw: number | string | undefined): number | null {
   if (raw == null) return null;
@@ -18,6 +18,8 @@ function formatPrice(amount: number): string {
 
 export type CampaignHeaderProps = {
   restaurantId: number;
+  /** Used to build `/funnel/{campaignId}/landing` for Meta / Facebook ad destinations. */
+  campaignId?: number;
   offer?: string;
   price?: number | string;
   defaultTabId?: string;
@@ -41,6 +43,7 @@ const TABS: { id: string; label: string; icon?: typeof Circle }[] = [
 
 export default function CampaignHeader({
   restaurantId,
+  campaignId,
   offer,
   price,
   defaultTabId = "overview",
@@ -75,15 +78,55 @@ export default function CampaignHeader({
     [isControlled, onTabChange],
   );
 
+  const [trackingDialogOpen, setTrackingDialogOpen] = useState(false);
+  const [trackingOrigin, setTrackingOrigin] = useState("");
+  const [copyDone, setCopyDone] = useState(false);
+
+  const landingTrackingUrl = useMemo(() => {
+    if (campaignId == null || !trackingOrigin) return "";
+    return `${trackingOrigin}/funnel/${campaignId}/landing`;
+  }, [campaignId, trackingOrigin]);
+
+  useEffect(() => {
+    if (!trackingDialogOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setTrackingDialogOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [trackingDialogOpen]);
+
   const handleGenerate = useCallback(() => {
     onGenerateTrackingLink?.();
+    if (typeof window !== "undefined") {
+      setTrackingOrigin(window.location.origin);
+    }
+    setCopyDone(false);
+    setTrackingDialogOpen(true);
   }, [onGenerateTrackingLink]);
+
+  const handleCopyLandingUrl = useCallback(async () => {
+    if (!landingTrackingUrl) return;
+    try {
+      await navigator.clipboard.writeText(landingTrackingUrl);
+      setCopyDone(true);
+      window.setTimeout(() => setCopyDone(false), 2000);
+    } catch {
+      setCopyDone(false);
+    }
+  }, [landingTrackingUrl]);
 
   const handleEdit = useCallback(() => {
     onEdit?.();
   }, [onEdit]);
 
   return (
+    <>
     <header className="shrink-0 border-b border-zinc-200 bg-white">
       <div className="flex w-full flex-nowrap items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-4 sm:py-4 lg:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-1.5">
@@ -106,7 +149,13 @@ export default function CampaignHeader({
           <button
             type="button"
             onClick={handleGenerate}
-            className="inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:gap-2 sm:px-3 sm:text-sm"
+            disabled={campaignId == null}
+            title={
+              campaignId == null
+                ? "Campaign id missing"
+                : "Get link for Facebook ads"
+            }
+            className="inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-black px-2.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 enabled:cursor-pointer disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-100 sm:gap-2 sm:px-3 sm:text-sm"
           >
             <Link2 className="size-4 shrink-0" aria-hidden strokeWidth={2} />
             <span className="truncate">Generate Tracking Link</span>
@@ -136,9 +185,9 @@ export default function CampaignHeader({
                 role="tab"
                 aria-selected={active}
                 onClick={() => selectTab(id)}
-                className={`relative flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/40 sm:px-4 ${
+                className={`relative flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-400/50 sm:px-4 ${
                   active
-                    ? "text-blue-600 hover:bg-blue-50/80"
+                    ? "bg-zinc-100 text-zinc-950 hover:bg-zinc-100"
                     : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
                 }`}
               >
@@ -151,7 +200,7 @@ export default function CampaignHeader({
                 ) : null}
                 {label}
                 {active ? (
-                  <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-blue-600 sm:inset-x-3" />
+                  <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-zinc-950 sm:inset-x-3" />
                 ) : null}
               </button>
             );
@@ -159,5 +208,105 @@ export default function CampaignHeader({
         </div>
       </nav>
     </header>
+
+    {trackingDialogOpen ? (
+      <div
+        className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center"
+        role="presentation"
+        onClick={() => setTrackingDialogOpen(false)}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tracking-link-dialog-title"
+          className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2
+                id="tracking-link-dialog-title"
+                className="text-base font-semibold text-zinc-900"
+              >
+                Tracking link
+              </h2>
+              <p className="mt-1 text-sm text-zinc-600">
+                Use this URL as the website destination in Facebook / Meta ads
+                (landing step).
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setTrackingDialogOpen(false)}
+              className="shrink-0 rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+            >
+              <X className="size-5" strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+          {campaignId != null && landingTrackingUrl ? (
+            <div className="mt-4 space-y-2">
+              <label
+                htmlFor="tracking-landing-url"
+                className="block text-xs font-medium text-zinc-500"
+              >
+                Landing URL
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="tracking-landing-url"
+                  readOnly
+                  value={landingTrackingUrl}
+                  className="min-w-0 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-900"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleCopyLandingUrl()}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50"
+                >
+                  {copyDone ? (
+                    <Check className="size-4 text-emerald-600" strokeWidth={2} />
+                  ) : (
+                    <Copy className="size-4" strokeWidth={2} />
+                  )}
+                  {copyDone ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <p className="text-[0.65rem] leading-relaxed text-zinc-500">
+                Dev server runs on port{" "}
+                <span className="font-mono text-zinc-700">3002</span> — link
+                uses your current origin (
+                <span className="font-mono">{trackingOrigin || "—"}</span>).
+              </p>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-amber-800">
+              This campaign has no id in the URL, so a tracking link cannot be
+              built.
+            </p>
+          )}
+          <div className="mt-5 flex justify-end gap-2">
+            {campaignId != null && landingTrackingUrl ? (
+              <Link
+                href={`/funnel/${campaignId}/landing`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50"
+              >
+                Open preview
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setTrackingDialogOpen(false)}
+              className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
-import CampaignFunnelEditor from "@/app/components/CampaignFunnelEditor";
+import { CrmTemplateEditor } from "@/app/components/crm-template-editor/CrmTemplateEditor";
 
 function parseId(raw: unknown): number | undefined {
   if (typeof raw !== "string" || !/^\d+$/.test(raw)) return undefined;
@@ -11,7 +11,7 @@ function parseId(raw: unknown): number | undefined {
   return n >= 1 ? n : undefined;
 }
 
-export default function CampaignFunnelEditorPage() {
+export default function CampaignCrmTemplateEditorPage() {
   const params = useParams();
   const restaurantId = useMemo(
     () => parseId(params.restaurantId),
@@ -37,10 +37,11 @@ export default function CampaignFunnelEditorPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-5rem)] w-full flex-col lg:min-h-[calc(100dvh-4.5rem)]">
-      <CampaignFunnelEditor
+    <div className="flex min-h-[calc(100dvh-5rem)] w-full flex-1 flex-col lg:min-h-[calc(100dvh-4.5rem)]">
+      <CrmTemplateEditor
         restaurantId={restaurantId}
         campaignId={campaignId}
+        interactivePreview
       />
     </div>
   );

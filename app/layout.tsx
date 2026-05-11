@@ -1,3 +1,4 @@
+import { AppToaster } from "@/app/components/AppToaster";
 import { CredentialProvider } from "@/app/contexts/credential-context";
 import { StoreProvider } from "@/app/store/StoreProvider";
 import type { Metadata } from "next";
@@ -33,7 +34,10 @@ export default function RootLayout({
         className={`${geistSans.className} min-h-full flex flex-col antialiased`}
       >
         <StoreProvider>
-          <CredentialProvider>{children}</CredentialProvider>
+          <CredentialProvider>
+            {children}
+            <AppToaster />
+          </CredentialProvider>
         </StoreProvider>
       </body>
     </html>
