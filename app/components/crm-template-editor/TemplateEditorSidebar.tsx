@@ -1,5 +1,4 @@
 "use client";
-
 import { type ChangeEvent, useCallback, useId, useState } from "react";
 import {
   ChevronLeft,
@@ -10,6 +9,7 @@ import {
   Image as ImageIcon,
   Mail,
   MousePointerClick,
+  Phone,
   Trash2,
   Upload,
   User,
@@ -44,6 +44,7 @@ const FORM_FIELD_ICONS: Record<FormFieldId, LucideIcon> = {
   firstName: User,
   lastName: UserRound,
   email: Mail,
+  phone: Phone,
 };
 
 function defaultAccordionOpen(

@@ -4,7 +4,7 @@ export type TemplatePageId =
   | "payment"
   | "confirmation";
 
-export type FormFieldId = "firstName" | "lastName" | "email";
+export type FormFieldId = "firstName" | "lastName" | "email" | "phone";
 
 import type { FormDesign } from "@/app/components/crm-template-editor/form-designs/types";
 export type { FormDesign };

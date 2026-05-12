@@ -4,7 +4,12 @@ import type {
   TemplatePagesState,
 } from "@/app/components/crm-template-editor/template-types";
 
-const DEFAULT_FIELDS: FormFieldId[] = ["firstName", "lastName", "email"];
+const DEFAULT_FIELDS: FormFieldId[] = [
+  "firstName",
+  "lastName",
+  "email",
+  "phone",
+];
 
 const DEFAULT_DESIGN: FormDesign = "stacked_input_form";
 
@@ -104,4 +109,5 @@ export const FORM_FIELD_OPTIONS: { id: FormFieldId; label: string }[] = [
   { id: "firstName", label: "First name" },
   { id: "lastName", label: "Last name" },
   { id: "email", label: "Email" },
+  { id: "phone", label: "Phone" },
 ];

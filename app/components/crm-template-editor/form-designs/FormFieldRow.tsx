@@ -1,6 +1,6 @@
 "use client";
 
-import { Mail, User, type LucideIcon } from "lucide-react";
+import { Mail, Phone, User, type LucideIcon } from "lucide-react";
 import { useId } from "react";
 import type { FormFieldId } from "@/app/components/crm-template-editor/template-types";
 
@@ -8,6 +8,7 @@ const FIELD_LABEL_ICON: Record<FormFieldId, LucideIcon> = {
   firstName: User,
   lastName: User,
   email: Mail,
+  phone: Phone,
 };
 
 export function FormFieldRow({

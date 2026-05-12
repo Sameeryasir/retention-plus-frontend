@@ -44,13 +44,17 @@ export function SignupFormFields({
       interactive={interactive}
       fieldId={id}
       inputName={id}
-      inputType={id === "email" ? "email" : "text"}
+      inputType={
+        id === "email" ? "email" : id === "phone" ? "tel" : "text"
+      }
       autoComplete={
         id === "email"
           ? "email"
-          : id === "firstName"
-            ? "given-name"
-            : "family-name"
+          : id === "phone"
+            ? "tel"
+            : id === "firstName"
+              ? "given-name"
+              : "family-name"
       }
     />
   ));
