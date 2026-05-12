@@ -1,6 +1,13 @@
 "use client";
 
-import { Pencil } from "lucide-react";
+import {
+  CheckCircle2,
+  CreditCard,
+  Home,
+  Pencil,
+  UserPlus,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { TemplatePageId } from "@/app/components/crm-template-editor/template-types";
 
 export const FUNNEL_PAGE_ORDER: TemplatePageId[] = [
@@ -9,6 +16,13 @@ export const FUNNEL_PAGE_ORDER: TemplatePageId[] = [
   "payment",
   "confirmation",
 ];
+
+const PAGE_ICONS: Record<TemplatePageId, LucideIcon> = {
+  landing: Home,
+  signup: UserPlus,
+  payment: CreditCard,
+  confirmation: CheckCircle2,
+};
 
 export function TemplatePageList({
   pages,
@@ -46,11 +60,23 @@ export function TemplatePageList({
                 <button
                   type="button"
                   onClick={() => onSelect(id)}
-                  className={`flex min-w-0 flex-1 cursor-pointer items-center px-3 py-2.5 text-left text-sm font-medium transition ${
+                  className={`flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 px-3 py-2.5 text-left text-sm font-medium transition ${
                     selected ? "text-white" : "text-zinc-700"
                   }`}
                 >
-                  {p.label}
+                  {(() => {
+                    const Icon = PAGE_ICONS[id];
+                    return (
+                      <Icon
+                        className={`size-4 shrink-0 ${
+                          selected ? "text-white" : "text-zinc-500"
+                        }`}
+                        strokeWidth={2}
+                        aria-hidden
+                      />
+                    );
+                  })()}
+                  <span className="min-w-0 truncate">{p.label}</span>
                 </button>
                 <button
                   type="button"

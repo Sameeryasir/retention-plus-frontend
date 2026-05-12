@@ -1,11 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, Loader2, Save as SaveIcon } from "lucide-react";
+import { DiscardChangesDialog } from "@/app/components/crm-template-editor/DiscardChangesDialog";
 import {
   loadFunnelTemplatePagesAsync,
   saveFunnelTemplatePagesAsync,
 } from "@/app/components/crm-template-editor/funnel-template-storage";
 import { INITIAL_TEMPLATE_PAGES } from "@/app/components/crm-template-editor/template-data";
+import { getSetupAccessToken } from "@/app/lib/setup-access-token";
+import {
+  buildCreateFunnelRequestBody,
+  createFunnel,
+} from "@/app/services/funnel/create-funnel";
 import { TemplateEditorSidebar } from "@/app/components/crm-template-editor/TemplateEditorSidebar";
 import { TemplatePageList } from "@/app/components/crm-template-editor/TemplatePageList";
 import { TemplatePreview } from "@/app/components/crm-template-editor/TemplatePreview";
@@ -39,6 +46,12 @@ export function CrmTemplateEditor({
   const [didHydrateStorage, setDidHydrateStorage] = useState(
     _campaignId == null,
   );
+  type SaveStatus = "idle" | "saving" | "saved" | "error";
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [pendingNavId, setPendingNavId] = useState<TemplatePageId | null>(null);
+  const editSnapshotRef = useRef<TemplatePagesState | null>(null);
 
   const activePage = pages[activeId];
 
@@ -69,6 +82,34 @@ export function CrmTemplateEditor({
     return () => window.clearTimeout(t);
   }, [pages, _campaignId, didHydrateStorage]);
 
+  const handleSave = useCallback(async () => {
+    if (_campaignId == null) {
+      setSaveStatus("error");
+      setSaveError("Missing campaign id.");
+      return;
+    }
+    const token = getSetupAccessToken().trim();
+    if (!token) {
+      setSaveStatus("error");
+      setSaveError("You're signed out. Sign in again to save.");
+      return;
+    }
+    setSaveStatus("saving");
+    setSaveError(null);
+    try {
+      await createFunnel(
+        token,
+        buildCreateFunnelRequestBody(_campaignId, pages, [activeId]),
+      );
+      setSaveStatus("saved");
+      setIsDirty(false);
+      editSnapshotRef.current = JSON.parse(JSON.stringify(pages)) as TemplatePagesState;
+    } catch (e) {
+      setSaveStatus("error");
+      setSaveError(e instanceof Error ? e.message : "Could not save changes.");
+    }
+  }, [_campaignId, pages, activeId]);
+
   const previewSignupNextHref =
     interactivePreview && _campaignId != null
       ? `/funnel/${encodeURIComponent(String(_campaignId))}/payment`
@@ -88,6 +129,9 @@ export function CrmTemplateEditor({
   );
 
   const patchPage = useCallback((patch: TemplatePagePatch) => {
+    setSaveStatus((s) => (s === "saved" ? "idle" : s));
+    setSaveError(null);
+    setIsDirty(true);
     setPages((prev) => {
       const updated = { ...prev[activeId], ...patch } as TemplatePage;
       const next: TemplatePagesState = {
@@ -111,17 +155,122 @@ export function CrmTemplateEditor({
     });
   }, [activeId]);
 
-  const openEditorForPage = useCallback((id: TemplatePageId) => {
-    setActiveId(id);
-    setSidebarOpen(true);
+  const beginEditSession = useCallback(
+    (id: TemplatePageId, sourcePages: TemplatePagesState) => {
+      setActiveId(id);
+      setSidebarOpen(true);
+      setSaveStatus("idle");
+      setSaveError(null);
+      setIsDirty(false);
+      editSnapshotRef.current = JSON.parse(
+        JSON.stringify(sourcePages),
+      ) as TemplatePagesState;
+    },
+    [],
+  );
+
+  const openEditorForPage = useCallback(
+    (id: TemplatePageId) => {
+      if (sidebarOpen && isDirty && id !== activeId) {
+        setPendingNavId(id);
+        return;
+      }
+      beginEditSession(id, pages);
+    },
+    [sidebarOpen, isDirty, activeId, pages, beginEditSession],
+  );
+
+  const requestSwitchActive = useCallback(
+    (id: TemplatePageId) => {
+      if (id === activeId) return;
+      if (sidebarOpen && isDirty) {
+        setPendingNavId(id);
+        return;
+      }
+      if (sidebarOpen) {
+        beginEditSession(id, pages);
+      } else {
+        setActiveId(id);
+      }
+    },
+    [activeId, sidebarOpen, isDirty, pages, beginEditSession],
+  );
+
+  const cancelDiscard = useCallback(() => {
+    setPendingNavId(null);
   }, []);
+
+  const confirmDiscard = useCallback(() => {
+    const target = pendingNavId;
+    const snapshot = editSnapshotRef.current;
+    if (snapshot) {
+      setPages(snapshot);
+    }
+    setIsDirty(false);
+    setSaveStatus("idle");
+    setSaveError(null);
+    setPendingNavId(null);
+    if (target) {
+      beginEditSession(target, snapshot ?? pages);
+    }
+  }, [pendingNavId, pages, beginEditSession]);
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-zinc-100 text-zinc-900">
-      <header className="flex h-14 shrink-0 items-center border-b border-zinc-200 bg-white px-4 shadow-sm">
-        <h1 className="truncate text-sm font-semibold sm:text-base">
+      <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-white px-4 shadow-sm">
+        <h1 className="min-w-0 truncate text-sm font-semibold sm:text-base">
           {activePage.label}
         </h1>
+        {sidebarOpen ? (
+          <div className="flex shrink-0 items-center gap-2">
+            {saveStatus === "error" && saveError ? (
+              <span
+                className="hidden max-w-[14rem] truncate text-[0.7rem] font-medium text-red-700 sm:inline"
+                title={saveError}
+              >
+                {saveError}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saveStatus === "saving"}
+              className="group inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-black/90 bg-gradient-to-b from-zinc-800 to-black px-4 text-[0.78rem] font-semibold tracking-tight text-white shadow-[0_1px_0_0_rgba(255,255,255,0.08)_inset,0_1px_2px_rgba(0,0,0,0.25)] ring-1 ring-white/5 transition-all duration-150 ease-out hover:from-zinc-700 hover:to-zinc-900 hover:shadow-[0_1px_0_0_rgba(255,255,255,0.12)_inset,0_4px_12px_-2px_rgba(0,0,0,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/40 active:translate-y-px active:shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              aria-live="polite"
+            >
+              <span className="flex size-4 shrink-0 items-center justify-center">
+                {saveStatus === "saving" ? (
+                  <Loader2
+                    className="size-4 animate-spin text-white/90"
+                    strokeWidth={2.25}
+                    aria-hidden
+                  />
+                ) : saveStatus === "error" ? (
+                  <AlertCircle
+                    className="size-4 text-rose-300"
+                    strokeWidth={2.25}
+                    aria-hidden
+                  />
+                ) : (
+                  <SaveIcon
+                    className="size-4 text-white/90 transition-transform duration-150 group-hover:-translate-y-px"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                )}
+              </span>
+              <span className="leading-none">
+                {saveStatus === "saving"
+                  ? "Saving"
+                  : saveStatus === "saved"
+                    ? "Saved"
+                    : saveStatus === "error"
+                      ? "Retry"
+                      : "Save changes"}
+              </span>
+            </button>
+          </div>
+        ) : null}
       </header>
 
       <div className="flex min-h-0 flex-1">
@@ -129,22 +278,15 @@ export function CrmTemplateEditor({
           <TemplatePageList
             pages={pageList}
             activeId={activeId}
-            onSelect={setActiveId}
+            onSelect={requestSwitchActive}
             onEditPage={openEditorForPage}
           />
           {sidebarOpen ? (
             <>
-              <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50 px-3 py-2">
+              <div className="flex shrink-0 items-center gap-2 border-b border-zinc-200 bg-zinc-50 px-3 py-2">
                 <span className="truncate text-xs font-semibold text-zinc-700">
                   Editing: {activePage.label}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setSidebarOpen(false)}
-                  className="shrink-0 cursor-pointer rounded-md px-2 py-1 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-200/80 hover:text-zinc-900"
-                >
-                  Done
-                </button>
               </div>
               <TemplateEditorSidebar
                 key={activeId}
@@ -176,6 +318,13 @@ export function CrmTemplateEditor({
           </div>
         </main>
       </div>
+
+      <DiscardChangesDialog
+        open={pendingNavId !== null}
+        pageLabel={activePage.label}
+        onCancel={cancelDiscard}
+        onDiscard={confirmDiscard}
+      />
     </div>
   );
 }
