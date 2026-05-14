@@ -18,7 +18,6 @@ function formatPrice(amount: number): string {
 
 export type CampaignHeaderProps = {
   restaurantId: number;
-  /** Used to build `/funnel/{campaignId}/landing` for Meta / Facebook ad destinations. */
   campaignId?: number;
   offer?: string;
   price?: number | string;
@@ -82,10 +81,17 @@ export default function CampaignHeader({
   const [trackingOrigin, setTrackingOrigin] = useState("");
   const [copyDone, setCopyDone] = useState(false);
 
+  const landingTrackingPath = useMemo(() => {
+    if (campaignId == null) return "";
+    const base = `/funnel/${campaignId}/landing`;
+    if (!Number.isFinite(restaurantId) || restaurantId < 1) return base;
+    return `${base}?restaurantId=${encodeURIComponent(String(restaurantId))}`;
+  }, [campaignId, restaurantId]);
+
   const landingTrackingUrl = useMemo(() => {
-    if (campaignId == null || !trackingOrigin) return "";
-    return `${trackingOrigin}/funnel/${campaignId}/landing`;
-  }, [campaignId, trackingOrigin]);
+    if (!landingTrackingPath || !trackingOrigin) return "";
+    return `${trackingOrigin}${landingTrackingPath}`;
+  }, [landingTrackingPath, trackingOrigin]);
 
   useEffect(() => {
     if (!trackingDialogOpen) return;
@@ -288,7 +294,7 @@ export default function CampaignHeader({
           <div className="mt-5 flex justify-end gap-2">
             {campaignId != null && landingTrackingUrl ? (
               <Link
-                href={`/funnel/${campaignId}/landing`}
+                href={landingTrackingPath}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50"

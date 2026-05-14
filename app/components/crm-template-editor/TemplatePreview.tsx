@@ -14,15 +14,13 @@ import {
 } from "@/app/components/crm-template-editor/template-image";
 import type { SignUpTemplatePage, TemplatePage } from "@/app/components/crm-template-editor/template-types";
 import { createCustomer } from "@/app/services/customer/create-customer";
-
-// --- Preview chrome ---
-// Borderless white card + soft shadow only (no outline rings on the phone preview).
+import { setFunnelCheckoutEmail } from "@/app/lib/funnel-checkout-storage";
+import type { FunnelStripePaymentContext } from "@/app/components/funnel/FunnelStripePaymentForm";
 
 function layoutShellClass(_layoutType: string) {
   return "max-w-full";
 }
 
-/** Outer “phone card” — `overflow-hidden` clips full-bleed hero to rounded corners. */
 function previewOuterChrome(_pageId: string, _coloredByStep: boolean): string {
   return "overflow-hidden rounded-2xl bg-white shadow-sm";
 }
@@ -41,7 +39,6 @@ function BodyBlock({
   body: string;
   layoutType: string;
   isMobile: boolean;
-  /** Signup preview: center body copy regardless of page layoutType. */
   centerBody?: boolean;
 }) {
   const trimmed = body.trim();
@@ -69,7 +66,6 @@ function HeroImage({
 }: {
   url: string;
   scale: number;
-  /** `fullBleedTop` — edge-to-edge with card top/sides, taller frame (stacked + split preview). */
   variant?: "inset" | "fullBleedTop";
 }) {
   const bleed = variant === "fullBleedTop";
@@ -112,6 +108,7 @@ export function TemplatePreview({
   interactiveForms = false,
   submitCustomerOnSignupNext = false,
   editorStepPreviewChrome = false,
+  paymentStripeCheckout = null,
 }: {
   page: TemplatePage;
   landingPage: TemplatePage;
@@ -120,8 +117,8 @@ export function TemplatePreview({
   signupBackHref?: string;
   interactiveForms?: boolean;
   submitCustomerOnSignupNext?: boolean;
-  /** Passed from CRM editor; preview card is borderless either way. */
   editorStepPreviewChrome?: boolean;
+  paymentStripeCheckout?: FunnelStripePaymentContext | null;
 }) {
   const router = useRouter();
   const [signupSubmitting, setSignupSubmitting] = useState(false);
@@ -183,6 +180,7 @@ export function TemplatePreview({
       setSignupSubmitting(true);
       try {
         await createCustomer({ name, email });
+        setFunnelCheckoutEmail(email);
         toast.success("You're all set — continuing to payment.", {
           duration: 2400,
         });
@@ -214,6 +212,7 @@ export function TemplatePreview({
         page={page}
         landingPage={landingPage}
         interactive={interactiveForms}
+        stripeCheckout={paymentStripeCheckout}
       />,
     );
   }

@@ -8,7 +8,9 @@ import {
   saveFunnelTemplatePagesAsync,
 } from "@/app/components/crm-template-editor/funnel-template-storage";
 import { INITIAL_TEMPLATE_PAGES } from "@/app/components/crm-template-editor/template-data";
+import { getFunnelCheckoutEmail } from "@/app/lib/funnel-checkout-storage";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
+import type { FunnelStripePaymentContext } from "@/app/components/funnel/FunnelStripePaymentForm";
 import {
   buildCreateFunnelRequestBody,
   createFunnel,
@@ -25,6 +27,24 @@ import type {
 
 function clonePages(): TemplatePagesState {
   return JSON.parse(JSON.stringify(INITIAL_TEMPLATE_PAGES)) as TemplatePagesState;
+}
+
+function parseAmountEnv(raw: string | undefined, fallback: number): number {
+  if (raw == null || raw === "") return fallback;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n >= 1 ? n : fallback;
+}
+
+function parseFeeEnv(raw: string | undefined, fallback: number): number {
+  if (raw == null || raw === "") return fallback;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
+function parseEnvPositiveInt(raw: string | undefined): number | null {
+  if (raw == null || raw.trim() === "") return null;
+  const n = Number.parseInt(raw.trim(), 10);
+  return Number.isFinite(n) && n >= 1 ? n : null;
 }
 
 export type CrmTemplateEditorProps = {
@@ -110,14 +130,74 @@ export function CrmTemplateEditor({
     }
   }, [_campaignId, pages, activeId]);
 
+  const previewRestaurantId = useMemo(
+    () =>
+      _restaurantId ??
+      parseEnvPositiveInt(process.env.NEXT_PUBLIC_FUNNEL_PAYMENT_RESTAURANT_ID),
+    [_restaurantId],
+  );
+  const previewCampaignId = useMemo(
+    () => (_campaignId != null && _campaignId >= 1 ? _campaignId : null),
+    [_campaignId],
+  );
+
   const previewSignupNextHref =
-    interactivePreview && _campaignId != null
-      ? `/funnel/${encodeURIComponent(String(_campaignId))}/payment`
+    interactivePreview && previewCampaignId != null
+      ? (() => {
+          const path = `/funnel/${encodeURIComponent(String(previewCampaignId))}/payment`;
+          if (previewRestaurantId == null) return path;
+          return `${path}?restaurantId=${encodeURIComponent(String(previewRestaurantId))}`;
+        })()
       : undefined;
   const previewSignupBackHref =
-    interactivePreview && _campaignId != null
-      ? `/funnel/${encodeURIComponent(String(_campaignId))}/landing`
+    interactivePreview && previewCampaignId != null
+      ? `/funnel/${encodeURIComponent(String(previewCampaignId))}/landing`
       : undefined;
+
+  const paymentStripeCheckout = useMemo((): FunnelStripePaymentContext | null => {
+    if (!interactivePreview || activeId !== "payment") {
+      return null;
+    }
+    if (previewRestaurantId == null) {
+      return null;
+    }
+    const email =
+      getFunnelCheckoutEmail()?.trim() ||
+      process.env.NEXT_PUBLIC_FUNNEL_PAYMENT_PREVIEW_EMAIL?.trim() ||
+      null;
+    if (!email) return null;
+
+    const amount = parseAmountEnv(
+      process.env.NEXT_PUBLIC_FUNNEL_PAYMENT_AMOUNT,
+      2000,
+    );
+    const applicationFeeAmount = parseFeeEnv(
+      process.env.NEXT_PUBLIC_FUNNEL_PAYMENT_APPLICATION_FEE,
+      200,
+    );
+    const currency =
+      process.env.NEXT_PUBLIC_FUNNEL_PAYMENT_CURRENCY?.trim().toLowerCase() ||
+      "usd";
+
+    const funnelId =
+      _campaignId != null && Number.isFinite(_campaignId) && _campaignId >= 1
+        ? _campaignId
+        : 11;
+
+    return {
+      funnelId,
+      restaurantId: previewRestaurantId,
+      amount,
+      applicationFeeAmount,
+      currency,
+      customerEmail: email,
+    };
+  }, [
+    interactivePreview,
+    previewRestaurantId,
+    _campaignId,
+    activeId,
+  ]);
 
   const pageList = useMemo(
     () =>
@@ -314,6 +394,7 @@ export function CrmTemplateEditor({
               signupNextHref={previewSignupNextHref}
               signupBackHref={previewSignupBackHref}
               editorStepPreviewChrome
+              paymentStripeCheckout={paymentStripeCheckout}
             />
           </div>
         </main>

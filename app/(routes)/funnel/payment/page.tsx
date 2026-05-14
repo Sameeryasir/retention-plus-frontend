@@ -1,11 +1,48 @@
 "use client";
 
+import { Suspense, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { CrmTemplateEditor } from "@/app/components/crm-template-editor/CrmTemplateEditor";
+
+function parsePositiveIntParam(raw: string | null): number | undefined {
+  if (raw == null || raw.trim() === "") return undefined;
+  const n = Number.parseInt(raw.trim(), 10);
+  return Number.isFinite(n) && n >= 1 ? n : undefined;
+}
+
+function FunnelPaymentPreviewInner() {
+  const searchParams = useSearchParams();
+  const restaurantId = useMemo(
+    () => parsePositiveIntParam(searchParams.get("restaurantId")),
+    [searchParams],
+  );
+  const campaignId = useMemo(
+    () => parsePositiveIntParam(searchParams.get("campaignId")),
+    [searchParams],
+  );
+
+  return (
+    <div className="h-dvh min-h-0 w-full">
+      <CrmTemplateEditor
+        initialPageId="payment"
+        interactivePreview
+        restaurantId={restaurantId}
+        campaignId={campaignId}
+      />
+    </div>
+  );
+}
 
 export default function Page() {
   return (
-    <div className="h-dvh min-h-0 w-full">
-      <CrmTemplateEditor initialPageId="payment" interactivePreview />
-    </div>
+    <Suspense
+      fallback={
+        <div className="flex h-dvh items-center justify-center bg-zinc-100 text-sm text-zinc-500">
+          Loading…
+        </div>
+      }
+    >
+      <FunnelPaymentPreviewInner />
+    </Suspense>
   );
 }

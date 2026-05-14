@@ -3,6 +3,10 @@
 import type { HTMLAttributes } from "react";
 import { useId } from "react";
 import { CreditCard, Mail, User } from "lucide-react";
+import {
+  FunnelStripePaymentForm,
+  type FunnelStripePaymentContext,
+} from "@/app/components/funnel/FunnelStripePaymentForm";
 import { getFormFieldStyles } from "@/app/components/crm-template-editor/form-design-registry";
 import {
   imageScaleStyle,
@@ -68,13 +72,16 @@ export function PaymentPagePreview({
   page,
   landingPage,
   interactive = false,
+  stripeCheckout = null,
 }: {
   page: TemplatePage;
   landingPage: TemplatePage;
   interactive?: boolean;
+  stripeCheckout?: FunnelStripePaymentContext | null;
 }) {
   const p = page as PaymentTemplatePage;
   const design = p.formDesign;
+  const stripeMode = Boolean(interactive && stripeCheckout);
   const { label: cardLabelCls, field: cardFieldCls } = getFormFieldStyles(design);
   const intro =
     p.subheading?.trim() ||
@@ -171,14 +178,18 @@ export function PaymentPagePreview({
           <CheckoutFieldRow
             design={design}
             label="Email"
-            interactive={interactive}
+            interactive={interactive && !stripeMode}
             inputName="contactEmail"
             type="email"
             placeholder={emailPh}
             autoComplete="email"
           >
             <Mail className="size-4 shrink-0 text-zinc-400" strokeWidth={2} />
-            <span className="min-w-0 truncate">{emailPh}</span>
+            <span className="min-w-0 truncate">
+              {stripeMode && stripeCheckout
+                ? stripeCheckout.customerEmail
+                : emailPh}
+            </span>
           </CheckoutFieldRow>
           <CheckoutFieldRow
             design={design}
@@ -213,91 +224,97 @@ export function PaymentPagePreview({
         <p className="mb-3 text-xs font-semibold tracking-tight text-zinc-800">
           {p.paymentMethodSectionTitle || "Payment method"}
         </p>
-        <div className="space-y-4">
-          <div className="min-w-0 text-left">
-            <label htmlFor={cardInputId} className={cardLabelCls}>
-              Card number
-            </label>
-            {interactive ? (
-              <div
-                className={`${cardShell} border-0 outline-none ring-0 focus-within:ring-2 focus-within:ring-zinc-900/15`}
-              >
-                <CreditCard
-                  className="size-4 shrink-0 text-zinc-400"
-                  strokeWidth={2}
+        {stripeMode && stripeCheckout ? (
+          <FunnelStripePaymentForm context={stripeCheckout} />
+        ) : (
+          <div className="space-y-4">
+            <div className="min-w-0 text-left">
+              <label htmlFor={cardInputId} className={cardLabelCls}>
+                Card number
+              </label>
+              {interactive ? (
+                <div
+                  className={`${cardShell} border-0 outline-none ring-0 focus-within:ring-2 focus-within:ring-zinc-900/15`}
+                >
+                  <CreditCard
+                    className="size-4 shrink-0 text-zinc-400"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                  <input
+                    id={cardInputId}
+                    name="cardNumber"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="cc-number"
+                    placeholder={cardPh}
+                    className="min-w-0 flex-1 border-0 bg-transparent text-sm text-zinc-900 outline-none placeholder:text-zinc-400"
+                  />
+                  <span className="shrink-0 rounded-lg border border-zinc-200/95 bg-white px-2 py-0.5 text-[0.55rem] font-bold italic text-zinc-600 shadow-sm">
+                    {p.paymentCardBrandLabel || "Visa"}
+                  </span>
+                </div>
+              ) : (
+                <div
+                  className={`flex w-full min-h-10 items-center justify-between gap-2 px-3 text-sm text-zinc-400 ${cardFieldCls}`}
                   aria-hidden
-                />
-                <input
-                  id={cardInputId}
-                  name="cardNumber"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="cc-number"
-                  placeholder={cardPh}
-                  className="min-w-0 flex-1 border-0 bg-transparent text-sm text-zinc-900 outline-none placeholder:text-zinc-400"
-                />
-                <span className="shrink-0 rounded-lg border border-zinc-200/95 bg-white px-2 py-0.5 text-[0.55rem] font-bold italic text-zinc-600 shadow-sm">
-                  {p.paymentCardBrandLabel || "Visa"}
-                </span>
-              </div>
-            ) : (
-              <div
-                className={`flex w-full min-h-10 items-center justify-between gap-2 px-3 text-sm text-zinc-400 ${cardFieldCls}`}
-                aria-hidden
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <CreditCard className="size-4 shrink-0 text-zinc-400" strokeWidth={2} />
+                    <span className="truncate">{cardPh}</span>
+                  </span>
+                  <span className="shrink-0 rounded-lg border border-zinc-200/95 bg-white px-2 py-0.5 text-[0.55rem] font-bold italic text-zinc-600 shadow-sm">
+                    {p.paymentCardBrandLabel || "Visa"}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <CheckoutFieldRow
+                design={design}
+                label="Expiry"
+                interactive={interactive}
+                inputName="cardExpiry"
+                placeholder={expPh}
+                autoComplete="cc-exp"
+                inputMode="numeric"
               >
-                <span className="flex min-w-0 items-center gap-2">
-                  <CreditCard className="size-4 shrink-0 text-zinc-400" strokeWidth={2} />
-                  <span className="truncate">{cardPh}</span>
-                </span>
-                <span className="shrink-0 rounded-lg border border-zinc-200/95 bg-white px-2 py-0.5 text-[0.55rem] font-bold italic text-zinc-600 shadow-sm">
-                  {p.paymentCardBrandLabel || "Visa"}
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+                <span>{expPh}</span>
+              </CheckoutFieldRow>
+              <CheckoutFieldRow
+                design={design}
+                label="CVC"
+                interactive={interactive}
+                inputName="cardCvc"
+                placeholder={cvcPh}
+                autoComplete="cc-csc"
+                inputMode="numeric"
+              >
+                <span>{cvcPh}</span>
+              </CheckoutFieldRow>
+            </div>
             <CheckoutFieldRow
               design={design}
-              label="Expiry"
+              label="Name on card"
               interactive={interactive}
-              inputName="cardExpiry"
-              placeholder={expPh}
-              autoComplete="cc-exp"
-              inputMode="numeric"
+              inputName="cardName"
+              placeholder={nameOnCardPh}
+              autoComplete="cc-name"
             >
-              <span>{expPh}</span>
-            </CheckoutFieldRow>
-            <CheckoutFieldRow
-              design={design}
-              label="CVC"
-              interactive={interactive}
-              inputName="cardCvc"
-              placeholder={cvcPh}
-              autoComplete="cc-csc"
-              inputMode="numeric"
-            >
-              <span>{cvcPh}</span>
+              <span className="min-w-0 truncate">{nameOnCardPh}</span>
             </CheckoutFieldRow>
           </div>
-          <CheckoutFieldRow
-            design={design}
-            label="Name on card"
-            interactive={interactive}
-            inputName="cardName"
-            placeholder={nameOnCardPh}
-            autoComplete="cc-name"
-          >
-            <span className="min-w-0 truncate">{nameOnCardPh}</span>
-          </CheckoutFieldRow>
-        </div>
+        )}
       </div>
 
-      <button
-        type={interactive ? "submit" : "button"}
-        className="mt-2 w-full cursor-pointer rounded-lg bg-zinc-900 py-3 text-sm font-semibold text-white shadow-sm"
-      >
-        {submitLabel}
-      </button>
+      {!stripeMode ? (
+        <button
+          type={interactive ? "submit" : "button"}
+          className="mt-2 w-full cursor-pointer rounded-lg bg-zinc-900 py-3 text-sm font-semibold text-white shadow-sm"
+        >
+          {submitLabel}
+        </button>
+      ) : null}
 
       <p className="pt-1 text-center text-[0.65rem] text-zinc-500">
         {p.paymentFooterText?.trim() ? (
@@ -312,6 +329,10 @@ export function PaymentPagePreview({
   );
 
   if (!interactive) return body;
+
+  if (stripeMode) {
+    return body;
+  }
 
   return (
     <form

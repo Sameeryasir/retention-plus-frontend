@@ -1,12 +1,19 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { useFunnelTemplatePagesFromStorage } from "@/app/components/crm-template-editor/funnel-template-storage";
 import { TemplatePreview } from "@/app/components/crm-template-editor/TemplatePreview";
 
-export default function FunnelCampaignSignupPage() {
+function buildPaymentHref(campaignId: string, restaurantId: string | null) {
+  const path = `/funnel/${encodeURIComponent(campaignId)}/payment`;
+  if (!restaurantId?.trim()) return path;
+  return `${path}?restaurantId=${encodeURIComponent(restaurantId.trim())}`;
+}
+
+function FunnelCampaignSignupInner() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const campaignId = useMemo(() => {
     const raw = params.campaignId;
     if (typeof raw === "string" && raw.length > 0) return raw;
@@ -14,11 +21,17 @@ export default function FunnelCampaignSignupPage() {
     return "";
   }, [params.campaignId]);
 
+  const restaurantForPayment = useMemo(() => {
+    const q = searchParams.get("restaurantId")?.trim();
+    if (q) return q;
+    return process.env.NEXT_PUBLIC_FUNNEL_PAYMENT_RESTAURANT_ID?.trim() ?? null;
+  }, [searchParams]);
+
   const pages = useFunnelTemplatePagesFromStorage(campaignId);
   const signup = pages.signup;
   const landing = pages.landing;
   const signupNextHref = campaignId
-    ? `/funnel/${encodeURIComponent(campaignId)}/payment`
+    ? buildPaymentHref(campaignId, restaurantForPayment)
     : undefined;
   const signupBackHref = campaignId
     ? `/funnel/${encodeURIComponent(campaignId)}/landing`
@@ -41,5 +54,19 @@ export default function FunnelCampaignSignupPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function FunnelCampaignSignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-dvh items-center justify-center bg-zinc-100 text-sm text-zinc-500">
+          Loading…
+        </div>
+      }
+    >
+      <FunnelCampaignSignupInner />
+    </Suspense>
   );
 }
