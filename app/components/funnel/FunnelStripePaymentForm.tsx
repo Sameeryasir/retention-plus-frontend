@@ -11,7 +11,6 @@ import { createPaymentIntent } from "@/app/services/payment/create-payment-inten
 export type FunnelStripePaymentContext = {
   funnelId: number;
   restaurantId: number;
-  amount: number;
   applicationFeeAmount: number;
   currency: string;
   customerEmail: string;
@@ -48,7 +47,6 @@ export function FunnelStripePaymentForm({
   }, [
     context.funnelId,
     context.restaurantId,
-    context.amount,
     context.applicationFeeAmount,
     context.currency,
     context.customerEmail,
@@ -63,7 +61,6 @@ export function FunnelStripePaymentForm({
         {
           funnelId: context.funnelId,
           restaurantId: context.restaurantId,
-          amount: context.amount,
           applicationFeeAmount: context.applicationFeeAmount,
           currency: context.currency,
           customerEmail: context.customerEmail,

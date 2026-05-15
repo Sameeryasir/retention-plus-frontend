@@ -57,8 +57,6 @@ function FunnelCampaignPaymentPageInner() {
     const restaurantId = fromQuery ?? fromEnv;
     if (restaurantId == null) return null;
 
-    const amount =
-      parsePositiveInt(searchParams.get("amount")) ?? 2000;
     const applicationFeeAmount =
       parsePositiveInt(searchParams.get("applicationFeeAmount")) ?? 200;
     const currency =
@@ -67,7 +65,6 @@ function FunnelCampaignPaymentPageInner() {
     return {
       funnelId,
       restaurantId,
-      amount,
       applicationFeeAmount,
       currency,
       customerEmail: email,

@@ -6,7 +6,6 @@ const PAYMENT_INTENT_FUNNEL_ID = 11;
 export type CreatePaymentIntentPayload = {
   funnelId?: number;
   restaurantId: number;
-  amount: number;
   applicationFeeAmount: number;
   currency: string;
   customerEmail: string;
@@ -38,9 +37,6 @@ export async function createPaymentIntent(
   if (!Number.isFinite(payload.restaurantId) || payload.restaurantId < 1) {
     throw new Error("Restaurant is required.");
   }
-  if (!Number.isFinite(payload.amount) || payload.amount < 1) {
-    throw new Error("Amount is required.");
-  }
   if (
     !Number.isFinite(payload.applicationFeeAmount) ||
     payload.applicationFeeAmount < 0
@@ -64,7 +60,6 @@ export async function createPaymentIntent(
   const body: Record<string, unknown> = {
     funnelId: PAYMENT_INTENT_FUNNEL_ID,
     restaurantId: payload.restaurantId,
-    amount: payload.amount,
     applicationFeeAmount: payload.applicationFeeAmount,
     currency: payload.currency.trim().toLowerCase(),
     customerEmail: payload.customerEmail.trim(),

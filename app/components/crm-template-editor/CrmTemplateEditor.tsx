@@ -29,12 +29,6 @@ function clonePages(): TemplatePagesState {
   return JSON.parse(JSON.stringify(INITIAL_TEMPLATE_PAGES)) as TemplatePagesState;
 }
 
-function parseAmountEnv(raw: string | undefined, fallback: number): number {
-  if (raw == null || raw === "") return fallback;
-  const n = Number.parseInt(raw, 10);
-  return Number.isFinite(n) && n >= 1 ? n : fallback;
-}
-
 function parseFeeEnv(raw: string | undefined, fallback: number): number {
   if (raw == null || raw === "") return fallback;
   const n = Number.parseInt(raw, 10);
@@ -167,10 +161,6 @@ export function CrmTemplateEditor({
       null;
     if (!email) return null;
 
-    const amount = parseAmountEnv(
-      process.env.NEXT_PUBLIC_FUNNEL_PAYMENT_AMOUNT,
-      2000,
-    );
     const applicationFeeAmount = parseFeeEnv(
       process.env.NEXT_PUBLIC_FUNNEL_PAYMENT_APPLICATION_FEE,
       200,
@@ -187,7 +177,6 @@ export function CrmTemplateEditor({
     return {
       funnelId,
       restaurantId: previewRestaurantId,
-      amount,
       applicationFeeAmount,
       currency,
       customerEmail: email,
