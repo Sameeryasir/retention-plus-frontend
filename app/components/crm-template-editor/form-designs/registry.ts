@@ -4,12 +4,16 @@ import { formDesignStylesBatchC } from "@/app/components/crm-template-editor/for
 import { formDesignStylesBatchD } from "@/app/components/crm-template-editor/form-designs/styles/batch-d";
 import type { FormDesign, FormDesignStyle } from "@/app/components/crm-template-editor/form-designs/types";
 
-export const FORM_DESIGN_STYLES = {
+
+const FORM_DESIGN_STYLES_MERGED = {
   ...formDesignStylesBatchA,
   ...formDesignStylesBatchB,
   ...formDesignStylesBatchC,
   ...formDesignStylesBatchD,
-} satisfies Record<FormDesign, FormDesignStyle>;
+};
+
+export const FORM_DESIGN_STYLES =
+  FORM_DESIGN_STYLES_MERGED as Record<FormDesign, FormDesignStyle>;
 
 export function getFormDesignStyle(design: FormDesign): FormDesignStyle {
   return FORM_DESIGN_STYLES[design];
