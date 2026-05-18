@@ -6,7 +6,9 @@ import { Elements } from "@stripe/react-stripe-js";
 import { Loader2 } from "lucide-react";
 import { CheckoutForm } from "@/app/components/funnel/CheckoutForm";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
+import { setFunnelPaymentId } from "@/app/lib/funnel-checkout-storage";
 import { createPaymentIntent } from "@/app/services/payment/create-payment-intent";
+import { isPositiveInt } from "@/app/lib/numbers";
 
 export type FunnelStripePaymentContext = {
   funnelId: number;
@@ -72,6 +74,9 @@ export function FunnelStripePaymentForm({
         throw new Error(
           "The server did not return a payment session. Please try again.",
         );
+      }
+      if (isPositiveInt(res.paymentId)) {
+        setFunnelPaymentId(res.paymentId);
       }
       setClientSecret(secret);
       setStripeAccountId(res.stripeAccountId?.trim() ?? null);
@@ -139,7 +144,7 @@ export function FunnelStripePaymentForm({
         appearance: { theme: "stripe", variables: { borderRadius: "8px" } },
       }}
     >
-      <CheckoutForm />
+      <CheckoutForm funnelId={context.funnelId} />
     </Elements>
   );
 }

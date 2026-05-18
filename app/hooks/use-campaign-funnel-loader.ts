@@ -13,6 +13,7 @@ import type { TemplatePagesState } from "@/app/components/crm-template-editor/te
 
 export type CampaignFunnelLoaderState = {
   pages: TemplatePagesState;
+  pagesBaseline: TemplatePagesState;
   funnelId: number | null;
   isLoading: boolean;
   loadError: string | null;
@@ -21,11 +22,16 @@ export type CampaignFunnelLoaderState = {
 
 const IDLE: CampaignFunnelLoaderState = {
   pages: cloneTemplatePages(),
+  pagesBaseline: cloneTemplatePages(),
   funnelId: null,
   isLoading: false,
   loadError: null,
   isHydrated: true,
 };
+
+function clonePages(pages: TemplatePagesState): TemplatePagesState {
+  return JSON.parse(JSON.stringify(pages)) as TemplatePagesState;
+}
 
 export function useCampaignFunnelLoader(
   campaignId: number | undefined,
@@ -53,19 +59,26 @@ export function useCampaignFunnelLoader(
     let funnelId: number | null = null;
     let loadError: string | null = null;
 
-    let loadedFrom: "api" | "indexeddb" | "defaults" = "defaults";
+    const local = await loadFunnelTemplatePagesAsync(String(id));
+    if (local) {
+      pages = local;
+    }
+
+    let loadedFrom: "api" | "indexeddb" | "defaults" = local
+      ? "indexeddb"
+      : "defaults";
 
     if (token) {
       try {
-        const result = await loadTemplatePagesForCampaign(id, token);
+        const result = await loadTemplatePagesForCampaign(id, token, pages);
         pages = result.pages;
         funnelId = result.funnelId;
-        loadedFrom = result.fromApi ? "api" : "defaults";
+        loadedFrom = result.fromApi ? "api" : loadedFrom;
 
         console.group("[Funnel Editor] Loaded from API → syncing to IndexedDB");
         console.log("campaignId:", id);
         console.log("funnelId:", funnelId);
-        console.log("had pages in DB:", result.fromApi);
+        console.log("api page keys:", result.apiPageKeys);
         console.log("pages shown in editor:", pages);
         console.groupEnd();
 
@@ -77,9 +90,9 @@ export function useCampaignFunnelLoader(
       } catch (e) {
         loadError =
           e instanceof Error ? e.message : "Could not load funnel from server.";
-        const local = await loadFunnelTemplatePagesAsync(String(id));
-        if (local) {
-          pages = local;
+        const cached = await loadFunnelTemplatePagesAsync(String(id));
+        if (cached) {
+          pages = cached;
           loadedFrom = "indexeddb";
         }
         console.warn("[Funnel Editor] API failed, using IndexedDB cache", {
@@ -89,7 +102,6 @@ export function useCampaignFunnelLoader(
         });
       }
     } else {
-      const local = await loadFunnelTemplatePagesAsync(String(id));
       if (local) {
         pages = local;
         loadedFrom = "indexeddb";
@@ -112,6 +124,7 @@ export function useCampaignFunnelLoader(
 
     setState({
       pages,
+      pagesBaseline: clonePages(pages),
       funnelId,
       isLoading: false,
       loadError,

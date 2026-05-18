@@ -2,8 +2,49 @@
 
 import Link from "next/link";
 import { Check } from "lucide-react";
+import { Suspense, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  getFunnelCheckoutCustomerId,
+  getFunnelCheckoutFunnelId,
+  getFunnelPaymentId,
+} from "@/app/lib/funnel-checkout-storage";
+import { getOrCreateVisitorId } from "@/app/lib/funnel-visitor-id";
+import { parsePositiveInt } from "@/app/lib/numbers";
+import { trackFunnelEvent } from "@/app/services/funnel/track-funnel-event";
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessInner() {
+  const searchParams = useSearchParams();
+  const trackedRef = useRef(false);
+
+  useEffect(() => {
+    getOrCreateVisitorId();
+
+    const redirectStatus = searchParams.get("redirect_status");
+    if (redirectStatus !== "succeeded") return;
+    if (trackedRef.current) return;
+    trackedRef.current = true;
+
+    const funnelId =
+      parsePositiveInt(searchParams.get("funnelId")) ??
+      getFunnelCheckoutFunnelId();
+    const funnelPaymentId = getFunnelPaymentId();
+    const customerId = getFunnelCheckoutCustomerId();
+
+    if (funnelId == null || funnelPaymentId == null) return;
+
+    void trackFunnelEvent({
+      eventType: "payment",
+      funnelId,
+      funnelPaymentId,
+      paymentStatus: "paid",
+      visitorId: getOrCreateVisitorId(),
+      ...(customerId != null ? { customerId } : {}),
+    }).catch((err) => {
+      console.warn("[Funnel] payment track failed", err);
+    });
+  }, [searchParams]);
+
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-zinc-100 px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
@@ -25,5 +66,19 @@ export default function PaymentSuccessPage() {
         </Link>
       </div>
     </main>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-dvh items-center justify-center bg-zinc-100 text-sm text-zinc-500">
+          Loading…
+        </div>
+      }
+    >
+      <PaymentSuccessInner />
+    </Suspense>
   );
 }

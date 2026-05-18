@@ -4,13 +4,36 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { Loader2 } from "lucide-react";
+import {
+  getFunnelCheckoutCustomerId,
+  getFunnelPaymentId,
+} from "@/app/lib/funnel-checkout-storage";
+import { getOrCreateVisitorId } from "@/app/lib/funnel-visitor-id";
+import { trackFunnelEvent } from "@/app/services/funnel/track-funnel-event";
 
 export type CheckoutFormProps = {
   submitLabel?: string;
+  funnelId: number;
 };
+
+async function trackPaymentSuccess(funnelId: number): Promise<void> {
+  const funnelPaymentId = getFunnelPaymentId();
+  if (funnelPaymentId == null) return;
+
+  const customerId = getFunnelCheckoutCustomerId();
+  await trackFunnelEvent({
+    eventType: "payment",
+    funnelId,
+    funnelPaymentId,
+    paymentStatus: "paid",
+    visitorId: getOrCreateVisitorId(),
+    ...(customerId != null ? { customerId } : {}),
+  });
+}
 
 export function CheckoutForm({
   submitLabel = "Complete Payment",
+  funnelId,
 }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -24,14 +47,29 @@ export function CheckoutForm({
 
     setBusy(true);
     try {
-      const { error } = await stripe.confirmPayment({
+      const returnUrl = new URL("/payment/success", window.location.origin);
+      returnUrl.searchParams.set("funnelId", String(funnelId));
+
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/payment/success`,
+          return_url: returnUrl.toString(),
         },
+        redirect: "if_required",
       });
+
       if (error?.message) {
         setFormError(error.message);
+        return;
+      }
+
+      if (paymentIntent?.status === "succeeded") {
+        try {
+          await trackPaymentSuccess(funnelId);
+        } catch (trackErr) {
+          console.warn("[Funnel] payment track failed", trackErr);
+        }
+        window.location.href = `${returnUrl.toString()}&redirect_status=succeeded`;
       }
     } finally {
       setBusy(false);

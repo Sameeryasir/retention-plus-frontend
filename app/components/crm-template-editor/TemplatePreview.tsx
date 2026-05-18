@@ -14,7 +14,12 @@ import {
 } from "@/app/components/crm-template-editor/template-image";
 import type { SignUpTemplatePage, TemplatePage } from "@/app/components/crm-template-editor/template-types";
 import { createCustomer } from "@/app/services/customer/create-customer";
-import { setFunnelCheckoutEmail } from "@/app/lib/funnel-checkout-storage";
+import {
+  setFunnelCheckoutCustomerId,
+  setFunnelCheckoutEmail,
+} from "@/app/lib/funnel-checkout-storage";
+import { getOrCreateVisitorId } from "@/app/lib/funnel-visitor-id";
+import { trackFunnelEvent } from "@/app/services/funnel/track-funnel-event";
 import type { FunnelStripePaymentContext } from "@/app/components/funnel/FunnelStripePaymentForm";
 
 function layoutShellClass(_layoutType: string) {
@@ -112,6 +117,7 @@ export function TemplatePreview({
   submitCustomerOnSignupNext = false,
   editorStepPreviewChrome = false,
   paymentStripeCheckout = null,
+  trackingFunnelId = null,
 }: {
   page: TemplatePage;
   landingPage: TemplatePage;
@@ -122,6 +128,7 @@ export function TemplatePreview({
   submitCustomerOnSignupNext?: boolean;
   editorStepPreviewChrome?: boolean;
   paymentStripeCheckout?: FunnelStripePaymentContext | null;
+  trackingFunnelId?: number | null;
 }) {
   const router = useRouter();
   const [signupSubmitting, setSignupSubmitting] = useState(false);
@@ -182,8 +189,23 @@ export function TemplatePreview({
       }
       setSignupSubmitting(true);
       try {
-        await createCustomer({ name, email });
+        const customer = await createCustomer({ name, email });
         setFunnelCheckoutEmail(email);
+        setFunnelCheckoutCustomerId(customer.id);
+
+        if (trackingFunnelId != null && trackingFunnelId >= 1) {
+          try {
+            await trackFunnelEvent({
+              eventType: "signup",
+              funnelId: trackingFunnelId,
+              customerId: customer.id,
+              visitorId: getOrCreateVisitorId(),
+            });
+          } catch (trackErr) {
+            console.warn("[Funnel] signup track failed", trackErr);
+          }
+        }
+
         toast.success("You're all set — continuing to payment.", {
           duration: 2400,
         });
@@ -199,7 +221,7 @@ export function TemplatePreview({
         setSignupSubmitting(false);
       }
     },
-    [signupSubmitFlow, signupNextAsLink, router],
+    [signupSubmitFlow, signupNextAsLink, router, trackingFunnelId],
   );
 
   const withSurface = (alignClass: string, children: React.ReactNode) => (

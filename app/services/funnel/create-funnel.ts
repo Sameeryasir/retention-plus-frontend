@@ -206,13 +206,13 @@ function buildConfirmationPayload(
 export function buildCreateFunnelRequestBody(
   campaignId: number,
   pages: TemplatePagesState,
-  includePageIds?: TemplatePageId[],
 ): CreateFunnelRequestBody {
-  const include = new Set<TemplatePageId>(
-    includePageIds && includePageIds.length > 0
-      ? includePageIds
-      : (["landing", "signup", "payment", "confirmation"] as TemplatePageId[]),
-  );
+  const include = new Set<TemplatePageId>([
+    "landing",
+    "signup",
+    "payment",
+    "confirmation",
+  ]);
 
   const out: CreateFunnelPagesPayload = {};
   if (include.has("landing")) {

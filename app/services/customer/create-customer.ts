@@ -5,9 +5,32 @@ export type CreateCustomerPayload = {
   email: string;
 };
 
+export type CreateCustomerResponse = {
+  id: number;
+};
+
+function readCustomerId(data: unknown): number {
+  if (!data || typeof data !== "object") {
+    throw new Error("Invalid customer response from server.");
+  }
+  const o = data as Record<string, unknown>;
+  const id =
+    typeof o.id === "number"
+      ? o.id
+      : typeof o.customer === "object" &&
+          o.customer !== null &&
+          typeof (o.customer as { id?: unknown }).id === "number"
+        ? (o.customer as { id: number }).id
+        : null;
+  if (id == null || !Number.isFinite(id) || id < 1) {
+    throw new Error("Invalid customer response from server.");
+  }
+  return id;
+}
+
 export async function createCustomer(
   payload: CreateCustomerPayload,
-): Promise<unknown> {
+): Promise<CreateCustomerResponse> {
   if (!payload.name?.trim()) {
     throw new Error("Name is required.");
   }
@@ -30,5 +53,6 @@ export async function createCustomer(
     throw new Error(await parseApiErrorMessage(res, "Could not create customer."));
   }
 
-  return res.json() as Promise<unknown>;
+  const json: unknown = await res.json();
+  return { id: readCustomerId(json) };
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { FunnelOrdersPanel } from "@/app/components/campaign/FunnelOrdersPanel";
+import { FunnelOverviewPanel } from "@/app/components/campaign/FunnelOverviewPanel";
 import { CrmTemplateEditor } from "@/app/components/crm-template-editor/CrmTemplateEditor";
 import CampaignHeader from "@/app/components/CampaignHeader";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
@@ -33,7 +35,8 @@ export default function CampaignWelcomePage() {
     undefined,
   );
   const [activeTabId, setActiveTabId] = useState("overview");
-  const funnelId = useCampaignFunnelId(campaignId);
+  const { funnelId, isLoading: isFunnelIdLoading } =
+    useCampaignFunnelId(campaignId);
 
   useEffect(() => {
     if (restaurantId == null || campaignId == null) return;
@@ -90,6 +93,18 @@ export default function CampaignWelcomePage() {
             campaignName={campaign?.campaignName}
           />
         </div>
+      ) : activeTabId === "overview" ? (
+        <FunnelOverviewPanel
+          campaignName={campaign?.campaignName}
+          price={campaign?.price}
+          funnelId={funnelId}
+          isFunnelIdLoading={isFunnelIdLoading}
+        />
+      ) : activeTabId === "orders" ? (
+        <FunnelOrdersPanel
+          funnelId={funnelId}
+          isFunnelIdLoading={isFunnelIdLoading}
+        />
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
           <p className="text-center text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">

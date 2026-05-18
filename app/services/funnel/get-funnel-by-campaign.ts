@@ -43,6 +43,7 @@ export type CampaignFunnelLoadResult = {
   pages: TemplatePagesState;
   funnelId: number | null;
   fromApi: boolean;
+  apiPageKeys: (keyof NonNullable<FunnelByCampaignResponse["pages"]>)[];
 };
 
 type FunnelPageCommonPayload = Pick<
@@ -174,6 +175,40 @@ export function mapFunnelApiPagesToTemplateState(
   return base;
 }
 
+export function mergeApiPagesIntoTemplateState(
+  base: TemplatePagesState,
+  apiPages: NonNullable<FunnelByCampaignResponse["pages"]>,
+): TemplatePagesState {
+  const mapped = mapFunnelApiPagesToTemplateState(apiPages);
+  const next: TemplatePagesState = {
+    landing: base.landing,
+    signup: base.signup,
+    payment: base.payment,
+    confirmation: base.confirmation,
+  };
+
+  if (apiPages.landing) {
+    next.landing = mapped.landing;
+  }
+  if (apiPages.signup) {
+    next.signup = mapped.signup as SignUpTemplatePage;
+  }
+  if (apiPages.payment) {
+    next.payment = mapped.payment as PaymentTemplatePage;
+  }
+  if (apiPages.confirmation) {
+    next.confirmation = mapped.confirmation;
+  }
+
+  if (apiPages.landing && next.landing.imageUrl) {
+    const { imageUrl, imageScale } = next.landing;
+    next.signup = { ...next.signup, imageUrl, imageScale };
+    next.payment = { ...next.payment, imageUrl, imageScale };
+  }
+
+  return next;
+}
+
 const funnelIdByCampaignCache = new Map<number, number>();
 
 function readFunnelId(
@@ -242,21 +277,31 @@ export async function fetchFunnelByCampaignId(
 export async function loadTemplatePagesForCampaign(
   campaignId: number,
   accessToken: string,
+  baseline?: TemplatePagesState | null,
 ): Promise<CampaignFunnelLoadResult> {
+  const start = baseline ?? cloneTemplatePages();
   const remote = await fetchFunnelByCampaignId(accessToken, campaignId);
   const funnelId = readFunnelId(campaignId, remote);
 
-  if (remote?.pages && Object.keys(remote.pages).length > 0) {
+  const apiPageKeys = remote?.pages
+    ? (Object.keys(remote.pages) as (keyof NonNullable<
+        FunnelByCampaignResponse["pages"]
+      >)[])
+    : [];
+
+  if (remote?.pages && apiPageKeys.length > 0) {
     return {
-      pages: mapFunnelApiPagesToTemplateState(remote.pages),
+      pages: mergeApiPagesIntoTemplateState(start, remote.pages),
       funnelId,
       fromApi: true,
+      apiPageKeys,
     };
   }
 
   return {
-    pages: cloneTemplatePages(),
+    pages: start,
     funnelId,
     fromApi: false,
+    apiPageKeys: [],
   };
 }

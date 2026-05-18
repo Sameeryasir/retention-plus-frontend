@@ -17,6 +17,7 @@ import { getFunnelCheckoutEmail } from "@/app/lib/funnel-checkout-storage";
 import { parseNonNegativeInt, parsePositiveInt } from "@/app/lib/numbers";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
 import type { FunnelStripePaymentContext } from "@/app/components/funnel/FunnelStripePaymentForm";
+import { mergePagesForSave } from "@/app/lib/merge-funnel-pages";
 import {
   buildCreateFunnelRequestBody,
   createFunnel,
@@ -50,8 +51,13 @@ export function CrmTemplateEditor({
   interactivePreview = false,
 }: CrmTemplateEditorProps) {
   const funnelLoader = useCampaignFunnelLoader(campaignId);
-  const { funnelId, isLoading: isLoadingFunnel, loadError, isHydrated } =
-    funnelLoader;
+  const {
+    funnelId,
+    isLoading: isLoadingFunnel,
+    loadError,
+    isHydrated,
+    pagesBaseline,
+  } = funnelLoader;
 
   const {
     present: pages,
@@ -102,9 +108,10 @@ export function CrmTemplateEditor({
     setSaveStatus("saving");
     setSaveError(null);
     try {
+      const pagesToSave = mergePagesForSave(pagesBaseline, pages);
       await createFunnel(
         token,
-        buildCreateFunnelRequestBody(campaignId, pages, [activeId]),
+        buildCreateFunnelRequestBody(campaignId, pagesToSave),
       );
       setSaveStatus("saved");
       setIsDirty(false);
@@ -115,7 +122,7 @@ export function CrmTemplateEditor({
       setSaveStatus("error");
       setSaveError(e instanceof Error ? e.message : "Could not save changes.");
     }
-  }, [campaignId, pages, activeId]);
+  }, [campaignId, pages, pagesBaseline]);
 
   useEditorKeyboardShortcuts({
     onSave: () => void handleSave(),

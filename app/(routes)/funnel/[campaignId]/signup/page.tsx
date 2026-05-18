@@ -44,6 +44,7 @@ function FunnelCampaignSignupInner() {
               signupBackHref={signupBackHref}
               interactiveForms
               submitCustomerOnSignupNext
+              trackingFunnelId={funnelId}
             />
           </div>
         </div>
