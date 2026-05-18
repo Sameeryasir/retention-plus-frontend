@@ -31,7 +31,7 @@ export function SettingsPanel({
 
   return (
     <aside
-      className={`hidden h-full min-h-0 flex-col border-l border-slate-200/90 bg-gradient-to-b from-white to-slate-50/80 lg:flex ${editorCardClass} !rounded-none !border-y-0 !border-r-0 !shadow-none`}
+      className={`hidden h-full min-h-0 flex-col overflow-hidden border-l border-slate-200/90 bg-gradient-to-b from-white to-slate-50/80 lg:flex ${editorCardClass} !rounded-none !border-y-0 !border-r-0 !shadow-none`}
     >
       <div className={editorPanelScrollClass}>
         <TemplateEditorSidebar page={page} onChange={onChange} />

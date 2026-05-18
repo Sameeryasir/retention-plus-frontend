@@ -7,7 +7,9 @@ export type TemplatePageId =
 export type FormFieldId = "firstName" | "lastName" | "email" | "phone";
 
 import type { FormDesign } from "@/app/components/crm-template-editor/form-designs/types";
-export type { FormDesign };
+import type { HeroDesign } from "@/app/components/crm-template-editor/hero-designs/types";
+import type { LandingDesign } from "@/app/components/crm-template-editor/landing-designs/types";
+export type { FormDesign, HeroDesign, LandingDesign };
 
 export interface TemplatePageBase {
   id: TemplatePageId;
@@ -50,8 +52,19 @@ export interface PaymentTemplatePage extends TemplatePageBase {
   paymentFooterText: string;
 }
 
+export type LandingTemplatePage = TemplatePageBase & {
+  id: "landing";
+  landingDesign: LandingDesign;
+  heroDesign: HeroDesign;
+  /** Empty string = use colors from the selected page design preset. */
+  headingColor: string;
+  subheadingColor: string;
+  bodyColor: string;
+  buttonTextColor: string;
+};
+
 export type TemplatePage =
-  | (TemplatePageBase & { id: "landing" })
+  | LandingTemplatePage
   | (TemplatePageBase & { id: "confirmation" })
   | SignUpTemplatePage
   | PaymentTemplatePage;
@@ -59,6 +72,17 @@ export type TemplatePage =
 export type TemplatePagesState = Record<TemplatePageId, TemplatePage>;
 
 export type TemplatePagePatch = Partial<Omit<TemplatePageBase, "id">> &
+  Partial<
+    Pick<
+      LandingTemplatePage,
+      | "landingDesign"
+      | "heroDesign"
+      | "headingColor"
+      | "subheadingColor"
+      | "bodyColor"
+      | "buttonTextColor"
+    >
+  > &
   Partial<
     Pick<
       SignUpTemplatePage,

@@ -7,12 +7,19 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formDesignHidesTopHero } from "@/app/components/crm-template-editor/form-design-registry";
 import { SignupFormFields } from "@/app/components/crm-template-editor/form-designs/SignupFormFields";
+import { LandingPagePreview } from "@/app/components/crm-template-editor/LandingPagePreview";
+import { normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
+import { normalizeLandingDesign } from "@/app/components/crm-template-editor/landing-designs/registry";
 import { PaymentPagePreview } from "@/app/components/crm-template-editor/PaymentPagePreview";
 import {
   imageScaleStyle,
   normalizeImageScale,
 } from "@/app/components/crm-template-editor/template-image";
-import type { SignUpTemplatePage, TemplatePage } from "@/app/components/crm-template-editor/template-types";
+import type {
+  LandingTemplatePage,
+  SignUpTemplatePage,
+  TemplatePage,
+} from "@/app/components/crm-template-editor/template-types";
 import { createCustomer } from "@/app/services/customer/create-customer";
 import {
   setFunnelCheckoutCustomerId,
@@ -239,6 +246,33 @@ export function TemplatePreview({
         interactive={interactiveForms}
         stripeCheckout={paymentStripeCheckout}
       />,
+    );
+  }
+
+  if (page.id === "landing") {
+    return (
+      <div className={shell}>
+        <div className={`overflow-hidden ${previewFrameClass}`}>
+          <LandingPagePreview
+            page={page}
+            layoutType={layoutType}
+            landingDesign={normalizeLandingDesign(
+              page.id === "landing"
+                ? (page as LandingTemplatePage).landingDesign
+                : undefined,
+            )}
+            heroDesign={normalizeHeroDesign(
+              page.id === "landing"
+                ? (page as LandingTemplatePage).heroDesign
+                : undefined,
+            )}
+            heroImageUrl={heroImageUrl}
+            heroImageScale={heroImageScale}
+            landingCtaHref={landingCtaAsLink}
+            showTopHero={showTopHero}
+          />
+        </div>
+      </div>
     );
   }
 

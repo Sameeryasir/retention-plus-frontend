@@ -1,4 +1,7 @@
 import { formDesignUsesSplitLayout } from "@/app/components/crm-template-editor/form-design-registry";
+import { normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
+import { normalizeLandingDesign } from "@/app/components/crm-template-editor/landing-designs/registry";
+import type { LandingTemplatePage } from "@/app/components/crm-template-editor/template-types";
 import type {
   FormFieldId,
   PaymentTemplatePage,
@@ -34,6 +37,12 @@ export type CreateFunnelLandingPagePayload = {
   heroImageScale: number;
   backgroundColor: string;
   layoutType: string;
+  landingPageDesign: string;
+  heroImageDesign: string;
+  headlineColor?: string;
+  subheadlineColor?: string;
+  bodyColor?: string;
+  ctaTextColor?: string;
 };
 
 export type CreateFunnelSignupPagePayload = {
@@ -113,7 +122,7 @@ function mapFormFields(ids: FormFieldId[]): CreateFunnelFormFieldId[] {
 }
 
 function buildLandingPayload(
-  page: TemplatePage,
+  page: LandingTemplatePage,
 ): CreateFunnelLandingPagePayload {
   return {
     id: "landing",
@@ -126,6 +135,12 @@ function buildLandingPayload(
     heroImageScale: page.imageScale,
     backgroundColor: page.backgroundColor,
     layoutType: page.layoutType,
+    landingPageDesign: normalizeLandingDesign(page.landingDesign),
+    heroImageDesign: normalizeHeroDesign(page.heroDesign),
+    headlineColor: page.headingColor?.trim() || undefined,
+    subheadlineColor: page.subheadingColor?.trim() || undefined,
+    bodyColor: page.bodyColor?.trim() || undefined,
+    ctaTextColor: page.buttonTextColor?.trim() || undefined,
   };
 }
 
@@ -216,7 +231,7 @@ export function buildCreateFunnelRequestBody(
 
   const out: CreateFunnelPagesPayload = {};
   if (include.has("landing")) {
-    out.landing = buildLandingPayload(pages.landing);
+    out.landing = buildLandingPayload(pages.landing as LandingTemplatePage);
   }
   if (include.has("signup")) {
     out.signup = buildSignupPayload(pages.signup as SignUpTemplatePage);

@@ -1,6 +1,8 @@
 "use client";
-import { type ChangeEvent, useCallback, useId, useState } from "react";
+import { type ChangeEvent, useCallback, useEffect, useId, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -17,11 +19,25 @@ import {
   ZoomIn,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ContentTextColorPicker } from "@/app/components/crm-template-editor/ContentTextColorPicker";
+import {
+  editorSidebarPickerPanelClass,
+  editorSidebarPickerScrollClass,
+} from "@/app/components/crm-template-editor/editor-layout";
 import { formDesignUsesSplitLayout } from "@/app/components/crm-template-editor/form-design-registry";
 import { FormDesignSwatch } from "@/app/components/crm-template-editor/form-designs/FormDesignSwatch";
+import { HeroDesignPickerOption } from "@/app/components/crm-template-editor/hero-designs/HeroDesignPickerOption";
+import { getHeroDesignStyle, normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
+import { LandingDesignPickerOption } from "@/app/components/crm-template-editor/landing-designs/LandingDesignPickerOption";
+import {
+  getLandingDesignStyle,
+  normalizeLandingDesign,
+} from "@/app/components/crm-template-editor/landing-designs/registry";
 import {
   FORM_DESIGN_OPTIONS,
   FORM_FIELD_OPTIONS,
+  HERO_DESIGN_OPTIONS,
+  LANDING_DESIGN_OPTIONS,
 } from "@/app/components/crm-template-editor/template-data";
 import {
   IMAGE_SCALE_MAX,
@@ -32,13 +48,16 @@ import {
 import type {
   FormDesign,
   FormFieldId,
+  HeroDesign,
+  LandingDesign,
+  LandingTemplatePage,
   PaymentTemplatePage,
   SignUpTemplatePage,
   TemplatePage,
   TemplatePagePatch,
 } from "@/app/components/crm-template-editor/template-types";
 
-type SectionId = "content" | "media" | "form";
+type SectionId = "content" | "media" | "form" | "appearance";
 
 const FORM_FIELD_ICONS: Record<FormFieldId, LucideIcon> = {
   firstName: User,
@@ -47,36 +66,29 @@ const FORM_FIELD_ICONS: Record<FormFieldId, LucideIcon> = {
   phone: Phone,
 };
 
-function defaultAccordionOpen(
-  pageId: TemplatePage["id"],
-): Partial<Record<SectionId, boolean>> {
-  if (pageId === "landing") {
-    return {
-      content: true,
-      media: false,
-      form: false,
-    };
-  }
-  if (pageId === "signup") {
-    return {
-      content: true,
-      media: false,
-      form: false,
-    };
-  }
-  if (pageId === "payment") {
-    return {
-      content: true,
-      media: false,
-      form: false,
-    };
-  }
-  return {
-    content: true,
-    media: false,
-    form: false,
-  };
+function defaultOpenSection(pageId: TemplatePage["id"]): SectionId | null {
+  if (pageId === "landing") return "appearance";
+  return "content";
 }
+
+const accordionEase = [0.22, 1, 0.36, 1] as const;
+
+/** Slower open/close so the sidebar accordion feels deliberate, not snappy. */
+const accordionPanelOpen = {
+  duration: 0.48,
+  delay: 0.1,
+  ease: accordionEase,
+} as const;
+const accordionPanelClose = {
+  duration: 0.4,
+  delay: 0.06,
+  ease: accordionEase,
+} as const;
+const accordionChevronTransition = {
+  duration: 0.42,
+  delay: 0.06,
+  ease: accordionEase,
+} as const;
 
 function AccordionSection({
   id,
@@ -96,12 +108,39 @@ function AccordionSection({
       <button
         type="button"
         onClick={() => onToggle(id)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-zinc-900 hover:bg-zinc-50"
+        className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold transition-colors duration-300 ${
+          open
+            ? "bg-zinc-50 text-zinc-900"
+            : "text-zinc-900 hover:bg-zinc-50/80"
+        }`}
       >
         {title}
-        <span className="text-zinc-400">{open ? "−" : "+"}</span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={accordionChevronTransition}
+          className="flex text-zinc-400"
+        >
+          <ChevronDown className="size-4" strokeWidth={2} aria-hidden />
+        </motion.span>
       </button>
-      {open ? <div className="space-y-3 px-4 pb-4">{children}</div> : null}
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div
+            key={`panel-${id}`}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{
+              height: 0,
+              opacity: 0,
+              transition: accordionPanelClose,
+            }}
+            transition={accordionPanelOpen}
+            className="overflow-hidden"
+          >
+            <div className="space-y-3 px-4 pb-4 pt-0.5">{children}</div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
@@ -222,17 +261,33 @@ export function TemplateEditorSidebar({
   onChange: (patch: TemplatePagePatch) => void;
 }) {
   const mediaFileId = useId();
-  const [open, setOpen] = useState<Partial<Record<SectionId, boolean>>>(() =>
-    defaultAccordionOpen(page.id),
+  const [openSection, setOpenSection] = useState<SectionId | null>(() =>
+    defaultOpenSection(page.id),
   );
 
+  useEffect(() => {
+    setOpenSection(defaultOpenSection(page.id));
+  }, [page.id]);
+
+  /** Only one section open — tapping another closes the rest. */
   const toggle = useCallback((id: SectionId) => {
-    setOpen((prev) => ({ ...prev, [id]: !prev[id] }));
+    setOpenSection((prev) => (prev === id ? null : id));
   }, []);
+
+  const isOpen = useCallback(
+    (id: SectionId) => openSection === id,
+    [openSection],
+  );
 
   const signup = page.id === "signup" ? (page as SignUpTemplatePage) : null;
   const payment = page.id === "payment" ? (page as PaymentTemplatePage) : null;
   const showLandingHeroEditor = page.id === "landing";
+  const landingPage =
+    page.id === "landing" ? (page as LandingTemplatePage) : null;
+  const activeLandingDesign = normalizeLandingDesign(
+    landingPage?.landingDesign,
+  );
+  const activeHeroDesign = normalizeHeroDesign(landingPage?.heroDesign);
 
   const onImageFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -259,13 +314,13 @@ export function TemplateEditorSidebar({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white [&_button]:cursor-pointer [&_select]:cursor-pointer">
+    <div className="w-full bg-white [&_button]:cursor-pointer [&_select]:cursor-pointer">
         {showLandingHeroEditor ? (
           <>
             <AccordionSection
               id="content"
               title="Content"
-              open={!!open.content}
+              open={isOpen("content")}
               onToggle={toggle}
             >
               <div className="space-y-5">
@@ -279,6 +334,10 @@ export function TemplateEditorSidebar({
                     onChange={(e) => onChange({ heading: e.target.value })}
                     className={contentInputClass}
                   />
+                  <ContentTextColorPicker
+                    value={landingPage?.headingColor ?? ""}
+                    onChange={(headingColor) => onChange({ headingColor })}
+                  />
                 </Field>
                 <Field
                   label="Subheading"
@@ -290,6 +349,10 @@ export function TemplateEditorSidebar({
                     rows={3}
                     className={`${contentInputClass} resize-y`}
                   />
+                  <ContentTextColorPicker
+                    value={landingPage?.subheadingColor ?? ""}
+                    onChange={(subheadingColor) => onChange({ subheadingColor })}
+                  />
                 </Field>
                 <Field
                   label="Body text"
@@ -300,6 +363,10 @@ export function TemplateEditorSidebar({
                     onChange={(e) => onChange({ body: e.target.value })}
                     rows={8}
                     className={`${contentInputClass} resize-y`}
+                  />
+                  <ContentTextColorPicker
+                    value={landingPage?.bodyColor ?? ""}
+                    onChange={(bodyColor) => onChange({ bodyColor })}
                   />
                 </Field>
                 <Field
@@ -317,17 +384,78 @@ export function TemplateEditorSidebar({
                     onChange={(e) => onChange({ buttonText: e.target.value })}
                     className={contentInputClass}
                   />
+                  <ContentTextColorPicker
+                    value={landingPage?.buttonTextColor ?? ""}
+                    onChange={(buttonTextColor) => onChange({ buttonTextColor })}
+                    fallbackHex="#FFFFFF"
+                  />
                 </Field>
+              </div>
+            </AccordionSection>
+
+            <AccordionSection
+              id="appearance"
+              title="Page design"
+              open={isOpen("appearance")}
+              onToggle={toggle}
+            >
+              <div className={editorSidebarPickerPanelClass}>
+                <div className={editorSidebarPickerScrollClass}>
+                  <div className="grid grid-cols-1 gap-2 pb-1">
+                  {LANDING_DESIGN_OPTIONS.map((opt) => {
+                    const on = activeLandingDesign === opt.value;
+                    const tokens = getLandingDesignStyle(opt.value);
+                    return (
+                      <LandingDesignPickerOption
+                        key={opt.value}
+                        label={opt.label}
+                        description={opt.description}
+                        selected={on}
+                        style={tokens}
+                        onSelect={() =>
+                          onChange({
+                            landingDesign: opt.value as LandingDesign,
+                            backgroundColor: tokens.backgroundDefault,
+                          })
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              </div>
               </div>
             </AccordionSection>
 
             <AccordionSection
               id="media"
               title="Media"
-              open={!!open.media}
+              open={isOpen("media")}
               onToggle={toggle}
             >
-              <div className="space-y-5">
+              <div className="space-y-4">
+                <div className={editorSidebarPickerPanelClass}>
+                  <div className={editorSidebarPickerScrollClass}>
+                    <div className="grid grid-cols-1 gap-2 pb-1">
+                    {HERO_DESIGN_OPTIONS.map((opt) => {
+                      const on = activeHeroDesign === opt.value;
+                      const tokens = getHeroDesignStyle(opt.value);
+                      return (
+                        <HeroDesignPickerOption
+                          key={opt.value}
+                          label={opt.label}
+                          description={opt.description}
+                          selected={on}
+                          style={tokens}
+                          onSelect={() =>
+                            onChange({ heroDesign: opt.value as HeroDesign })
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+                </div>
+
                 <Field
                   as="div"
                   label="Hero image"
@@ -428,7 +556,7 @@ export function TemplateEditorSidebar({
             <AccordionSection
               id="content"
               title="Summary"
-              open={!!open.content}
+              open={isOpen("content")}
               onToggle={toggle}
             >
               <div className="space-y-4">
@@ -476,7 +604,7 @@ export function TemplateEditorSidebar({
             <AccordionSection
               id="form"
               title="Form design"
-              open={!!open.form}
+              open={isOpen("form")}
               onToggle={toggle}
             >
               <p className="mb-2 text-xs font-medium text-zinc-600">
@@ -528,7 +656,7 @@ export function TemplateEditorSidebar({
           <AccordionSection
             id="content"
             title="Content"
-            open={!!open.content}
+            open={isOpen("content")}
             onToggle={toggle}
           >
             <div className="space-y-5">
@@ -590,7 +718,7 @@ export function TemplateEditorSidebar({
             <AccordionSection
               id="content"
               title="Content"
-              open={!!open.content}
+              open={isOpen("content")}
               onToggle={toggle}
             >
               <Field
@@ -610,7 +738,7 @@ export function TemplateEditorSidebar({
             <AccordionSection
               id="form"
               title="Form design"
-              open={!!open.form}
+              open={isOpen("form")}
               onToggle={toggle}
             >
             <div>

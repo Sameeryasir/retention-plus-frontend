@@ -20,10 +20,27 @@ export const editorCanvasSlotClass =
   "order-3 flex min-h-0 h-full min-w-0 flex-col lg:order-none lg:col-start-2 lg:row-start-2";
 
 export const editorSettingsSlotClass =
-  "order-4 flex min-h-0 h-full min-w-0 flex-col lg:order-none lg:col-start-3 lg:row-start-2";
+  "order-4 flex min-h-0 max-h-[38vh] min-w-0 flex-col overflow-hidden lg:order-none lg:col-start-3 lg:row-start-2 lg:h-full lg:max-h-none";
 
 export const editorPanelScrollClass =
   "min-h-0 flex-1 overflow-y-auto overscroll-contain";
+
+/**
+ * Scrollable picker list — height fits ~3 option rows, then scrolls.
+ * Row ≈ 4.25rem (preview + padding) × 3 + gaps ≈ 13.5rem.
+ */
+export const editorSidebarPickerScrollClass = [
+  "max-h-[13.5rem] overflow-y-auto overscroll-y-contain pr-1",
+  "[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgb(212_212_216)_transparent]",
+  "[&::-webkit-scrollbar]:w-1.5",
+  "[&::-webkit-scrollbar-track]:bg-transparent",
+  "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-300/90",
+  "[&::-webkit-scrollbar-thumb:hover]:bg-zinc-400",
+].join(" ");
+
+/** Wrapper around picker lists in Media / Page design accordions. */
+export const editorSidebarPickerPanelClass =
+  "overflow-hidden rounded-xl border border-zinc-200/90 bg-gradient-to-b from-zinc-50/50 to-white p-1.5 shadow-sm ring-1 ring-zinc-950/[0.03]";
 
 export const previewPhoneFrameClass =
   "mx-auto w-full max-w-[min(390px,100%)] max-h-[calc(100dvh-5.5rem)] min-h-0 overflow-x-hidden overflow-y-auto rounded-2xl bg-white shadow-sm ring-1 ring-zinc-200/80 [scrollbar-width:thin]";

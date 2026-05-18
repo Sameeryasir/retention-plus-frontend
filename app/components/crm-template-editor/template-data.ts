@@ -29,11 +29,17 @@ export const INITIAL_TEMPLATE_PAGES: TemplatePagesState = {
     heading: LOREM_HEADING,
     subheading: LOREM_SUB,
     body: LOREM_BODY,
-    buttonText: "Lorem CTA",
+    buttonText: "Get started",
     imageUrl: "",
     imageScale: 1,
-    backgroundColor: "#fafafa",
+    backgroundColor: "#F8F7FF",
     layoutType: "centered",
+    landingDesign: "classic_offer",
+    heroDesign: "edge_to_edge",
+    headingColor: "",
+    subheadingColor: "",
+    bodyColor: "",
+    buttonTextColor: "",
   },
   signup: {
     id: "signup",
@@ -104,6 +110,8 @@ export const LAYOUT_OPTIONS: { value: string; label: string }[] = [
 
 export type { FormDesignOptionRow as FormDesignOption } from "@/app/components/crm-template-editor/form-designs/types";
 export { FORM_DESIGN_OPTIONS } from "@/app/components/crm-template-editor/form-designs/form-design-options";
+export { LANDING_DESIGN_OPTIONS } from "@/app/components/crm-template-editor/landing-designs/landing-design-catalog";
+export { HERO_DESIGN_OPTIONS } from "@/app/components/crm-template-editor/hero-designs/hero-design-catalog";
 
 export const FORM_FIELD_OPTIONS: { id: FormFieldId; label: string }[] = [
   { id: "firstName", label: "First name" },

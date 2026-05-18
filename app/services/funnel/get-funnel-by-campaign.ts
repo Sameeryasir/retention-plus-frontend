@@ -1,6 +1,9 @@
+import { normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
+import { normalizeLandingDesign } from "@/app/components/crm-template-editor/landing-designs/registry";
 import type {
   FormDesign,
   FormFieldId,
+  LandingTemplatePage,
   PaymentTemplatePage,
   SignUpTemplatePage,
   TemplatePage,
@@ -101,7 +104,29 @@ export function mapFunnelApiPagesToTemplateState(
   const base = cloneTemplatePages();
 
   if (apiPages.landing) {
-    base.landing = baseFromApi("landing", apiPages.landing, base.landing);
+    const fb = base.landing as LandingTemplatePage;
+    const mapped = baseFromApi("landing", apiPages.landing, fb) as LandingTemplatePage;
+    const apiDesign = (
+      apiPages.landing as { landingPageDesign?: string }
+    ).landingPageDesign;
+    mapped.landingDesign = normalizeLandingDesign(
+      apiDesign ?? fb.landingDesign,
+    );
+    const apiHeroDesign = (
+      apiPages.landing as { heroImageDesign?: string }
+    ).heroImageDesign;
+    mapped.heroDesign = normalizeHeroDesign(apiHeroDesign ?? fb.heroDesign);
+    const landingApi = apiPages.landing as {
+      headlineColor?: string;
+      subheadlineColor?: string;
+      bodyColor?: string;
+      ctaTextColor?: string;
+    };
+    mapped.headingColor = landingApi.headlineColor ?? fb.headingColor ?? "";
+    mapped.subheadingColor = landingApi.subheadlineColor ?? fb.subheadingColor ?? "";
+    mapped.bodyColor = landingApi.bodyColor ?? fb.bodyColor ?? "";
+    mapped.buttonTextColor = landingApi.ctaTextColor ?? fb.buttonTextColor ?? "";
+    base.landing = mapped;
   }
 
   if (apiPages.signup) {
