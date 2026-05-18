@@ -259,7 +259,7 @@ export function TemplateEditorSidebar({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-zinc-50 [&_button]:cursor-pointer [&_select]:cursor-pointer">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white [&_button]:cursor-pointer [&_select]:cursor-pointer">
         {showLandingHeroEditor ? (
           <>
             <AccordionSection

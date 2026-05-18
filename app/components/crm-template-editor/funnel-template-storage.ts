@@ -133,7 +133,6 @@ export async function saveFunnelTemplatePagesAsync(
   if (ok) dispatchSaved(campaignId);
 }
 
-/** Keep draft pages reachable at public URLs keyed by funnel id. */
 export async function mirrorFunnelTemplatePagesToFunnelId(
   campaignId: string,
   funnelId: number | null | undefined,

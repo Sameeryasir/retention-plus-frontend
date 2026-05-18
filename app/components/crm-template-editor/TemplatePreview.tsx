@@ -21,7 +21,10 @@ function layoutShellClass(_layoutType: string) {
   return "max-w-full";
 }
 
-function previewOuterChrome(_pageId: string, _coloredByStep: boolean): string {
+function previewOuterChrome(_pageId: string, editorChrome: boolean): string {
+  if (editorChrome) {
+    return "min-w-0 overflow-x-hidden bg-white";
+  }
   return "overflow-hidden rounded-2xl bg-white shadow-sm";
 }
 

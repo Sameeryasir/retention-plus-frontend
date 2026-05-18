@@ -53,32 +53,62 @@ export function useCampaignFunnelLoader(
     let funnelId: number | null = null;
     let loadError: string | null = null;
 
+    let loadedFrom: "api" | "indexeddb" | "defaults" = "defaults";
+
     if (token) {
       try {
         const result = await loadTemplatePagesForCampaign(id, token);
         pages = result.pages;
         funnelId = result.funnelId;
+        loadedFrom = result.fromApi ? "api" : "defaults";
+
+        console.group("[Funnel Editor] Loaded from API → syncing to IndexedDB");
+        console.log("campaignId:", id);
+        console.log("funnelId:", funnelId);
+        console.log("had pages in DB:", result.fromApi);
+        console.log("pages shown in editor:", pages);
+        console.groupEnd();
 
         await saveFunnelTemplatePagesAsync(String(id), pages);
         await mirrorFunnelTemplatePagesToFunnelId(String(id), funnelId, pages);
 
-        if (!result.fromApi) {
-          const local = await loadFunnelTemplatePagesAsync(String(id));
-          if (local) pages = local;
-        }
+        const cached = await loadFunnelTemplatePagesAsync(String(id));
+        console.log("[Funnel Editor] IndexedDB after sync (campaign key):", cached);
       } catch (e) {
         loadError =
           e instanceof Error ? e.message : "Could not load funnel from server.";
         const local = await loadFunnelTemplatePagesAsync(String(id));
-        if (local) pages = local;
+        if (local) {
+          pages = local;
+          loadedFrom = "indexeddb";
+        }
+        console.warn("[Funnel Editor] API failed, using IndexedDB cache", {
+          campaignId: id,
+          error: loadError,
+          pages,
+        });
       }
     } else {
       const local = await loadFunnelTemplatePagesAsync(String(id));
-      if (local) pages = local;
+      if (local) {
+        pages = local;
+        loadedFrom = "indexeddb";
+      }
       loadError = "Sign in to load funnel data from the server.";
+      console.warn("[Funnel Editor] No auth token — IndexedDB only", {
+        campaignId: id,
+        pages,
+      });
     }
 
     if (signal.cancelled) return;
+
+    console.log("[Funnel Editor] Ready to display", {
+      campaignId: id,
+      funnelId,
+      loadedFrom,
+      loadError,
+    });
 
     setState({
       pages,
@@ -109,10 +139,10 @@ export function usePersistCampaignFunnelDraft(
   campaignId: number | undefined,
   funnelId: number | null,
   pages: TemplatePagesState,
-  isHydrated: boolean,
+  canPersistDraft: boolean,
 ): void {
   useEffect(() => {
-    if (!isHydrated || campaignId == null) return;
+    if (!canPersistDraft || campaignId == null) return;
 
     const timer = window.setTimeout(() => {
       void (async () => {
@@ -123,5 +153,5 @@ export function usePersistCampaignFunnelDraft(
     }, 320);
 
     return () => window.clearTimeout(timer);
-  }, [campaignId, funnelId, pages, isHydrated]);
+  }, [campaignId, funnelId, pages, canPersistDraft]);
 }

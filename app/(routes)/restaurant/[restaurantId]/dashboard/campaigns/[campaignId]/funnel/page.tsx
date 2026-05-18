@@ -37,7 +37,7 @@ export default function CampaignCrmTemplateEditorPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-5rem)] w-full flex-1 flex-col lg:min-h-[calc(100dvh-4.5rem)]">
+    <div className="h-[100dvh] min-h-0 w-full overflow-hidden">
       <CrmTemplateEditor
         restaurantId={restaurantId}
         campaignId={campaignId}

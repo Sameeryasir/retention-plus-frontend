@@ -215,6 +215,7 @@ export async function fetchFunnelByCampaignId(
   );
 
   if (res.status === 404) {
+    console.info("[Funnel DB] No funnel in database yet (404)", { campaignId });
     return null;
   }
 
@@ -229,6 +230,12 @@ export async function fetchFunnelByCampaignId(
 
   const data = (await res.json()) as FunnelByCampaignResponse;
   readFunnelId(campaignId, data);
+
+  console.group("[Funnel DB] GET /funnel/campaign/:campaignId");
+  console.log("campaignId:", campaignId);
+  console.log("stored in database (raw API JSON):", data);
+  console.groupEnd();
+
   return data;
 }
 

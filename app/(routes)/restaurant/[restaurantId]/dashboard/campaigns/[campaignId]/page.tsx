@@ -87,6 +87,7 @@ export default function CampaignWelcomePage() {
           <CrmTemplateEditor
             restaurantId={restaurantId}
             campaignId={campaignId}
+            campaignName={campaign?.campaignName}
           />
         </div>
       ) : (
