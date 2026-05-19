@@ -17,9 +17,9 @@ export const formDesignStylesBatchA: Partial<Record<FormDesign, FormDesignStyle>
     fieldClass:
       "h-10 w-full rounded-md border border-zinc-200/80 bg-white px-2.5 shadow-sm",
     rowClass: "min-w-0 text-left",
-    fieldsContainerClass: "space-y-4",
-    splitVariant: "neutral",
-    swatchKind: "split",
+    fieldsContainerClass: "grid grid-cols-1 gap-4 sm:grid-cols-2",
+    splitVariant: null,
+    swatchKind: "card",
   },
   floating_label_form: {
     shellClass:

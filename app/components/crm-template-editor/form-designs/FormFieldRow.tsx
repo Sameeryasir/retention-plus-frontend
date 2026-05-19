@@ -21,6 +21,7 @@ export function FormFieldRow({
   inputType = "text",
   autoComplete,
   fieldId,
+  inputTextClassName = "text-zinc-900 placeholder:text-zinc-400",
 }: {
   label: string;
   labelClassName: string;
@@ -32,10 +33,11 @@ export function FormFieldRow({
   autoComplete?: string;
   /** When set, a Lucide icon is shown before the label (signup preview polish). */
   fieldId?: FormFieldId;
+  inputTextClassName?: string;
 }) {
   const reactId = useId();
   const inputId = inputName ? `${inputName}-${reactId}` : `input-${reactId}`;
-  const inputClassName = `${fieldClassName} min-w-0 border-0 bg-transparent px-3 text-sm text-zinc-900 outline-none ring-0 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900/15`;
+  const inputClassName = `${fieldClassName} min-w-0 border-0 bg-transparent px-3 text-sm outline-none ring-0 focus-visible:ring-2 focus-visible:ring-zinc-900/15 ${inputTextClassName}`;
   const Icon = fieldId ? FIELD_LABEL_ICON[fieldId] : null;
 
   return (

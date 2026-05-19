@@ -41,7 +41,7 @@ export function ContentTextColorPicker({
           id={`${inputId}-picker`}
           type="color"
           value={pickerValue}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(normalizeHexColor(e.target.value))}
           className="absolute inset-0 size-full cursor-pointer opacity-0"
           aria-label="Pick text color"
         />

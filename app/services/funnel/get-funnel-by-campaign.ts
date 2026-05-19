@@ -1,3 +1,4 @@
+import { normalizeHexColor } from "@/app/components/crm-template-editor/landing-content-colors";
 import { normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
 import { normalizeLandingDesign } from "@/app/components/crm-template-editor/landing-designs/registry";
 import type {
@@ -106,26 +107,42 @@ export function mapFunnelApiPagesToTemplateState(
   if (apiPages.landing) {
     const fb = base.landing as LandingTemplatePage;
     const mapped = baseFromApi("landing", apiPages.landing, fb) as LandingTemplatePage;
-    const apiDesign = (
-      apiPages.landing as { landingPageDesign?: string }
-    ).landingPageDesign;
+    const landingApiDesign = apiPages.landing as {
+      landingPageDesign?: string;
+      pageDesign?: string;
+    };
     mapped.landingDesign = normalizeLandingDesign(
-      apiDesign ?? fb.landingDesign,
+      landingApiDesign.landingPageDesign ??
+        landingApiDesign.pageDesign ??
+        fb.landingDesign,
     );
-    const apiHeroDesign = (
-      apiPages.landing as { heroImageDesign?: string }
-    ).heroImageDesign;
-    mapped.heroDesign = normalizeHeroDesign(apiHeroDesign ?? fb.heroDesign);
-    const landingApi = apiPages.landing as {
+    const landingApiHero = apiPages.landing as {
+      heroImageDesign?: string;
+      mediaDesign?: string;
+    };
+    mapped.heroDesign = normalizeHeroDesign(
+      landingApiHero.heroImageDesign ??
+        landingApiHero.mediaDesign ??
+        fb.heroDesign,
+    );
+    const landingApiColors = apiPages.landing as {
       headlineColor?: string;
       subheadlineColor?: string;
       bodyColor?: string;
       ctaTextColor?: string;
     };
-    mapped.headingColor = landingApi.headlineColor ?? fb.headingColor ?? "";
-    mapped.subheadingColor = landingApi.subheadlineColor ?? fb.subheadingColor ?? "";
-    mapped.bodyColor = landingApi.bodyColor ?? fb.bodyColor ?? "";
-    mapped.buttonTextColor = landingApi.ctaTextColor ?? fb.buttonTextColor ?? "";
+    mapped.headingColor = normalizeHexColor(
+      landingApiColors.headlineColor ?? fb.headingColor,
+    );
+    mapped.subheadingColor = normalizeHexColor(
+      landingApiColors.subheadlineColor ?? fb.subheadingColor,
+    );
+    mapped.bodyColor = normalizeHexColor(
+      landingApiColors.bodyColor ?? fb.bodyColor,
+    );
+    mapped.buttonTextColor = normalizeHexColor(
+      landingApiColors.ctaTextColor ?? fb.buttonTextColor,
+    );
     base.landing = mapped;
   }
 

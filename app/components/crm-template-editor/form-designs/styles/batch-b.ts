@@ -84,8 +84,8 @@ export const formDesignStylesBatchB: Partial<Record<FormDesign, FormDesignStyle>
       "h-10 w-full rounded-lg border border-white/60 bg-white/90 px-3 shadow-sm backdrop-blur-sm",
     rowClass: "min-w-0 text-left",
     fieldsContainerClass: "space-y-4",
-    splitVariant: "gradient",
-    swatchKind: "split",
+    splitVariant: null,
+    swatchKind: "rounded",
   },
   transparent_form: {
     shellClass: "rounded-2xl border border-dashed border-zinc-300/80 bg-transparent p-5",

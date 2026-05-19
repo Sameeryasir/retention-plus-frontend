@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { formDesignHidesTopHero } from "@/app/components/crm-template-editor/form-design-registry";
 import { SignupFormFields } from "@/app/components/crm-template-editor/form-designs/SignupFormFields";
 import { LandingPagePreview } from "@/app/components/crm-template-editor/LandingPagePreview";
+import { SignupPagePreview } from "@/app/components/crm-template-editor/SignupPagePreview";
 import { normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
 import { normalizeLandingDesign } from "@/app/components/crm-template-editor/landing-designs/registry";
 import { PaymentPagePreview } from "@/app/components/crm-template-editor/PaymentPagePreview";
@@ -28,6 +29,10 @@ import {
 import { getOrCreateVisitorId } from "@/app/lib/funnel-visitor-id";
 import { trackFunnelEvent } from "@/app/services/funnel/track-funnel-event";
 import type { FunnelStripePaymentContext } from "@/app/components/funnel/FunnelStripePaymentForm";
+
+function isLandingTemplatePage(page: TemplatePage): page is LandingTemplatePage {
+  return page.id === "landing";
+}
 
 function layoutShellClass(_layoutType: string) {
   return "max-w-full";
@@ -249,6 +254,27 @@ export function TemplatePreview({
     );
   }
 
+  if (page.id === "signup" && signup && isLandingTemplatePage(landingPage)) {
+    return (
+      <div className={shell}>
+        <div className={`overflow-hidden ${previewFrameClass}`}>
+          <SignupPagePreview
+            signupPage={signup}
+            landingPage={landingPage}
+            heroImageUrl={heroImageUrl}
+            heroImageScale={heroImageScale}
+            signupBackHref={signupBackAsLink}
+            signupNextHref={signupNextAsLink}
+            interactiveForms={interactiveForms}
+            signupSubmitFlow={signupSubmitFlow}
+            signupSubmitting={signupSubmitting}
+            onSignupSubmit={onSignupCustomerSubmit}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (page.id === "landing") {
     return (
       <div className={shell}>
@@ -316,8 +342,6 @@ export function TemplatePreview({
               <SignupFormFields
                 fieldIds={signup.formFieldIds}
                 design={signup.formDesign}
-                imageUrl={heroImageUrl}
-                imageScale={heroImageScale}
                 interactive={interactiveForms}
                 omitInteractiveForm
               />
@@ -359,8 +383,6 @@ export function TemplatePreview({
               <SignupFormFields
                 fieldIds={signup.formFieldIds}
                 design={signup.formDesign}
-                imageUrl={heroImageUrl}
-                imageScale={heroImageScale}
                 interactive={interactiveForms}
               />
             </div>
@@ -464,8 +486,6 @@ export function TemplatePreview({
                     <SignupFormFields
                       fieldIds={signup.formFieldIds}
                       design={signup.formDesign}
-                      imageUrl={heroImageUrl}
-                      imageScale={heroImageScale}
                       interactive={interactiveForms}
                       omitInteractiveForm
                     />
@@ -507,8 +527,6 @@ export function TemplatePreview({
                     <SignupFormFields
                       fieldIds={signup.formFieldIds}
                       design={signup.formDesign}
-                      imageUrl={heroImageUrl}
-                      imageScale={heroImageScale}
                       interactive={interactiveForms}
                     />
                   </div>

@@ -612,7 +612,7 @@ export function TemplateEditorSidebar({
               </p>
               <div className="max-h-72 overflow-y-auto overscroll-y-contain pr-0.5 sm:max-h-96">
                 <div className="grid grid-cols-1 gap-2.5">
-                  {/* Payment: hide split / hero-column presets; signup still uses full FORM_DESIGN_OPTIONS list. */}
+                  {/* Payment & signup: form presets are fields-only (no hero column). */}
                   {FORM_DESIGN_OPTIONS.filter(
                     (opt) => !formDesignUsesSplitLayout(opt.value),
                   ).map((opt) => {
@@ -788,7 +788,9 @@ export function TemplateEditorSidebar({
               </p>
               <div className="max-h-72 overflow-y-auto overscroll-y-contain pr-0.5 sm:max-h-96">
                 <div className="grid grid-cols-1 gap-2.5">
-                {FORM_DESIGN_OPTIONS.map((opt) => {
+                {FORM_DESIGN_OPTIONS.filter(
+                  (opt) => !formDesignUsesSplitLayout(opt.value),
+                ).map((opt) => {
                   const on = signup.formDesign === opt.value;
                   return (
                     <button

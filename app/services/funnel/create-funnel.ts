@@ -1,4 +1,5 @@
 import { formDesignUsesSplitLayout } from "@/app/components/crm-template-editor/form-design-registry";
+import { normalizeHexColor } from "@/app/components/crm-template-editor/landing-content-colors";
 import { normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
 import { normalizeLandingDesign } from "@/app/components/crm-template-editor/landing-designs/registry";
 import type { LandingTemplatePage } from "@/app/components/crm-template-editor/template-types";
@@ -37,12 +38,17 @@ export type CreateFunnelLandingPagePayload = {
   heroImageScale: number;
   backgroundColor: string;
   layoutType: string;
+  /** Page design (Appearance). */
   landingPageDesign: string;
+  pageDesign: string;
+  /** Hero / media layout (Media). */
   heroImageDesign: string;
-  headlineColor?: string;
-  subheadlineColor?: string;
-  bodyColor?: string;
-  ctaTextColor?: string;
+  mediaDesign: string;
+  /** Content text colors — hex codes from the Content section. */
+  headlineColor: string;
+  subheadlineColor: string;
+  bodyColor: string;
+  ctaTextColor: string;
 };
 
 export type CreateFunnelSignupPagePayload = {
@@ -124,6 +130,9 @@ function mapFormFields(ids: FormFieldId[]): CreateFunnelFormFieldId[] {
 function buildLandingPayload(
   page: LandingTemplatePage,
 ): CreateFunnelLandingPagePayload {
+  const pageDesign = normalizeLandingDesign(page.landingDesign);
+  const mediaDesign = normalizeHeroDesign(page.heroDesign);
+
   return {
     id: "landing",
     pageTitle: page.label,
@@ -135,12 +144,14 @@ function buildLandingPayload(
     heroImageScale: page.imageScale,
     backgroundColor: page.backgroundColor,
     layoutType: page.layoutType,
-    landingPageDesign: normalizeLandingDesign(page.landingDesign),
-    heroImageDesign: normalizeHeroDesign(page.heroDesign),
-    headlineColor: page.headingColor?.trim() || undefined,
-    subheadlineColor: page.subheadingColor?.trim() || undefined,
-    bodyColor: page.bodyColor?.trim() || undefined,
-    ctaTextColor: page.buttonTextColor?.trim() || undefined,
+    landingPageDesign: pageDesign,
+    pageDesign,
+    heroImageDesign: mediaDesign,
+    mediaDesign,
+    headlineColor: normalizeHexColor(page.headingColor),
+    subheadlineColor: normalizeHexColor(page.subheadingColor),
+    bodyColor: normalizeHexColor(page.bodyColor),
+    ctaTextColor: normalizeHexColor(page.buttonTextColor),
   };
 }
 

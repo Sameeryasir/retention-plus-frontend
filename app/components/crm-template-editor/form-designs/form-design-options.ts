@@ -9,7 +9,7 @@ export const FORM_DESIGN_OPTIONS: FormDesignOptionRow[] = [
   {
     value: "two_column_form",
     label: "Two Column Form",
-    description: "Hero beside fields on wide screens.",
+    description: "Two-column field grid on wide screens.",
   },
   {
     value: "floating_label_form",
@@ -89,7 +89,7 @@ export const FORM_DESIGN_OPTIONS: FormDesignOptionRow[] = [
   {
     value: "gradient_background_form",
     label: "Gradient Background Form",
-    description: "Bold gradient hero column.",
+    description: "Bright gradient accents on fields.",
   },
   {
     value: "transparent_form",
@@ -189,12 +189,12 @@ export const FORM_DESIGN_OPTIONS: FormDesignOptionRow[] = [
   {
     value: "elegant_luxury_form",
     label: "Elegant Luxury Form",
-    description: "Warm split hero with gold fields.",
+    description: "Warm gold-toned luxury fields.",
   },
   {
     value: "modern_shopify_form",
     label: "Modern Shopify Form",
-    description: "Split layout, commerce-friendly.",
+    description: "Commerce-friendly bordered fields.",
   },
   {
     value: "professional_corporate_form",

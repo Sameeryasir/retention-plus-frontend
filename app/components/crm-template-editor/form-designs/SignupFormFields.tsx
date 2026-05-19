@@ -4,11 +4,13 @@ import type { ReactNode } from "react";
 import { FormFieldRow } from "@/app/components/crm-template-editor/form-designs/FormFieldRow";
 import { FormPresetExtra } from "@/app/components/crm-template-editor/form-designs/FormPresetExtra";
 import {
-  formDesignUsesSplitLayout,
   getFormDesignStyle,
   getNonSplitShellClass,
 } from "@/app/components/crm-template-editor/form-designs/registry";
-import { SplitFormLayout } from "@/app/components/crm-template-editor/form-designs/SplitFormLayout";
+import {
+  blendFormDesignWithLanding,
+  isLandingDesignDark,
+} from "@/app/components/crm-template-editor/landing-blended-form-styles";
 import { FORM_FIELD_OPTIONS } from "@/app/components/crm-template-editor/template-data";
 import type { FormDesign } from "@/app/components/crm-template-editor/form-designs/types";
 import type { FormFieldId } from "@/app/components/crm-template-editor/template-types";
@@ -16,23 +18,29 @@ import type { FormFieldId } from "@/app/components/crm-template-editor/template-
 export function SignupFormFields({
   fieldIds,
   design,
-  imageUrl,
-  imageScale,
   interactive = false,
   omitInteractiveForm = false,
+  blendWithLandingDesign,
 }: {
   fieldIds: FormFieldId[];
   design: FormDesign;
-  imageUrl: string;
-  imageScale: number;
   interactive?: boolean;
   omitInteractiveForm?: boolean;
+  /** When set, fields blend with the landing page (no separate hero column). */
+  blendWithLandingDesign?: string;
 }) {
   const labels = Object.fromEntries(
     FORM_FIELD_OPTIONS.map((o) => [o.id, o.label]),
   ) as Record<FormFieldId, string>;
 
-  const style = getFormDesignStyle(design);
+  const useLandingBlend = Boolean(blendWithLandingDesign);
+  const landingIsDark = isLandingDesignDark(blendWithLandingDesign);
+  const style = useLandingBlend
+    ? blendFormDesignWithLanding(design, blendWithLandingDesign)
+    : getFormDesignStyle(design);
+  const blendedInputText = landingIsDark
+    ? "text-white placeholder:text-white/45 focus-visible:ring-white/25"
+    : undefined;
 
   const fields = fieldIds.map((id) => (
     <FormFieldRow
@@ -42,6 +50,7 @@ export function SignupFormFields({
       fieldClassName={style.fieldClass}
       rowClassName={style.rowClass}
       interactive={interactive}
+      inputTextClassName={blendedInputText}
       fieldId={id}
       inputName={id}
       inputType={
@@ -81,14 +90,6 @@ export function SignupFormFields({
       node
     );
 
-  if (formDesignUsesSplitLayout(design)) {
-    return wrapForm(
-      <SplitFormLayout design={design} imageUrl={imageUrl} imageScale={imageScale}>
-        {inner}
-      </SplitFormLayout>,
-    );
-  }
-
-  const shell = getNonSplitShellClass(design);
+  const shell = useLandingBlend ? style.shellClass : getNonSplitShellClass(design);
   return wrapForm(<div className={shell}>{inner}</div>);
 }

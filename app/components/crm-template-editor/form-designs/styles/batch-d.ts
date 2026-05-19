@@ -86,8 +86,8 @@ export const formDesignStylesBatchD: Partial<Record<FormDesign, FormDesignStyle>
       "h-10 w-full rounded-lg border border-amber-200/80 bg-gradient-to-b from-amber-50/80 to-white px-3 shadow-sm",
     rowClass: "min-w-0 text-left",
     fieldsContainerClass: "space-y-4",
-    splitVariant: "warm",
-    swatchKind: "split",
+    splitVariant: null,
+    swatchKind: "gold",
   },
   modern_shopify_form: {
     shellClass: "",
@@ -96,8 +96,8 @@ export const formDesignStylesBatchD: Partial<Record<FormDesign, FormDesignStyle>
       "h-10 w-full rounded-md border border-zinc-300 bg-white px-3 shadow-sm",
     rowClass: "min-w-0 text-left",
     fieldsContainerClass: "space-y-4",
-    splitVariant: "shop",
-    swatchKind: "split",
+    splitVariant: null,
+    swatchKind: "card",
   },
   professional_corporate_form: {
     shellClass:

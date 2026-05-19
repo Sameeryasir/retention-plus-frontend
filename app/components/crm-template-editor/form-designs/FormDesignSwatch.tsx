@@ -16,16 +16,6 @@ export function FormDesignSwatch({
 
   const wrap = `flex h-11 w-[4.25rem] shrink-0 items-stretch overflow-hidden rounded-lg border border-zinc-200/70 bg-zinc-50 shadow-inner ${ring}`;
 
-  const splitSwatch = (
-    <div className={`${wrap} flex-row gap-px bg-white p-0.5`}>
-      <div className="w-[40%] rounded bg-gradient-to-b from-zinc-300 to-zinc-400" />
-      <div className="flex flex-1 flex-col justify-center gap-0.5 py-0.5 pr-0.5">
-        <div className="h-0.5 w-full rounded-full bg-zinc-200" />
-        <div className="h-0.5 w-full rounded-full bg-zinc-200" />
-        <div className="h-0.5 w-3/4 rounded-full bg-zinc-100" />
-      </div>
-    </div>
-  );
 
   const cardSwatch = (
     <div className={`${wrap} bg-white p-1`}>
@@ -55,7 +45,7 @@ export function FormDesignSwatch({
 
   switch (getFormDesignStyle(design).swatchKind) {
     case "split":
-      return splitSwatch;
+      return cardSwatch;
     case "dark":
       return (
         <div
