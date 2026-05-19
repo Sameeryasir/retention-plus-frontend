@@ -3,12 +3,20 @@
 import { Suspense } from "react";
 import { useFunnelTemplatePagesFromStorage } from "@/app/components/crm-template-editor/funnel-template-storage";
 import { TemplatePreview } from "@/app/components/crm-template-editor/TemplatePreview";
+import { useCampaignPricing } from "@/app/hooks/use-campaign-pricing";
 import { useFunnelGuestRoute } from "@/app/hooks/use-funnel-guest-route";
 import { buildFunnelPublicPath } from "@/app/lib/funnel-public-path";
 
 function FunnelCampaignSignupInner() {
   const { funnelIdSegment, funnelId, campaignId, restaurantId } =
     useFunnelGuestRoute();
+
+  const campaignPricing = useCampaignPricing(campaignId, restaurantId);
+  const funnelLinkQuery = {
+    campaignId,
+    restaurantId,
+    price: campaignPricing.subtotal ?? undefined,
+  };
 
   const pages = useFunnelTemplatePagesFromStorage(funnelIdSegment);
   const signup = pages.signup;
@@ -19,7 +27,7 @@ function FunnelCampaignSignupInner() {
       ? buildFunnelPublicPath({
           funnelId,
           step: "payment",
-          query: { campaignId, restaurantId },
+          query: funnelLinkQuery,
         })
       : undefined;
 
@@ -28,7 +36,7 @@ function FunnelCampaignSignupInner() {
       ? buildFunnelPublicPath({
           funnelId,
           step: "landing",
-          query: { campaignId, restaurantId },
+          query: funnelLinkQuery,
         })
       : undefined;
 

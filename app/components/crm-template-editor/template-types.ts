@@ -6,10 +6,15 @@ export type TemplatePageId =
 
 export type FormFieldId = "firstName" | "lastName" | "email" | "phone";
 
+import type {
+  CheckoutTemplateType,
+  CheckoutTheme,
+} from "@/app/components/crm-template-editor/checkout-template-types";
 import type { FormDesign } from "@/app/components/crm-template-editor/form-designs/types";
 import type { HeroDesign } from "@/app/components/crm-template-editor/hero-designs/types";
 import type { LandingDesign } from "@/app/components/crm-template-editor/landing-designs/types";
 export type { FormDesign, HeroDesign, LandingDesign };
+export type { CheckoutTemplateType, CheckoutTheme };
 
 export interface TemplatePageBase {
   id: TemplatePageId;
@@ -34,6 +39,12 @@ export interface SignUpTemplatePage extends TemplatePageBase {
 
 export interface PaymentTemplatePage extends TemplatePageBase {
   id: "payment";
+  checkoutTemplate: CheckoutTemplateType;
+  showCoupon: boolean;
+  showPhoneField: boolean;
+  showAddressField: boolean;
+  showOrderSummary: boolean;
+  checkoutTheme: CheckoutTheme;
   formDesign: FormDesign;
   payWithLinkText: string;
   checkoutDividerText: string;
@@ -92,6 +103,12 @@ export type TemplatePagePatch = Partial<Omit<TemplatePageBase, "id">> &
   Partial<
     Pick<
       PaymentTemplatePage,
+      | "checkoutTemplate"
+      | "showCoupon"
+      | "showPhoneField"
+      | "showAddressField"
+      | "showOrderSummary"
+      | "checkoutTheme"
       | "formDesign"
       | "payWithLinkText"
       | "checkoutDividerText"

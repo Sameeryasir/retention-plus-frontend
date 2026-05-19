@@ -5,6 +5,7 @@ export type FunnelPublicStep = "landing" | "signup" | "payment" | "confirmation"
 export type FunnelPublicPathQuery = {
   campaignId?: number | null;
   restaurantId?: number | null;
+  price?: number | string | null;
 };
 
 export type BuildFunnelPublicPathInput = {
@@ -26,6 +27,10 @@ export function buildFunnelPublicPath({
   }
   if (isPositiveInt(query?.restaurantId)) {
     params.set("restaurantId", String(query.restaurantId));
+  }
+  const price = query?.price;
+  if (price != null && String(price).trim() !== "") {
+    params.set("price", String(price).trim());
   }
 
   const qs = params.toString();

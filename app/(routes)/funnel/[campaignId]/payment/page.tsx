@@ -5,14 +5,18 @@ import { useSearchParams } from "next/navigation";
 import { useFunnelTemplatePagesFromStorage } from "@/app/components/crm-template-editor/funnel-template-storage";
 import { TemplatePreview } from "@/app/components/crm-template-editor/TemplatePreview";
 import type { FunnelStripePaymentContext } from "@/app/components/funnel/FunnelStripePaymentForm";
+import { useCampaignPricing } from "@/app/hooks/use-campaign-pricing";
 import { useFunnelGuestRoute } from "@/app/hooks/use-funnel-guest-route";
 import { getFunnelCheckoutEmail } from "@/app/lib/funnel-checkout-storage";
 import { parseNonNegativeInt, parsePositiveInt } from "@/app/lib/numbers";
 
 function FunnelCampaignPaymentPageInner() {
   const searchParams = useSearchParams();
-  const { funnelIdSegment, funnelId, restaurantId } = useFunnelGuestRoute();
+  const { funnelIdSegment, funnelId, campaignId, restaurantId } =
+    useFunnelGuestRoute();
   const [checkoutEmail] = useState(() => getFunnelCheckoutEmail());
+
+  const campaignPricing = useCampaignPricing(campaignId, restaurantId);
 
   const pages = useFunnelTemplatePagesFromStorage(funnelIdSegment);
   const payment = pages.payment;
@@ -63,6 +67,7 @@ function FunnelCampaignPaymentPageInner() {
             landingPage={landing}
             interactiveForms
             paymentStripeCheckout={paymentStripeCheckout}
+            campaignPricing={campaignPricing}
           />
         </div>
       </main>

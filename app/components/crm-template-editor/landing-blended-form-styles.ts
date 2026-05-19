@@ -8,7 +8,6 @@ export function isLandingDesignDark(design: string | undefined): boolean {
   return entry?.mode === "dark";
 }
 
-/** Tweaks Tailwind classes so a form preset stays readable on dark landing backgrounds. */
 function adaptClassForDarkLanding(className: string): string {
   return className
     .replace(/\btext-zinc-900\b/g, "text-white")
@@ -24,10 +23,6 @@ function adaptClassForDarkLanding(className: string): string {
     .replace(/\bring-zinc-950\b/g, "ring-white/10");
 }
 
-/**
- * Keeps the user's chosen form design (underline, pill, glass, etc.) but drops
- * the outer card/split chrome so fields sit on the landing page design.
- */
 export function blendFormDesignWithLanding(
   design: FormDesign,
   landingDesignId: string | undefined,

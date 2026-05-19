@@ -1,3 +1,4 @@
+import { normalizePaymentPage } from "@/app/components/crm-template-editor/PaymentPagePreview";
 import { normalizeHexColor } from "@/app/components/crm-template-editor/landing-content-colors";
 import { normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
 import { normalizeLandingDesign } from "@/app/components/crm-template-editor/landing-designs/registry";
@@ -188,7 +189,33 @@ export function mapFunnelApiPagesToTemplateState(
     mapped.paymentCurrencyRateHint =
       apiPages.payment.paymentCurrencyRateHint ?? fb.paymentCurrencyRateHint;
     mapped.paymentFooterText = apiPages.payment.paymentFooterText ?? fb.paymentFooterText;
-    base.payment = mapped;
+    const paymentApi = apiPages.payment as CreateFunnelPaymentPagePayload & {
+      checkoutTemplate?: string;
+      showCoupon?: boolean;
+      showPhoneField?: boolean;
+      showAddressField?: boolean;
+      showOrderSummary?: boolean;
+      checkoutTheme?: Partial<PaymentTemplatePage["checkoutTheme"]>;
+    };
+    base.payment = normalizePaymentPage({
+      ...mapped,
+      ...(paymentApi.checkoutTemplate
+        ? { checkoutTemplate: paymentApi.checkoutTemplate as PaymentTemplatePage["checkoutTemplate"] }
+        : {}),
+      ...(paymentApi.showCoupon !== undefined ? { showCoupon: paymentApi.showCoupon } : {}),
+      ...(paymentApi.showPhoneField !== undefined
+        ? { showPhoneField: paymentApi.showPhoneField }
+        : {}),
+      ...(paymentApi.showAddressField !== undefined
+        ? { showAddressField: paymentApi.showAddressField }
+        : {}),
+      ...(paymentApi.showOrderSummary !== undefined
+        ? { showOrderSummary: paymentApi.showOrderSummary }
+        : {}),
+      ...(paymentApi.checkoutTheme
+        ? { checkoutTheme: paymentApi.checkoutTheme as PaymentTemplatePage["checkoutTheme"] }
+        : {}),
+    });
   }
 
   if (apiPages.confirmation) {

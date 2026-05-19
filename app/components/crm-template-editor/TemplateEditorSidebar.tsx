@@ -19,6 +19,11 @@ import {
   ZoomIn,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import {
+  CHECKOUT_TEMPLATE_OPTIONS,
+  CheckoutTemplateType,
+  normalizeCheckoutTemplate,
+} from "@/app/components/crm-template-editor/checkout-template-types";
 import { ContentTextColorPicker } from "@/app/components/crm-template-editor/ContentTextColorPicker";
 import {
   editorSidebarPickerPanelClass,
@@ -57,7 +62,12 @@ import type {
   TemplatePagePatch,
 } from "@/app/components/crm-template-editor/template-types";
 
-type SectionId = "content" | "media" | "form" | "appearance";
+type SectionId =
+  | "content"
+  | "media"
+  | "form"
+  | "appearance"
+  | "checkout-templates";
 
 const FORM_FIELD_ICONS: Record<FormFieldId, LucideIcon> = {
   firstName: User,
@@ -602,6 +612,124 @@ export function TemplateEditorSidebar({
             </AccordionSection>
 
             <AccordionSection
+              id="checkout-templates"
+              title="Checkout templates"
+              open={isOpen("checkout-templates")}
+              onToggle={toggle}
+            >
+              <p className="mb-2 text-xs font-medium text-zinc-600">
+                Choose a checkout layout
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                {CHECKOUT_TEMPLATE_OPTIONS.map((opt) => {
+                  const on =
+                    normalizeCheckoutTemplate(payment.checkoutTemplate) ===
+                    opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() =>
+                        onChange({
+                          checkoutTemplate: opt.value as CheckoutTemplateType,
+                        })
+                      }
+                      className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
+                        on
+                          ? "border-zinc-900 bg-zinc-900 text-white shadow-md"
+                          : "border-zinc-200/90 bg-white shadow-sm hover:border-zinc-300"
+                      }`}
+                    >
+                      <span
+                        className={`flex size-4 shrink-0 items-center justify-center rounded-full border-2 ${
+                          on ? "border-white" : "border-zinc-300"
+                        }`}
+                        aria-hidden
+                      >
+                        {on ? (
+                          <span className="size-1.5 rounded-full bg-white" />
+                        ) : null}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-bold">{opt.label}</span>
+                        <span
+                          className={`mt-0.5 block text-[0.65rem] leading-snug ${
+                            on ? "text-zinc-300" : "text-zinc-500"
+                          }`}
+                        >
+                          {opt.description}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-4 space-y-3 border-t border-zinc-200/80 pt-4">
+                <p className="text-xs font-medium text-zinc-600">Display options</p>
+                {(
+                  [
+                    ["showCoupon", "Coupon field"],
+                    ["showPhoneField", "Phone field"],
+                    ["showAddressField", "Billing address"],
+                    ["showOrderSummary", "Order summary"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <label
+                    key={key}
+                    className="flex cursor-pointer items-center gap-2 text-xs text-zinc-700"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={payment[key]}
+                      onChange={(e) =>
+                        onChange({ [key]: e.target.checked })
+                      }
+                      className="size-4 rounded border-zinc-300"
+                    />
+                    {label}
+                  </label>
+                ))}
+                <Field
+                  label="Button color"
+                  icon={<MousePointerClick className="size-4 shrink-0" />}
+                >
+                  <input
+                    type="color"
+                    value={payment.checkoutTheme.buttonColor}
+                    onChange={(e) =>
+                      onChange({
+                        checkoutTheme: {
+                          ...payment.checkoutTheme,
+                          buttonColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="h-9 w-full cursor-pointer rounded-lg border border-zinc-200"
+                  />
+                </Field>
+                <Field
+                  label="Page background"
+                  icon={<ImageIcon className="size-4 shrink-0" />}
+                >
+                  <input
+                    type="color"
+                    value={payment.checkoutTheme.background}
+                    onChange={(e) =>
+                      onChange({
+                        checkoutTheme: {
+                          ...payment.checkoutTheme,
+                          background: e.target.value,
+                        },
+                        backgroundColor: e.target.value,
+                      })
+                    }
+                    className="h-9 w-full cursor-pointer rounded-lg border border-zinc-200"
+                  />
+                </Field>
+              </div>
+            </AccordionSection>
+
+            <AccordionSection
               id="form"
               title="Form design"
               open={isOpen("form")}
@@ -612,7 +740,6 @@ export function TemplateEditorSidebar({
               </p>
               <div className="max-h-72 overflow-y-auto overscroll-y-contain pr-0.5 sm:max-h-96">
                 <div className="grid grid-cols-1 gap-2.5">
-                  {/* Payment & signup: form presets are fields-only (no hero column). */}
                   {FORM_DESIGN_OPTIONS.filter(
                     (opt) => !formDesignUsesSplitLayout(opt.value),
                   ).map((opt) => {

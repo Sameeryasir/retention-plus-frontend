@@ -14,6 +14,10 @@ import {
   resolveFunnelRouteId,
 } from "@/app/lib/funnel-public-path";
 import { getFunnelCheckoutEmail } from "@/app/lib/funnel-checkout-storage";
+import {
+  parseCampaignPrice,
+  type CampaignPricing,
+} from "@/app/lib/campaign-price";
 import { parseNonNegativeInt, parsePositiveInt } from "@/app/lib/numbers";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
 import type { FunnelStripePaymentContext } from "@/app/components/funnel/FunnelStripePaymentForm";
@@ -39,6 +43,8 @@ export type CrmTemplateEditorProps = {
   restaurantId?: number;
   campaignId?: number;
   campaignName?: string;
+  campaignPrice?: number | string;
+  campaignOffer?: string;
   initialPageId?: TemplatePageId;
   interactivePreview?: boolean;
 };
@@ -47,6 +53,8 @@ export function CrmTemplateEditor({
   restaurantId,
   campaignId,
   campaignName,
+  campaignPrice,
+  campaignOffer,
   initialPageId = "landing",
   interactivePreview = false,
 }: CrmTemplateEditorProps) {
@@ -145,15 +153,35 @@ export function CrmTemplateEditor({
     [funnelId, previewCampaignId],
   );
 
+  const campaignPricing = useMemo((): CampaignPricing => {
+    const subtotal = parseCampaignPrice(campaignPrice);
+    return {
+      subtotal,
+      fees: 0,
+      offer: campaignOffer?.trim() || null,
+    };
+  }, [campaignPrice, campaignOffer]);
+
+  const funnelLinkQuery = useMemo(
+    () => ({
+      restaurantId: previewRestaurantId,
+      campaignId: previewCampaignId,
+      price: campaignPricing.subtotal ?? campaignPrice ?? undefined,
+    }),
+    [
+      previewRestaurantId,
+      previewCampaignId,
+      campaignPricing.subtotal,
+      campaignPrice,
+    ],
+  );
+
   const previewSignupNextHref =
     interactivePreview && previewRouteId != null
       ? buildFunnelPublicPath({
           funnelId: previewRouteId,
           step: "payment",
-          query: {
-            restaurantId: previewRestaurantId,
-            campaignId: previewCampaignId,
-          },
+          query: funnelLinkQuery,
         })
       : undefined;
   const previewSignupBackHref =
@@ -161,10 +189,7 @@ export function CrmTemplateEditor({
       ? buildFunnelPublicPath({
           funnelId: previewRouteId,
           step: "landing",
-          query: {
-            restaurantId: previewRestaurantId,
-            campaignId: previewCampaignId,
-          },
+          query: funnelLinkQuery,
         })
       : undefined;
 
@@ -268,17 +293,13 @@ export function CrmTemplateEditor({
     const url = buildFunnelPublicPath({
       funnelId: previewRouteId,
       step: activeId === "confirmation" ? "confirmation" : activeId,
-      query: {
-        restaurantId: previewRestaurantId,
-        campaignId: previewCampaignId,
-      },
+      query: funnelLinkQuery,
     });
     window.open(url, "_blank", "noopener,noreferrer");
   }, [
     previewRouteId,
     activeId,
-    previewRestaurantId,
-    previewCampaignId,
+    funnelLinkQuery,
   ]);
 
   const cancelDiscard = useCallback(() => setPendingNavId(null), []);
@@ -334,6 +355,7 @@ export function CrmTemplateEditor({
               signupBackHref={previewSignupBackHref}
               editorStepPreviewChrome
               paymentStripeCheckout={paymentStripeCheckout}
+              campaignPricing={campaignPricing}
             />
           </CanvasWorkspace>
         }

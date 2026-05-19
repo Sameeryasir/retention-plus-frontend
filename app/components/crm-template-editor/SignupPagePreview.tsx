@@ -3,17 +3,12 @@
 import type { CSSProperties, FormEvent } from "react";
 import Link from "next/link";
 import { SignupFormFields } from "@/app/components/crm-template-editor/form-designs/SignupFormFields";
-import {
-  LandingHero,
-  pageBackgroundStyle,
-} from "@/app/components/crm-template-editor/LandingPagePreview";
+import { LandingFunnelStepShell } from "@/app/components/crm-template-editor/LandingFunnelStepShell";
 import { isLandingDesignDark } from "@/app/components/crm-template-editor/landing-blended-form-styles";
-import { getHeroDesignStyle } from "@/app/components/crm-template-editor/hero-designs/registry";
 import {
   getLandingDesignStyle,
   normalizeLandingDesign,
 } from "@/app/components/crm-template-editor/landing-designs/registry";
-import { normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
 import { textColorStyle } from "@/app/components/crm-template-editor/landing-content-colors";
 import type {
   LandingTemplatePage,
@@ -71,13 +66,9 @@ export function SignupPagePreview({
 }) {
   const landingDesign = normalizeLandingDesign(landingPage.landingDesign);
   const landingStyle = getLandingDesignStyle(landingDesign);
-  const heroStyle = getHeroDesignStyle(normalizeHeroDesign(landingPage.heroDesign));
   const isDark = isLandingDesignDark(landingDesign);
   const layoutType = landingPage.layoutType;
   const centered = layoutType === "centered";
-  const align = centered ? "text-center items-center" : "text-left items-start";
-  const contentBg =
-    landingPage.backgroundColor?.trim() || landingStyle.backgroundDefault;
 
   const bodyColorStyle = textColorStyle(landingPage.bodyColor);
 
@@ -182,23 +173,12 @@ export function SignupPagePreview({
   );
 
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden">
-      <LandingHero
-        url={heroImageUrl}
-        scale={heroImageScale}
-        fadeColor={contentBg}
-        placeholderClass={landingStyle.heroPlaceholderClass}
-        heroStyle={heroStyle}
-      />
-      <div
-        className={`flex flex-col ${align} px-5 pb-8 pt-6 sm:px-6`}
-        style={pageBackgroundStyle(
-          landingPage.backgroundColor,
-          landingStyle.backgroundDefault,
-        )}
-      >
-        {content}
-      </div>
-    </div>
+    <LandingFunnelStepShell
+      landingPage={landingPage}
+      heroImageUrl={heroImageUrl}
+      heroImageScale={heroImageScale}
+    >
+      {content}
+    </LandingFunnelStepShell>
   );
 }

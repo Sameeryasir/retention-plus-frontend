@@ -91,6 +91,8 @@ export default function CampaignWelcomePage() {
             restaurantId={restaurantId}
             campaignId={campaignId}
             campaignName={campaign?.campaignName}
+            campaignPrice={campaign?.price}
+            campaignOffer={campaign?.offer}
           />
         </div>
       ) : activeTabId === "overview" ? (

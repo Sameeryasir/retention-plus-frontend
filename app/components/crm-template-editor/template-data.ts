@@ -1,3 +1,7 @@
+import {
+  CheckoutTemplateType,
+  DEFAULT_CHECKOUT_THEME,
+} from "@/app/components/crm-template-editor/checkout-template-types";
 import type {
   FormDesign,
   FormFieldId,
@@ -69,6 +73,12 @@ export const INITIAL_TEMPLATE_PAGES: TemplatePagesState = {
     imageScale: 1,
     backgroundColor: "#f4f4f5",
     layoutType: "narrow",
+    checkoutTemplate: CheckoutTemplateType.SHOPIFY,
+    showCoupon: true,
+    showPhoneField: true,
+    showAddressField: true,
+    showOrderSummary: true,
+    checkoutTheme: { ...DEFAULT_CHECKOUT_THEME },
     formDesign: DEFAULT_DESIGN,
     payWithLinkText: "Pay with link",
     checkoutDividerText: "or",

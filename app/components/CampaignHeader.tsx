@@ -94,9 +94,13 @@ export default function CampaignHeader({
     return buildFunnelPublicPath({
       funnelId: routeId,
       step: "landing",
-      query: { restaurantId, campaignId },
+      query: {
+        restaurantId,
+        campaignId,
+        price: parsePrice(price) ?? price,
+      },
     });
-  }, [campaignId, funnelId, restaurantId]);
+  }, [campaignId, funnelId, restaurantId, price]);
 
   const landingTrackingUrl = useMemo(() => {
     if (!landingTrackingPath || !trackingOrigin) return "";

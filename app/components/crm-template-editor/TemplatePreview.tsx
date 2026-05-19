@@ -16,6 +16,7 @@ import {
   imageScaleStyle,
   normalizeImageScale,
 } from "@/app/components/crm-template-editor/template-image";
+import type { CampaignPricing } from "@/app/lib/campaign-price";
 import type {
   LandingTemplatePage,
   SignUpTemplatePage,
@@ -130,6 +131,7 @@ export function TemplatePreview({
   editorStepPreviewChrome = false,
   paymentStripeCheckout = null,
   trackingFunnelId = null,
+  campaignPricing,
 }: {
   page: TemplatePage;
   landingPage: TemplatePage;
@@ -141,6 +143,7 @@ export function TemplatePreview({
   editorStepPreviewChrome?: boolean;
   paymentStripeCheckout?: FunnelStripePaymentContext | null;
   trackingFunnelId?: number | null;
+  campaignPricing?: CampaignPricing | null;
 }) {
   const router = useRouter();
   const [signupSubmitting, setSignupSubmitting] = useState(false);
@@ -243,14 +246,20 @@ export function TemplatePreview({
   );
 
   if (page.id === "payment") {
-    return withSurface(
-      "text-left",
-      <PaymentPagePreview
-        page={page}
-        landingPage={landingPage}
-        interactive={interactiveForms}
-        stripeCheckout={paymentStripeCheckout}
-      />,
+    return (
+      <div className={`${shell} w-full min-w-0`}>
+        <div
+          className={`w-full min-w-0 overflow-hidden ${previewFrameClass}`}
+        >
+          <PaymentPagePreview
+            page={page}
+            landingPage={landingPage}
+            interactive={interactiveForms}
+            stripeCheckout={paymentStripeCheckout}
+            campaignPricing={campaignPricing}
+          />
+        </div>
+      </div>
     );
   }
 

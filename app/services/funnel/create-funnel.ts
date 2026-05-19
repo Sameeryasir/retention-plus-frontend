@@ -80,6 +80,17 @@ export type CreateFunnelPaymentPagePayload = {
   heroImageScale: number;
   backgroundColor: string;
   layoutType: string;
+  checkoutTemplate?: string;
+  showCoupon?: boolean;
+  showPhoneField?: boolean;
+  showAddressField?: boolean;
+  showOrderSummary?: boolean;
+  checkoutTheme?: {
+    background?: string;
+    buttonColor?: string;
+    borderRadius?: string;
+    shadow?: string;
+  };
   paymentFormDesign: string;
   payWithLinkText: string;
   checkoutDividerText: string;
@@ -193,6 +204,12 @@ function buildPaymentPayload(
     heroImageScale: page.imageScale,
     backgroundColor: page.backgroundColor,
     layoutType: page.layoutType,
+    checkoutTemplate: page.checkoutTemplate,
+    showCoupon: page.showCoupon,
+    showPhoneField: page.showPhoneField,
+    showAddressField: page.showAddressField,
+    showOrderSummary: page.showOrderSummary,
+    checkoutTheme: page.checkoutTheme,
     paymentFormDesign: page.formDesign,
     payWithLinkText: page.payWithLinkText,
     checkoutDividerText: page.checkoutDividerText,

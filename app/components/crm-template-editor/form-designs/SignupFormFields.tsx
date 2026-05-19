@@ -26,7 +26,6 @@ export function SignupFormFields({
   design: FormDesign;
   interactive?: boolean;
   omitInteractiveForm?: boolean;
-  /** When set, fields blend with the landing page (no separate hero column). */
   blendWithLandingDesign?: string;
 }) {
   const labels = Object.fromEntries(

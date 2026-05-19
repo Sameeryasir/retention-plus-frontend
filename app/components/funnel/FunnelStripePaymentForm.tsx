@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { Loader2 } from "lucide-react";
-import { CheckoutForm } from "@/app/components/funnel/CheckoutForm";
+import { CustomCardCheckoutForm } from "@/app/components/funnel/CustomCardCheckoutForm";
+import type { PaymentTemplatePage } from "@/app/components/crm-template-editor/template-types";
+import type { CheckoutFormStyles } from "@/app/components/payment-templates/shared/checkout-form-styles";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
 import { setFunnelPaymentId } from "@/app/lib/funnel-checkout-storage";
 import { createPaymentIntent } from "@/app/services/payment/create-payment-intent";
@@ -20,8 +22,12 @@ export type FunnelStripePaymentContext = {
 
 export function FunnelStripePaymentForm({
   context,
+  page,
+  formStyles,
 }: {
   context: FunnelStripePaymentContext;
+  page: PaymentTemplatePage;
+  formStyles: CheckoutFormStyles;
 }) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [stripeAccountId, setStripeAccountId] = useState<string | null>(null);
@@ -32,6 +38,8 @@ export function FunnelStripePaymentForm({
   const configError = publishableKey
     ? null
     : "Payments are not configured yet. Please add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.";
+
+  const darkInputs = formStyles.isDark;
 
   const stripePromise = useMemo(() => {
     if (!publishableKey || !clientSecret) return null;
@@ -91,6 +99,12 @@ export function FunnelStripePaymentForm({
     }
   };
 
+  useEffect(() => {
+    if (!publishableKey || clientSecret || creating) return;
+    void startPaymentIntent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load intent once per context
+  }, [publishableKey, context.funnelId, context.restaurantId]);
+
   if (configError) {
     return (
       <p className="text-xs font-medium text-red-600" role="alert">
@@ -119,7 +133,7 @@ export function FunnelStripePaymentForm({
               Preparing checkout…
             </span>
           ) : (
-            "Pay Now"
+            "Prepare payment"
           )}
         </button>
       </div>
@@ -128,9 +142,9 @@ export function FunnelStripePaymentForm({
 
   if (!stripePromise) {
     return (
-      <div className="flex items-center justify-center gap-2 py-8 text-sm text-zinc-500">
+      <div className="flex items-center justify-center gap-2 py-6 text-sm text-zinc-500">
         <Loader2 className="size-5 animate-spin" aria-hidden />
-        Loading Stripe…
+        Loading secure payment…
       </div>
     );
   }
@@ -141,10 +155,24 @@ export function FunnelStripePaymentForm({
       stripe={stripePromise}
       options={{
         clientSecret,
-        appearance: { theme: "stripe", variables: { borderRadius: "8px" } },
+        appearance: {
+          theme: darkInputs ? "night" : "stripe",
+          variables: {
+            borderRadius: page.checkoutTheme.borderRadius.replace("px", "") || "8",
+          },
+        },
       }}
     >
-      <CheckoutForm funnelId={context.funnelId} />
+      <p className="mb-3 text-left text-sm font-semibold tracking-tight text-inherit">
+        {page.paymentMethodSectionTitle || "Payment method"}
+      </p>
+      <CustomCardCheckoutForm
+        clientSecret={clientSecret}
+        funnelId={context.funnelId}
+        customerEmail={context.customerEmail}
+        page={page}
+        formStyles={formStyles}
+      />
     </Elements>
   );
 }
