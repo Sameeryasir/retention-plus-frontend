@@ -8,8 +8,6 @@ import { automationEase } from "@/app/components/automation/automation-ui";
 import { AutomationApiError } from "@/app/services/automation/automation-fetch";
 import { startExecution } from "@/app/services/automation/execution-api";
 
-const HARDCODED_CUSTOMER_ID = 34;
-
 export function StartExecutionModal({
   open,
   onClose,
@@ -78,7 +76,7 @@ export function StartExecutionModal({
                   Run for customer
                 </h2>
                 <p className="mt-1 text-sm text-zinc-500">
-                  Start this automation for one customer.
+                  Start a new run for this automation.
                 </p>
               </div>
               <button
@@ -100,11 +98,8 @@ export function StartExecutionModal({
                 }
                 setSubmitting(true);
                 try {
-                  const run = await startExecution({
-                    automationId,
-                    customerId: HARDCODED_CUSTOMER_ID,
-                  });
-                  toast.success("Workflow started for customer.");
+                  const run = await startExecution({ automationId });
+                  toast.success("Workflow started.");
                   onStarted(run.id);
                   onClose();
                 } catch (err) {
@@ -126,12 +121,6 @@ export function StartExecutionModal({
                 }
               }}
             >
-              <p className="rounded-xl border border-zinc-200/90 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
-                Customer ID:{" "}
-                <span className="font-bold text-zinc-900">
-                  {HARDCODED_CUSTOMER_ID}
-                </span>
-              </p>
               {automationActive === false ? (
                 <p className="text-xs text-amber-800">
                   This automation is not active. Activate it before starting runs.

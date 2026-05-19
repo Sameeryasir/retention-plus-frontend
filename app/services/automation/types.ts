@@ -116,6 +116,5 @@ export interface AutomationLog {
 
 export interface StartAutomationExecutionBody {
   automationId: number;
-  customerId: number;
   currentNodeId?: number;
 }
