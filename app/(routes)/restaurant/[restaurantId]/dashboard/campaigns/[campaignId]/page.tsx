@@ -43,11 +43,13 @@ export default function CampaignWelcomePage() {
   const openAutomationBuilder = useCallback(
     (automationId: string) => {
       if (restaurantId == null) return;
+      const funnelQuery =
+        funnelId != null ? `?funnelId=${encodeURIComponent(String(funnelId))}` : "";
       router.push(
-        `/restaurant/${restaurantId}/dashboard/automations/${automationId}`,
+        `/restaurant/${restaurantId}/dashboard/automations/${automationId}${funnelQuery}`,
       );
     },
-    [router, restaurantId],
+    [router, restaurantId, funnelId],
   );
 
   useEffect(() => {
@@ -122,6 +124,9 @@ export default function CampaignWelcomePage() {
       ) : activeTabId === "automations" ? (
         <AutomationListPage
           restaurantId={restaurantId}
+          campaignId={campaignId}
+          funnelId={funnelId}
+          isFunnelIdLoading={isFunnelIdLoading}
           onOpenBuilder={openAutomationBuilder}
         />
       ) : (

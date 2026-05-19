@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { AutomationBuilderPage } from "@/app/components/automation/AutomationBuilderPage";
+import { parsePositiveInt } from "@/app/lib/numbers";
+import { resolveAutomationNumericId } from "@/app/lib/resolve-automation-id";
 
 function parseRestaurantId(raw: unknown): number | undefined {
   if (typeof raw !== "string" || !/^\d+$/.test(raw)) return undefined;
@@ -13,6 +15,11 @@ function parseRestaurantId(raw: unknown): number | undefined {
 
 export default function RestaurantAutomationBuilderRoute() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const funnelId = useMemo(
+    () => parsePositiveInt(searchParams.get("funnelId")),
+    [searchParams],
+  );
   const restaurantId = useMemo(
     () => parseRestaurantId(params.restaurantId),
     [params.restaurantId],
@@ -34,10 +41,14 @@ export default function RestaurantAutomationBuilderRoute() {
     );
   }
 
+  const automationNumericId = resolveAutomationNumericId(automationId);
+
   return (
     <AutomationBuilderPage
       restaurantId={restaurantId}
       automationId={automationId}
+      automationNumericId={automationNumericId}
+      funnelId={funnelId}
     />
   );
 }

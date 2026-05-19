@@ -11,6 +11,7 @@ export function CreateAutomationModal({
   open,
   onClose,
   onCreate,
+  isSubmitting = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -18,7 +19,8 @@ export function CreateAutomationModal({
     name: string;
     description: string;
     trigger: string;
-  }) => void;
+  }) => void | Promise<void>;
+  isSubmitting?: boolean;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -96,8 +98,8 @@ export function CreateAutomationModal({
               className="space-y-4 px-6 py-5"
               onSubmit={(e) => {
                 e.preventDefault();
-                if (!name.trim()) return;
-                onCreate({
+                if (!name.trim() || isSubmitting) return;
+                void onCreate({
                   name: name.trim(),
                   description: description.trim(),
                   trigger,
@@ -148,16 +150,17 @@ export function CreateAutomationModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="cursor-pointer rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50"
+                  disabled={isSubmitting}
+                  className="cursor-pointer rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={!name.trim()}
+                  disabled={!name.trim() || isSubmitting}
                   className="cursor-pointer rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Create
+                  {isSubmitting ? "Creating…" : "Create"}
                 </button>
               </div>
             </form>

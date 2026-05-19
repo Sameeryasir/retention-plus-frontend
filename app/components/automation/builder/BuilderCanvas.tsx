@@ -14,10 +14,12 @@ const ZOOM_STEP = 0.08;
 
 export function BuilderCanvas({
   nodes,
+  loading = false,
   selectedId,
   onSelect,
 }: {
   nodes: WorkflowNode[];
+  loading?: boolean;
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
@@ -87,6 +89,14 @@ export function BuilderCanvas({
           animate={{ scale: zoom }}
           transition={{ type: "spring", stiffness: 260, damping: 28 }}
         >
+          {loading ? (
+            <p className="py-16 text-sm text-zinc-500">Loading workflow…</p>
+          ) : nodes.length === 0 ? (
+            <p className="max-w-sm py-16 text-center text-sm text-zinc-500">
+              No steps yet. Pick a block from the left sidebar to build your
+              automation.
+            </p>
+          ) : null}
           {nodes.map((node, index) => (
             <div key={node.id} className="flex w-full flex-col items-center">
               <WorkflowNodeCard

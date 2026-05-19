@@ -3,20 +3,28 @@
 import { ChevronRight, MoreHorizontal, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import SearchBar from "@/app/components/SearchBar";
+import { Skeleton } from "@/app/components/skeleton";
 import { CreateAutomationModal } from "@/app/components/automation/CreateAutomationModal";
 import {
   automationItem,
   automationStagger,
   statusBadgeClass,
 } from "@/app/components/automation/automation-ui";
-import { MOCK_AUTOMATIONS } from "@/app/components/automation/mock-data";
 import type {
   AutomationFilter,
   AutomationListItem,
-  AutomationStatus,
 } from "@/app/components/automation/types";
+import { isPositiveInt } from "@/app/lib/numbers";
+import { AutomationApiError } from "@/app/services/automation/automation-fetch";
+import {
+  createAutomation,
+  getAutomations,
+  mapAutomationToListItem,
+  triggerToApi,
+} from "@/app/services/automation/automation-api";
 
 const FILTERS: { id: AutomationFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -26,24 +34,50 @@ const FILTERS: { id: AutomationFilter; label: string }[] = [
   { id: "paused", label: "Paused" },
 ];
 
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
 export function AutomationListPage({
   restaurantId,
+  campaignId,
+  funnelId,
+  isFunnelIdLoading = false,
   onOpenBuilder,
 }: {
   restaurantId: number;
+  campaignId?: number;
+  funnelId?: number | null;
+  isFunnelIdLoading?: boolean;
   onOpenBuilder?: (automationId: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<AutomationFilter>("all");
-  const [items, setItems] = useState<AutomationListItem[]>(MOCK_AUTOMATIONS);
+  const [items, setItems] = useState<AutomationListItem[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const loadAutomations = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const list = await getAutomations(restaurantId);
+      setItems(list.map((a) => mapAutomationToListItem(a)));
+    } catch (err) {
+      setItems([]);
+      setLoadError(
+        err instanceof AutomationApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not load automations.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [restaurantId]);
+
+  useEffect(() => {
+    void loadAutomations();
+  }, [loadAutomations]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -58,8 +92,15 @@ export function AutomationListPage({
     });
   }, [items, query, filter]);
 
-  const builderHref = (id: string) =>
-    `/restaurant/${restaurantId}/dashboard/automations/${id}`;
+  const builderHref = (row: AutomationListItem) => {
+    const base = `/restaurant/${restaurantId}/dashboard/automations/${
+      row.numericId != null ? String(row.numericId) : row.id
+    }`;
+    if (funnelId != null && funnelId >= 1) {
+      return `${base}?funnelId=${encodeURIComponent(String(funnelId))}`;
+    }
+    return base;
+  };
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-50">
@@ -113,6 +154,22 @@ export function AutomationListPage({
           </select>
         </motion.div>
 
+        {loadError ? (
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-8 text-center text-sm text-red-800">
+            <p>{loadError}</p>
+            <button
+              type="button"
+              onClick={() => void loadAutomations()}
+              className="mt-3 cursor-pointer font-semibold underline"
+            >
+              Try again
+            </button>
+          </div>
+        ) : loading ? (
+          <AutomationListSkeleton />
+        ) : null}
+
+        {!loading && !loadError ? (
         <motion.div
           className="mt-6 hidden overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-950/[0.04] lg:block"
           variants={automationStagger}
@@ -132,12 +189,14 @@ export function AutomationListPage({
             <AutomationTableRow
               key={row.id}
               row={row}
-              href={builderHref(row.id)}
+              href={builderHref(row)}
               onOpenBuilder={onOpenBuilder}
             />
           ))}
         </motion.div>
+        ) : null}
 
+        {!loading && !loadError ? (
         <motion.div
           className="mt-6 grid gap-4 lg:hidden"
           variants={automationStagger}
@@ -148,13 +207,14 @@ export function AutomationListPage({
             <AutomationCard
               key={row.id}
               row={row}
-              href={builderHref(row.id)}
+              href={builderHref(row)}
               onOpenBuilder={onOpenBuilder}
             />
           ))}
         </motion.div>
+        ) : null}
 
-        {filtered.length === 0 ? (
+        {!loading && !loadError && filtered.length === 0 ? (
           <p className="mt-8 rounded-2xl border border-zinc-200/90 bg-white px-4 py-12 text-center text-sm text-zinc-500 shadow-sm">
             No automations match your search.
           </p>
@@ -163,25 +223,120 @@ export function AutomationListPage({
 
       <CreateAutomationModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onCreate={({ name, description, trigger }) => {
-          const id = slugify(name) || `automation-${Date.now()}`;
-          const next: AutomationListItem = {
-            id,
-            name,
-            description,
-            trigger,
-            status: "draft" as AutomationStatus,
-            restaurant: "Feastalytics Demo",
-            lastUpdated: "Just now",
-            customersEntered: 0,
-          };
-          setItems((prev) => [next, ...prev]);
-          setModalOpen(false);
-          onOpenBuilder?.(id);
+        isSubmitting={creating}
+        onClose={() => {
+          if (!creating) setModalOpen(false);
+        }}
+        onCreate={async ({ name, description, trigger }) => {
+          if (isFunnelIdLoading) {
+            toast.error("Still loading funnel. Try again in a moment.");
+            return;
+          }
+          if (
+            !isPositiveInt(restaurantId) ||
+            !isPositiveInt(campaignId) ||
+            !isPositiveInt(funnelId)
+          ) {
+            toast.error("Restaurant, campaign, and funnel are required.");
+            return;
+          }
+          setCreating(true);
+          try {
+            const created = await createAutomation({
+              name,
+              description: description || undefined,
+              trigger: triggerToApi(trigger),
+              restaurantId,
+              campaignId,
+              funnelId,
+            });
+            const next = mapAutomationToListItem(created);
+            setItems((prev) => [next, ...prev]);
+            setModalOpen(false);
+            toast.success("Automation created.");
+            const builderId = String(created.id);
+            onOpenBuilder?.(builderId);
+          } catch (err) {
+            toast.error(
+              err instanceof AutomationApiError
+                ? err.message
+                : err instanceof Error
+                  ? err.message
+                  : "Could not create automation.",
+            );
+          } finally {
+            setCreating(false);
+          }
         }}
       />
     </div>
+  );
+}
+
+const TABLE_GRID =
+  "grid grid-cols-[minmax(0,1.4fr)_0.7fr_0.6fr_0.9fr_0.8fr_0.7fr_2.5rem] gap-4";
+
+function AutomationListSkeleton() {
+  return (
+    <motion.div
+      className="mt-6"
+      aria-busy="true"
+      aria-label="Loading automations"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25 }}
+    >
+      <div className="hidden overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-950/[0.04] lg:block">
+        <div
+          className={`${TABLE_GRID} border-b border-zinc-200 bg-zinc-50/90 px-5 py-3.5`}
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} funnel className="h-3 w-16" />
+          ))}
+          <Skeleton funnel className="h-3 w-3" />
+        </div>
+        {Array.from({ length: 5 }).map((_, row) => (
+          <div
+            key={row}
+            className={`${TABLE_GRID} items-center border-b border-zinc-100 px-5 py-4 last:border-0`}
+          >
+            <div className="min-w-0 space-y-2">
+              <Skeleton funnel className="h-4 w-4/5" />
+              <Skeleton funnel className="h-3 w-1/2" />
+            </div>
+            <Skeleton funnel className="h-4 w-14" />
+            <Skeleton funnel className="h-6 w-16 rounded-full" />
+            <Skeleton funnel className="h-4 w-20" />
+            <Skeleton funnel className="h-4 w-16" />
+            <Skeleton funnel className="h-4 w-8" />
+            <Skeleton funnel className="size-4 rounded-full" />
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:hidden">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <article
+            key={i}
+            className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm ring-1 ring-zinc-950/[0.03]"
+            aria-hidden
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton funnel className="h-5 w-3/4" />
+                <Skeleton funnel className="h-3 w-1/3" />
+              </div>
+              <Skeleton funnel className="h-6 w-14 shrink-0 rounded-full" />
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <Skeleton funnel className="h-8 w-full" />
+              <Skeleton funnel className="h-8 w-full" />
+            </div>
+            <Skeleton funnel className="mt-4 h-3 w-24" />
+          </article>
+        ))}
+      </div>
+    </motion.div>
   );
 }
 

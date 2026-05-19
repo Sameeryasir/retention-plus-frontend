@@ -6,6 +6,7 @@ export type AutomationFilter = "all" | AutomationStatus;
 
 export type AutomationListItem = {
   id: string;
+  numericId?: number;
   name: string;
   description: string;
   trigger: string;
@@ -41,6 +42,8 @@ export type BlockDefinition = {
 
 export type WorkflowNode = {
   id: string;
+  numericId?: number;
+  automationId?: number;
   kind: WorkflowNodeKind;
   label: string;
 };
