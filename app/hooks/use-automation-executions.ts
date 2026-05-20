@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getExecutions } from "@/app/services/automation/execution-api";
+import {
+  deleteExecution as deleteExecutionApi,
+  getExecutions,
+} from "@/app/services/automation/execution-api";
 import {
   EXECUTIONS_PAGE_SIZE,
   type AutomationExecution,
@@ -22,6 +25,7 @@ export function useAutomationExecutions(
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const mountedRef = useRef(true);
 
   const fetchPage = useCallback(
@@ -76,6 +80,30 @@ export function useAutomationExecutions(
     [fetchPage],
   );
 
+  /** DELETE /automation/execution/:id — refreshes the current list after delete. */
+  const deleteExecution = useCallback(
+    async (executionId: number): Promise<void> => {
+      setDeletingId(executionId);
+      try {
+        await deleteExecutionApi(executionId);
+        if (!mountedRef.current) return;
+
+        const isLastOnPage = executions.length === 1;
+        const previousPage = page;
+        if (isLastOnPage && previousPage > 1) {
+          await fetchPage(previousPage - 1);
+        } else {
+          await fetchPage(previousPage);
+        }
+      } finally {
+        if (mountedRef.current) {
+          setDeletingId(null);
+        }
+      }
+    },
+    [executions.length, page, fetchPage],
+  );
+
   useEffect(() => {
     mountedRef.current = true;
     void fetchPage(1);
@@ -93,5 +121,7 @@ export function useAutomationExecutions(
     loading,
     error,
     refetch,
+    deleteExecution,
+    deletingId,
   };
 }

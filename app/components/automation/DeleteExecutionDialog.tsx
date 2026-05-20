@@ -17,14 +17,16 @@ export function DeleteExecutionDialog({
   return (
     <ConfirmDialog
       open={open}
+      tone="danger"
       icon={Trash2}
       titleId="delete-execution-title"
       title="Delete this run?"
-      description="This removes the run and all of its activity logs. You can’t undo this action."
+      description="This run and its activity logs will be removed permanently. This cannot be undone."
+      confirmLabel="Delete run"
       isLoading={isDeleting}
       loadingLabel="Deleting…"
       confirmCheckbox={{
-        label: "Yes, permanently delete this run",
+        label: "I understand this cannot be undone",
       }}
       onCancel={onCancel}
       onConfirm={onConfirm}

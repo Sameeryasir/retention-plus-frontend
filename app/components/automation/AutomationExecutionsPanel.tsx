@@ -41,7 +41,6 @@ import { useStartAutomationRun } from "@/app/hooks/use-start-automation-run";
 import { TableColumnHeader } from "@/app/components/TableColumnHeader";
 import { StatusPill } from "@/app/components/StatusPill";
 import { toastApiError } from "@/app/lib/toast-api-error";
-import { deleteExecution } from "@/app/services/automation/execution-api";
 import type {
   AutomationExecution,
   AutomationExecutionStatus,
@@ -372,31 +371,32 @@ export function AutomationExecutionsPanel({
 
   const apiStatus = statusFilter === "all" ? undefined : statusFilter;
 
-  const { executions, meta, summary, page, setPage, loading, error, refetch } =
-    useAutomationExecutions(automationId, apiStatus);
+  const {
+    executions,
+    meta,
+    summary,
+    page,
+    setPage,
+    loading,
+    error,
+    refetch,
+    deleteExecution,
+    deletingId,
+  } = useAutomationExecutions(automationId, apiStatus);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const confirmDeleteRun = useCallback(async () => {
     const executionId = deleteTargetId;
     if (executionId == null) return;
 
-    setDeletingId(executionId);
     try {
       await deleteExecution(executionId);
       toast.success("Run deleted.");
       setDeleteTargetId(null);
-      if (executions.length === 1 && page > 1) {
-        setPage(page - 1);
-      } else {
-        await refetch();
-      }
     } catch (err) {
       toastApiError(err, "Could not delete run.");
-    } finally {
-      setDeletingId(null);
     }
-  }, [deleteTargetId, executions.length, page, refetch, setPage]);
+  }, [deleteTargetId, deleteExecution]);
 
   const stats = useMemo(() => {
     return {
@@ -599,7 +599,7 @@ export function AutomationExecutionsPanel({
 
     <DeleteExecutionDialog
       open={deleteTargetId != null}
-      isDeleting={deletingId != null}
+      isDeleting={deletingId === deleteTargetId}
       onCancel={() => {
         if (deletingId == null) setDeleteTargetId(null);
       }}
