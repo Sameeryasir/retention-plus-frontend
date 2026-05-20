@@ -12,7 +12,7 @@ export type FunnelEventStats = {
   signupOnly: number;
   paidAfterSignup: number;
   revenue: number;
-  currency: string;
+  currency: string | null;
 };
 
 export async function getFunnelEventStats(

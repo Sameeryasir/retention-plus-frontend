@@ -35,7 +35,8 @@ import {
   deleteAutomationNode,
   mapApiNodeToWorkflowNode,
   mapAutomationGraphToWorkflowNodes,
-  SIGNUP_TRIGGER_DEFAULT_CONFIG,
+  defaultConfigForBlockKind,
+  isTriggerBlockKind,
   updateAutomationNode,
 } from "@/app/services/automation/node-api";
 import { isPositiveInt } from "@/app/lib/numbers";
@@ -174,10 +175,16 @@ export function AutomationBuilderPage({
   );
 
   useEffect(() => {
-    if (selectedNode?.kind !== "signup_trigger" || selectedNode.numericId == null) {
+    if (
+      !selectedNode ||
+      !isTriggerBlockKind(selectedNode.kind) ||
+      selectedNode.numericId == null
+    ) {
       return;
     }
-    if (selectedNode.config?.trigger === "signup") {
+    const defaultConfig = defaultConfigForBlockKind(selectedNode.kind);
+    const expectedTrigger = defaultConfig.trigger;
+    if (selectedNode.config?.trigger === expectedTrigger) {
       return;
     }
 
@@ -188,7 +195,7 @@ export function AutomationBuilderPage({
       setSavingNode(true);
       try {
         const updated = await updateAutomationNode(nodeId, {
-          config: SIGNUP_TRIGGER_DEFAULT_CONFIG,
+          config: defaultConfig,
         });
         if (cancelled) return;
         const mapped = {
@@ -196,14 +203,14 @@ export function AutomationBuilderPage({
           config:
             updated.config && Object.keys(updated.config).length > 0
               ? updated.config
-              : SIGNUP_TRIGGER_DEFAULT_CONFIG,
+              : defaultConfig,
         };
         setNodes((prev) =>
           prev.map((n) => (n.numericId === updated.id ? mapped : n)),
         );
       } catch (err) {
         if (cancelled) return;
-        toastApiError(err, "Could not save signup trigger settings.");
+        toastApiError(err, "Could not save trigger settings.");
       } finally {
         if (!cancelled) setSavingNode(false);
       }
@@ -240,16 +247,25 @@ export function AutomationBuilderPage({
 
       const order = nodes.length;
       const previousNode = nodes[nodes.length - 1] ?? null;
+      const defaultConfig = defaultConfigForBlockKind(blockId);
       try {
         const created = await createAutomationNode({
           automationId: automationNumericId,
           type: blockKindToNodeType(blockId),
           order,
-          config: {},
+          config: defaultConfig,
           positionX: 100,
           positionY: 200 + order * 120,
         });
-        const next = mapApiNodeToWorkflowNode(created);
+        const next: WorkflowNode = {
+          ...mapApiNodeToWorkflowNode(created),
+          kind: blockId,
+          label: block.label,
+          config: {
+            ...defaultConfig,
+            ...(created.config ?? {}),
+          },
+        };
         setNodes((prev) => [
           ...prev.filter((n) => n.numericId !== created.id),
           next,

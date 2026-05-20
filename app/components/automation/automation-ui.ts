@@ -1,4 +1,23 @@
-import type { AutomationStatus } from "@/app/components/automation/types";
+import type {
+  AutomationStatus,
+  WorkflowNode,
+  WorkflowNodeKind,
+} from "@/app/components/automation/types";
+
+const TRIGGER_NODE_KINDS = new Set<WorkflowNodeKind>([
+  "signup_trigger",
+  "payment_trigger",
+  "funnel_complete",
+]);
+
+export function isTriggerNodeKind(kind: WorkflowNodeKind): boolean {
+  return TRIGGER_NODE_KINDS.has(kind);
+}
+
+export function workflowStartsWithTrigger(nodes: WorkflowNode[]): boolean {
+  const first = nodes[0];
+  return first != null && isTriggerNodeKind(first.kind);
+}
 import { automationEase } from "@/app/lib/motion";
 
 export { automationEase };

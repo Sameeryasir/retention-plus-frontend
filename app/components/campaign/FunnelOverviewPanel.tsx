@@ -292,8 +292,8 @@ export function FunnelOverviewPanel({
               <motion.div variants={overviewItem}>
                 <StatCard
                 label="Revenue"
-                value={formatCents(stats.revenue, stats.currency)}
-                hint={`Currency: ${stats.currency.toUpperCase()}`}
+                value={formatCents(stats.revenue, stats.currency ?? "usd")}
+                hint={`Currency: ${(stats.currency ?? "usd").toUpperCase()}`}
                 icon={DollarSign}
                 accent="bg-zinc-900"
               />

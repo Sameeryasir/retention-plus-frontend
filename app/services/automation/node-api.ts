@@ -29,6 +29,28 @@ export const SIGNUP_TRIGGER_DEFAULT_CONFIG: Record<string, unknown> = {
   trigger: "signup",
 };
 
+const TRIGGER_DEFAULT_CONFIG_BY_KIND: Partial<
+  Record<WorkflowNodeKind, Record<string, unknown>>
+> = {
+  signup_trigger: SIGNUP_TRIGGER_DEFAULT_CONFIG,
+  payment_trigger: { trigger: "payment" },
+  funnel_complete: { trigger: "funnel_complete" },
+};
+
+const TRIGGER_BLOCK_KINDS = new Set<WorkflowNodeKind>(
+  Object.keys(TRIGGER_DEFAULT_CONFIG_BY_KIND) as WorkflowNodeKind[],
+);
+
+export function isTriggerBlockKind(kind: WorkflowNodeKind): boolean {
+  return TRIGGER_BLOCK_KINDS.has(kind);
+}
+
+export function defaultConfigForBlockKind(
+  kind: WorkflowNodeKind,
+): Record<string, unknown> {
+  return TRIGGER_DEFAULT_CONFIG_BY_KIND[kind] ?? {};
+}
+
 const BLOCK_TO_NODE_TYPE: Record<WorkflowNodeKind, ApiNodeType> = {
   signup_trigger: "trigger",
   payment_trigger: "trigger",
