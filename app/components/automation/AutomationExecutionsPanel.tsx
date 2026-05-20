@@ -14,14 +14,18 @@ import {
   Workflow,
   XCircle,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { RunProgressBanner } from "@/app/components/automation/RunProgressBanner";
 import {
   customerLabel,
+  executionProgressLabel,
   executionRunSubtitle,
   executionRunTitle,
   executionStatusBadgeClass,
   formatExecutionDateTime,
   formatScheduledCountdown,
+  isExecutionInProgress,
 } from "@/app/components/automation/execution-status-ui";
 import { Skeleton } from "@/app/components/skeleton";
 import { useAutomationExecutions } from "@/app/hooks/use-automation-executions";
@@ -40,6 +44,7 @@ const RUNS_TABLE_GRID =
 const STATUS_FILTERS: { id: "all" | AutomationExecutionStatus; label: string }[] =
   [
     { id: "all", label: "All" },
+    { id: "queued", label: "Queued" },
     { id: "running", label: "Running" },
     { id: "waiting", label: "Waiting" },
     { id: "completed", label: "Completed" },
@@ -48,6 +53,8 @@ const STATUS_FILTERS: { id: "all" | AutomationExecutionStatus; label: string }[]
 
 function statusIcon(status: AutomationExecutionStatus): LucideIcon {
   switch (status) {
+    case "queued":
+      return Loader2;
     case "running":
       return CircleDot;
     case "waiting":
@@ -156,19 +163,41 @@ function RunStatCard({
   );
 }
 
+function runDetailHref(
+  restaurantId: number,
+  automationSlug: string,
+  executionId: number,
+  funnelId?: number | null,
+): string {
+  const base = `/restaurant/${restaurantId}/dashboard/automations/${automationSlug}/runs/${executionId}?tab=runs`;
+  if (funnelId != null && funnelId >= 1) {
+    return `${base}&funnelId=${encodeURIComponent(String(funnelId))}`;
+  }
+  return base;
+}
+
 function RunRow({
   row,
-  selected,
-  onSelect,
+  restaurantId,
+  automationSlug,
+  funnelId,
 }: {
   row: AutomationExecution;
-  selected: boolean;
-  onSelect: () => void;
+  restaurantId: number;
+  automationSlug: string;
+  funnelId?: number | null;
 }) {
+  const router = useRouter();
   const StatusIcon = statusIcon(row.status);
   const countdown =
     row.status === "waiting" ? formatScheduledCountdown(row.scheduledAt) : null;
+  const progress = executionProgressLabel(
+    row.status,
+    row.emailsSentCount,
+    row.totalRecipients,
+  );
   const customersText =
+    progress ??
     executionRunSubtitle(row.executedRecipients) ??
     customerLabel(row.customerId, row.customer);
   const runSummary = executionRunTitle(
@@ -177,20 +206,32 @@ function RunRow({
     row.customer,
   );
 
+  const canOpenDetail = row.status === "completed";
+
   return (
     <button
       type="button"
-      onClick={onSelect}
-      className={`group ${RUNS_TABLE_GRID} w-full cursor-pointer border-b border-zinc-100 px-4 py-2 text-left text-xs transition last:border-0 ${
-        selected
-          ? "bg-violet-50/80 ring-1 ring-inset ring-violet-500/20"
-          : "hover:bg-zinc-50/90"
+      onClick={() => {
+        if (!canOpenDetail) return;
+        router.push(
+          runDetailHref(restaurantId, automationSlug, row.id, funnelId),
+        );
+      }}
+      disabled={!canOpenDetail}
+      className={`group ${RUNS_TABLE_GRID} w-full border-b border-zinc-100 px-4 py-2 text-left text-xs transition last:border-0 ${
+        canOpenDetail
+          ? "cursor-pointer hover:bg-zinc-50/90"
+          : "cursor-default opacity-90"
       }`}
     >
       <span
         className={`flex size-7 items-center justify-center rounded-md ${executionStatusBadgeClass(row.status)}`}
       >
-        <StatusIcon className="size-3.5" aria-hidden strokeWidth={ICON_STROKE} />
+        <StatusIcon
+          className={`size-3.5 ${row.status === "queued" || row.status === "running" ? "animate-spin" : ""}`}
+          aria-hidden
+          strokeWidth={ICON_STROKE}
+        />
       </span>
 
       <p className="min-w-0 truncate font-medium text-zinc-900" title={runSummary}>
@@ -222,8 +263,10 @@ function RunRow({
       </span>
 
       <ChevronRight
-        className={`size-3.5 text-zinc-300 transition group-hover:text-zinc-500 ${
-          selected ? "text-violet-500" : ""
+        className={`size-3.5 transition ${
+          canOpenDetail
+            ? "text-zinc-300 group-hover:text-zinc-500"
+            : "text-zinc-200"
         }`}
         aria-hidden
       />
@@ -233,21 +276,23 @@ function RunRow({
 
 export function AutomationExecutionsPanel({
   automationId,
+  automationSlug,
+  restaurantId,
+  funnelId,
   automationActive,
-  selectedExecutionId,
-  onSelectExecution,
   onExecutionStarted,
 }: {
   automationId: number;
+  automationSlug: string;
+  restaurantId: number;
+  funnelId?: number | null;
   automationActive?: boolean;
-  selectedExecutionId: number | null;
-  onSelectExecution: (id: number) => void;
-  onExecutionStarted: (id: number) => void;
+  onExecutionStarted?: (id: number) => void;
 }) {
   const [statusFilter, setStatusFilter] = useState<
     "all" | AutomationExecutionStatus
   >("all");
-  const { starting, run } = useStartAutomationRun(
+  const { busy, activeRun, run } = useStartAutomationRun(
     automationId,
     automationActive,
   );
@@ -265,7 +310,7 @@ export function AutomationExecutionsPanel({
     let customersReached = 0;
     for (const row of executions) {
       if (row.status === "completed") completed += 1;
-      if (row.status === "running" || row.status === "waiting") inProgress += 1;
+      if (isExecutionInProgress(row.status)) inProgress += 1;
       customersReached += row.executedRecipients?.length ?? 0;
     }
     return {
@@ -308,7 +353,7 @@ export function AutomationExecutionsPanel({
             <button
               type="button"
               onClick={() => void refetch()}
-              disabled={loading}
+              disabled={loading || busy}
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 disabled:opacity-50"
             >
               <RefreshCw
@@ -319,27 +364,31 @@ export function AutomationExecutionsPanel({
             </button>
             <button
               type="button"
-              disabled={starting || automationActive === false}
+              disabled={busy || automationActive === false}
               onClick={() =>
-                void run((id) => {
+                void run((result) => {
                   void refetch();
-                  onExecutionStarted(id);
+                  onExecutionStarted?.(result.executionId);
                 })
               }
               className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {starting ? (
+              {busy ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden />
               ) : (
                 <Play className="size-4" aria-hidden />
               )}
-              {starting ? "Starting…" : "Run automation"}
+              {busy ? "Running…" : "Run automation"}
             </button>
           </div>
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+        {activeRun && !activeRun.isTerminal ? (
+          <RunProgressBanner status={activeRun} />
+        ) : null}
+
         {!loading && !error && executions.length > 0 ? (
           <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             <RunStatCard label="Total runs" value={stats.total} icon={Workflow} tone="zinc" />
@@ -407,8 +456,9 @@ export function AutomationExecutionsPanel({
                 <RunRow
                   key={row.id}
                   row={row}
-                  selected={selectedExecutionId === row.id}
-                  onSelect={() => onSelectExecution(row.id)}
+                  restaurantId={restaurantId}
+                  automationSlug={automationSlug}
+                  funnelId={funnelId}
                 />
               ))}
             </div>

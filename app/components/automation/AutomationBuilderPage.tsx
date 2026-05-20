@@ -3,10 +3,10 @@
 import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AutomationActivityPanel } from "@/app/components/automation/AutomationActivityPanel";
-import { AutomationExecutionDetailPanel } from "@/app/components/automation/AutomationExecutionDetailPanel";
 import { AutomationExecutionsPanel } from "@/app/components/automation/AutomationExecutionsPanel";
 import { BlockSidebar } from "@/app/components/automation/builder/BlockSidebar";
 import { BuilderCanvas } from "@/app/components/automation/builder/BuilderCanvas";
@@ -76,7 +76,15 @@ export function AutomationBuilderPage({
   const title = automation?.name ?? "Automation";
   const [status, setStatus] = useState<AutomationStatus>("draft");
 
-  const [tab, setTab] = useState<BuilderTab>("builder");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
+  const initialTab: BuilderTab =
+    tabFromUrl === "runs" || tabFromUrl === "activity" || tabFromUrl === "builder"
+      ? tabFromUrl
+      : "builder";
+  const [tab, setTab] = useState<BuilderTab>(initialTab);
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [nodesLoading, setNodesLoading] = useState(false);
@@ -129,18 +137,31 @@ export function AutomationBuilderPage({
     void loadAutomation();
   }, [loadAutomation]);
 
-  const [selectedExecutionId, setSelectedExecutionId] = useState<number | null>(
-    null,
-  );
-
   useEffect(() => {
-    if (tab !== "runs") {
-      setSelectedExecutionId(null);
+    const next =
+      tabFromUrl === "runs" || tabFromUrl === "activity" || tabFromUrl === "builder"
+        ? tabFromUrl
+        : null;
+    if (next && next !== tab) {
+      setTab(next);
     }
-  }, [tab]);
+  }, [tabFromUrl, tab]);
 
   const automationsListHref =
     listHref ?? `/restaurant/${restaurantId}/dashboard/automations`;
+
+  const setBuilderTab = useCallback(
+    (next: BuilderTab) => {
+      setTab(next);
+      const q = new URLSearchParams(searchParams.toString());
+      q.set("tab", next);
+      if (funnelId != null && funnelId >= 1) {
+        q.set("funnelId", String(funnelId));
+      }
+      router.replace(`${pathname}?${q.toString()}`);
+    },
+    [funnelId, pathname, router, searchParams],
+  );
 
   const automationActive =
     status === "active" || automation?.status === "active";
@@ -352,7 +373,7 @@ export function AutomationBuilderPage({
             <button
               key={t.id}
               type="button"
-              onClick={() => setTab(t.id)}
+              onClick={() => setBuilderTab(t.id)}
               className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold transition ${
                 tab === t.id
                   ? "bg-white text-zinc-900 shadow-sm"
@@ -431,29 +452,18 @@ export function AutomationBuilderPage({
           </p>
         </div>
       ) : tab === "runs" ? (
-        <div className="flex min-h-0 flex-1">
-          <AutomationExecutionsPanel
-            automationId={automationNumericId}
-            automationActive={automationActive}
-            selectedExecutionId={selectedExecutionId}
-            onSelectExecution={setSelectedExecutionId}
-            onExecutionStarted={(id) => setSelectedExecutionId(id)}
-          />
-          {selectedExecutionId != null ? (
-            <AutomationExecutionDetailPanel
-              executionId={selectedExecutionId}
-              onBack={() => setSelectedExecutionId(null)}
-            />
-          ) : null}
-        </div>
+        <AutomationExecutionsPanel
+          automationId={automationNumericId}
+          automationSlug={automationId}
+          restaurantId={restaurantId}
+          funnelId={funnelId}
+          automationActive={automationActive}
+        />
       ) : (
         <AutomationActivityPanel
           automationId={automationNumericId}
           automationActive={automationActive}
-          onRunStarted={(id) => {
-            setTab("runs");
-            setSelectedExecutionId(id);
-          }}
+          onRunStarted={() => setBuilderTab("runs")}
         />
       )}
     </motion.div>

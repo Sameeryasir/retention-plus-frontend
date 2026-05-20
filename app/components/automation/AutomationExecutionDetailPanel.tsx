@@ -4,7 +4,6 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  executionRecipientsFromLogs,
   executionRunSubtitle,
   executionRunTitle,
   executionStatusBadgeClass,
@@ -27,15 +26,12 @@ export function AutomationExecutionDetailPanel({
   executionId: number;
   onBack: () => void;
 }) {
-  const { execution, logs, loading, error, refetch } =
+  const { execution, loading, error, refetch } =
     useExecutionDetail(executionId);
   const [actionLoading, setActionLoading] = useState(false);
   const isAdmin = isAdminUser();
 
-  const executedRecipients =
-    execution?.executedRecipients?.length
-      ? execution.executedRecipients
-      : executionRecipientsFromLogs(logs);
+  const executedRecipients = execution?.executedRecipients ?? [];
   const recipientSubtitle = executionRunSubtitle(executedRecipients);
 
   async function runAdminAction(
@@ -198,39 +194,10 @@ export function AutomationExecutionDetailPanel({
               ))}
             </ul>
           </div>
-        ) : null}
-        <h3 className="text-xs font-bold uppercase tracking-wide text-zinc-500">
-          Timeline
-        </h3>
-        {loading && logs.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-500">Loading logs…</p>
-        ) : logs.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-500">No log entries yet.</p>
         ) : (
-          <ol className="relative mt-4 space-y-0 border-l border-zinc-200 pl-4">
-            {logs.map((log) => (
-              <li key={log.id} className="relative pb-6 last:pb-0">
-                <span
-                  className="absolute -left-[1.3rem] top-1 size-2.5 rounded-full bg-zinc-300 ring-4 ring-white"
-                  aria-hidden
-                />
-                <p className="text-[0.65rem] font-semibold text-zinc-500">
-                  {formatExecutionDateTime(log.createdAt)}
-                </p>
-                {log.node?.type ? (
-                  <span className="mt-1 inline-flex rounded-md bg-zinc-100 px-1.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-zinc-600">
-                    {log.node.type}
-                  </span>
-                ) : null}
-                <p className="mt-1 text-sm text-zinc-800">{log.message}</p>
-                {log.error ? (
-                  <p className="mt-1 text-sm font-medium text-red-600">
-                    {log.error}
-                  </p>
-                ) : null}
-              </li>
-            ))}
-          </ol>
+          <p className="text-sm text-zinc-500">
+            Run details come from the execution record only.
+          </p>
         )}
       </div>
     </div>

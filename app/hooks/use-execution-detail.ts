@@ -41,7 +41,7 @@ export function useExecutionDetail(
       }
     } catch (e) {
       if (mountedRef.current) {
-        setError(e instanceof Error ? e.message : "Could not load execution.");
+        setError(e instanceof Error ? e.message : "Could not load run.");
         setExecution(null);
         setLogs([]);
       }

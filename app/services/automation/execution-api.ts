@@ -2,8 +2,10 @@ import { automationFetch } from "@/app/services/automation/automation-fetch";
 import type {
   AutomationExecution,
   AutomationExecutionStatus,
+  AutomationExecutionStatusDto,
   AutomationLog,
   StartAutomationExecutionBody,
+  StartAutomationExecutionResponse,
 } from "@/app/services/automation/types";
 
 export type GetExecutionsParams = {
@@ -43,11 +45,12 @@ export async function getExecutionLogs(
   return automationFetch<AutomationLog[]>(`/execution/${executionId}/logs`);
 }
 
-export async function getAutomationLogs(
-  automationId: number,
-): Promise<AutomationLog[]> {
-  return automationFetch<AutomationLog[]>(
-    `/log?automationId=${automationId}`,
+/** GET /automation/execution/:id/status — poll until isTerminal is true. */
+export async function getExecutionStatus(
+  executionId: number,
+): Promise<AutomationExecutionStatusDto> {
+  return automationFetch<AutomationExecutionStatusDto>(
+    `/execution/${executionId}/status`,
   );
 }
 
@@ -55,13 +58,13 @@ export async function getAutomationLogs(
 export async function startExecution(
   automationId: number,
   options?: Pick<StartAutomationExecutionBody, "currentNodeId">,
-): Promise<AutomationExecution> {
+): Promise<StartAutomationExecutionResponse> {
   const payload: StartAutomationExecutionBody = { automationId };
   const nodeId = options?.currentNodeId;
   if (nodeId != null && Number.isInteger(nodeId) && nodeId >= 1) {
     payload.currentNodeId = nodeId;
   }
-  return automationFetch<AutomationExecution>("/execution", {
+  return automationFetch<StartAutomationExecutionResponse>("/execution", {
     method: "POST",
     body: JSON.stringify(payload),
   });

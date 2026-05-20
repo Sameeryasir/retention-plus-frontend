@@ -4,10 +4,31 @@ import type {
   AutomationLog,
 } from "@/app/services/automation/types";
 
+export function isExecutionInProgress(
+  status: AutomationExecutionStatus,
+): boolean {
+  return status === "queued" || status === "running" || status === "waiting";
+}
+
+export function executionProgressLabel(
+  status: AutomationExecutionStatus,
+  emailsSent?: number,
+  totalRecipients?: number,
+): string | null {
+  if (!isExecutionInProgress(status)) return null;
+  const sent = emailsSent ?? 0;
+  const total = totalRecipients ?? 0;
+  if (total > 0) return `${sent} / ${total} emails`;
+  if (status === "queued") return "Queued";
+  return "In progress";
+}
+
 export function executionStatusBadgeClass(
   status: AutomationExecutionStatus,
 ): string {
   switch (status) {
+    case "queued":
+      return "bg-violet-100 text-violet-900 ring-1 ring-violet-200";
     case "running":
       return "bg-blue-100 text-blue-900 ring-1 ring-blue-200";
     case "waiting":

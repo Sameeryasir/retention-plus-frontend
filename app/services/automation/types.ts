@@ -98,10 +98,30 @@ export interface FunnelAutomationGraph {
 }
 
 export type AutomationExecutionStatus =
+  | "queued"
   | "running"
   | "waiting"
   | "completed"
   | "failed";
+
+/** GET /automation/execution/:id/status — used while polling a run. */
+export interface AutomationExecutionStatusDto {
+  executionId: number;
+  automationId: number;
+  status: AutomationExecutionStatus;
+  isTerminal: boolean;
+  totalRecipients: number;
+  emailsSent: number;
+  progressPercent: number;
+  queueJobId: string | null;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StartAutomationExecutionResponse {
+  status: AutomationExecutionStatusDto;
+}
 
 export type AutomationExecutionRecipient = {
   customerId: number;
@@ -115,6 +135,10 @@ export interface AutomationExecution {
   currentNodeId: number;
   status: AutomationExecutionStatus;
   scheduledAt: string | null;
+  totalRecipients?: number;
+  emailsSentCount?: number;
+  queueJobId?: string | null;
+  lastError?: string | null;
   createdAt: string;
   updatedAt: string;
   automation?: {

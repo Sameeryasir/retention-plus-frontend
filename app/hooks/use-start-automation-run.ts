@@ -1,31 +1,64 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { pollExecutionStatus } from "@/app/lib/poll-execution-status";
 import { AutomationApiError } from "@/app/services/automation/automation-fetch";
 import { startExecution } from "@/app/services/automation/execution-api";
+import type { AutomationExecutionStatusDto } from "@/app/services/automation/types";
 
 export function useStartAutomationRun(
   automationId: number,
   automationActive?: boolean,
 ) {
   const [starting, setStarting] = useState(false);
+  const [polling, setPolling] = useState(false);
+  const [activeRun, setActiveRun] =
+    useState<AutomationExecutionStatusDto | null>(null);
+  const pollGenerationRef = useRef(0);
 
   const run = useCallback(
-    async (onStarted?: (executionId: number) => void) => {
+    async (onFinished?: (result: AutomationExecutionStatusDto) => void) => {
       if (automationActive === false) {
         toast.error("Automation must be active before starting a run.");
         return;
       }
 
+      const generation = ++pollGenerationRef.current;
       setStarting(true);
+      setActiveRun(null);
+
       try {
-        const execution = await startExecution(automationId);
-        toast.success(
-          "Run started. Emails are sending in the background — refresh to see progress.",
+        const { status: initial } = await startExecution(automationId);
+        if (generation !== pollGenerationRef.current) return;
+
+        setActiveRun(initial);
+        setStarting(false);
+        setPolling(true);
+
+        const final = await pollExecutionStatus(
+          initial.executionId,
+          (update) => {
+            if (generation === pollGenerationRef.current) {
+              setActiveRun(update);
+            }
+          },
         );
-        onStarted?.(execution.id);
+
+        if (generation !== pollGenerationRef.current) return;
+
+        if (final.status === "completed") {
+          toast.success(
+            `Run completed — ${final.emailsSent} of ${final.totalRecipients} email${final.totalRecipients === 1 ? "" : "s"} sent.`,
+          );
+        } else if (final.status === "failed") {
+          toast.error(final.lastError ?? "Run failed.");
+        }
+
+        onFinished?.(final);
       } catch (err) {
+        if (generation !== pollGenerationRef.current) return;
+
         if (err instanceof AutomationApiError) {
           if (err.status === 403) {
             toast.error("Admin permission required.");
@@ -40,11 +73,17 @@ export function useStartAutomationRun(
           );
         }
       } finally {
-        setStarting(false);
+        if (generation === pollGenerationRef.current) {
+          setStarting(false);
+          setPolling(false);
+          setActiveRun(null);
+        }
       }
     },
     [automationId, automationActive],
   );
 
-  return { starting, run };
+  const busy = starting || polling;
+
+  return { starting, polling, busy, activeRun, run };
 }
