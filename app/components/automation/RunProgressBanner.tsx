@@ -1,6 +1,8 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { CheckCircle2, CircleDot, Loader2 } from "lucide-react";
+import { automationEase } from "@/app/lib/motion";
 import {
   isBulkEmailSendInProgress,
   normalizeExecutionStatusForDisplay,
@@ -160,9 +162,11 @@ export function RunProgressBanner({
               </span>
             </div>
             <div className="h-2.5 overflow-hidden rounded-full bg-zinc-200/80">
-              <div
-                className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-500 ease-out ${barTone}`}
-                style={{ width: `${percent}%` }}
+              <motion.div
+                className={`h-full rounded-full bg-gradient-to-r ${barTone}`}
+                initial={false}
+                animate={{ width: `${percent}%` }}
+                transition={{ duration: 0.45, ease: automationEase }}
               />
             </div>
           </div>
@@ -173,8 +177,14 @@ export function RunProgressBanner({
               <span className="text-violet-600">Bulk send</span>
             </div>
             <div className="h-2.5 overflow-hidden rounded-full bg-zinc-200/80">
-              <div
-                className={`h-full w-full animate-pulse rounded-full bg-gradient-to-r opacity-90 ${barTone}`}
+              <motion.div
+                className={`h-full w-full rounded-full bg-gradient-to-r ${barTone}`}
+                animate={{ opacity: [0.55, 0.95, 0.55] }}
+                transition={{
+                  duration: 1.4,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               />
             </div>
           </div>

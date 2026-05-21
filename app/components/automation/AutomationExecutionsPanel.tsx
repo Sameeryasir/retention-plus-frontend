@@ -19,6 +19,7 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DeleteExecutionDialog } from "@/app/components/automation/DeleteExecutionDialog";
@@ -45,6 +46,12 @@ import { useStartAutomationRun } from "@/app/hooks/use-start-automation-run";
 import { TableColumnHeader } from "@/app/components/TableColumnHeader";
 import { StatusPill } from "@/app/components/StatusPill";
 import { toastApiError } from "@/app/lib/toast-api-error";
+import {
+  runsContentFade,
+  runsPanelReveal,
+  runsRowReveal,
+  runsStagger,
+} from "@/app/lib/motion";
 import type {
   AutomationExecution,
   AutomationExecutionStatus,
@@ -323,6 +330,7 @@ export function AutomationExecutionsPanel({
     page,
     setPage,
     loading,
+    refreshing,
     error,
     refetch,
     deleteExecution,
@@ -372,9 +380,16 @@ export function AutomationExecutionsPanel({
     });
   }, []);
 
+  const showInitialSkeleton = loading && executions.length === 0;
+
   return (
     <>
-    <div className="min-w-0 bg-zinc-50">
+    <motion.div
+      className="min-w-0 bg-zinc-50"
+      initial="hidden"
+      animate="show"
+      variants={runsPanelReveal}
+    >
       <div className="border-b border-zinc-200/90 bg-white px-4 py-4 sm:px-6">
         <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex min-w-0 items-start gap-3">
@@ -410,7 +425,7 @@ export function AutomationExecutionsPanel({
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 disabled:opacity-50"
             >
               <RefreshCw
-                className={`size-4 ${loading ? "animate-spin" : ""}`}
+                className={`size-4 ${loading || refreshing ? "animate-spin" : ""}`}
                 aria-hidden
               />
               Refresh
@@ -420,14 +435,12 @@ export function AutomationExecutionsPanel({
                 busy={busy}
                 disabled={automationActive === false}
                 onClick={() =>
-                  void run((result) => {
-                    setPage(1);
-                    setLogsDrawer({
-                      executionId: result.executionId,
-                      runStartedAt: new Date().toISOString(),
-                      runTitle: `Run #${result.executionId}`,
-                    });
-                    onExecutionStarted?.(result.executionId);
+                  void run({
+                    onStarted: () => setPage(1),
+                    onFinished: (status) => {
+                      void refetch();
+                      onExecutionStarted?.(status.executionId);
+                    },
                   })
                 }
               />
@@ -437,24 +450,47 @@ export function AutomationExecutionsPanel({
         </div>
       </div>
 
-      <div className="px-4 py-4 sm:px-6">
-        {activeRun ? <RunProgressBanner status={activeRun} /> : null}
+      <div className="relative px-4 py-4 sm:px-6">
+        <AnimatePresence initial={false}>
+          {activeRun ? (
+            <motion.div
+              key="run-progress"
+              className="mb-5"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <RunProgressBanner status={activeRun} />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
-        {!loading && !error && executions.length > 0 ? (
-          <div className="mb-5 -mx-4 overflow-x-auto overscroll-x-contain px-4 pb-1 sm:-mx-6 sm:px-6 xl:mx-0 xl:overflow-visible xl:px-0 xl:pb-0">
+        {!showInitialSkeleton && !error && executions.length > 0 ? (
+          <motion.div
+            className="mb-5 -mx-4 overflow-x-auto overscroll-x-contain px-4 pb-1 sm:-mx-6 sm:px-6 xl:mx-0 xl:overflow-visible xl:px-0 xl:pb-0"
+            initial="hidden"
+            animate="show"
+            variants={runsStagger}
+          >
             <div className="grid min-w-[36rem] gap-3 sm:min-w-0 sm:grid-cols-2 xl:grid-cols-4">
+            <motion.div variants={runsRowReveal}>
             <MetricStatCardAccent
               label="Total runs"
               value={stats.total}
               icon={Workflow}
               tone="zinc"
             />
+            </motion.div>
+            <motion.div variants={runsRowReveal}>
             <MetricStatCardAccent
               label="Completed"
               value={stats.completed}
               icon={CheckCircle2}
               tone="emerald"
             />
+            </motion.div>
+            <motion.div variants={runsRowReveal}>
             <MetricStatCardAccent
               label="In progress"
               value={stats.inProgress}
@@ -462,31 +498,90 @@ export function AutomationExecutionsPanel({
               tone="blue"
               highlight={stats.inProgress > 0}
             />
+            </motion.div>
+            <motion.div variants={runsRowReveal}>
             <MetricStatCardAccent
               label="Customers reached"
               value={stats.customersReached}
               icon={Users}
               tone="violet"
             />
+            </motion.div>
             </div>
-          </div>
+          </motion.div>
         ) : null}
 
-        {loading ? (
-          <AutomationRunsSkeleton />
-        ) : error ? (
-          <AsyncErrorRetry
-            className=""
-            message={error}
-            onRetry={() => void refetch()}
-          />
-        ) : (meta?.total ?? 0) === 0 ? (
-          <PanelEmptyState
-            icon={Workflow}
-            title="No runs yet"
-            description="Run this automation to email unpaid customers. Each batch appears here with everyone it reached."
-          />
-        ) : (
+        <AnimatePresence>
+          {refreshing ? (
+            <motion.div
+              key="runs-refresh"
+              className="pointer-events-none absolute inset-x-4 top-4 z-10 h-0.5 overflow-hidden rounded-full bg-violet-100 sm:inset-x-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              aria-hidden
+            >
+              <motion.div
+                className="h-full w-1/3 rounded-full bg-violet-500"
+                animate={{ x: ["-120%", "380%"] }}
+                transition={{
+                  duration: 1.15,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
+        <AnimatePresence mode="wait">
+          {showInitialSkeleton ? (
+            <motion.div
+              key="runs-skeleton"
+              variants={runsContentFade}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+            >
+              <AutomationRunsSkeleton />
+            </motion.div>
+          ) : error ? (
+            <motion.div
+              key="runs-error"
+              variants={runsContentFade}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+            >
+              <AsyncErrorRetry
+                className=""
+                message={error}
+                onRetry={() => void refetch()}
+              />
+            </motion.div>
+          ) : (meta?.total ?? 0) === 0 ? (
+            <motion.div
+              key="runs-empty"
+              variants={runsContentFade}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+            >
+              <PanelEmptyState
+                icon={Workflow}
+                title="No runs yet"
+                description="Run this automation to email unpaid customers. Each batch appears here with everyone it reached."
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="runs-table"
+              variants={runsContentFade}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+            >
           <ReportTable
             minWidthClass="min-w-[48rem]"
             header={
@@ -538,10 +633,16 @@ export function AutomationExecutionsPanel({
               <TableColumnHeader icon={CheckCircle2} label="Status" />
               <span aria-hidden />
             </div>
-            <div className="divide-y divide-zinc-100/90">
+            <motion.div
+              className="divide-y divide-zinc-100/90"
+              initial="hidden"
+              animate="show"
+              variants={runsStagger}
+            >
               {executions.map((row, index) => (
-                <div
+                <motion.div
                   key={row.id}
+                  variants={runsRowReveal}
                   className={index % 2 === 1 ? "bg-zinc-50/35" : "bg-white"}
                 >
                   <RunRow
@@ -554,13 +655,15 @@ export function AutomationExecutionsPanel({
                     deleting={deletingId === row.id}
                     deleteLocked={deletingId != null}
                   />
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </ReportTable>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
 
     <DeleteExecutionDialog
       open={deleteTargetId != null}

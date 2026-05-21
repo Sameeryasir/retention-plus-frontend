@@ -29,8 +29,22 @@ export function usePaginatedAsyncResource<T, M extends { page: number }>(
   );
   const [page, setPageState] = useState(1);
   const [loading, setLoading] = useState(enabled);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
+  const beginFetch = useCallback(() => {
+    const hasCachedRows = dataRef.current.length > 0;
+    setLoading(!hasCachedRows);
+    setRefreshing(hasCachedRows);
+  }, []);
+
+  const endFetch = useCallback(() => {
+    setLoading(false);
+    setRefreshing(false);
+  }, []);
 
   const applyDisabledReset = useCallback(() => {
     const reset = resetWhenDisabledRef.current;
@@ -41,6 +55,7 @@ export function usePaginatedAsyncResource<T, M extends { page: number }>(
       return prev === nextMeta ? prev : nextMeta;
     });
     setLoading(false);
+    setRefreshing(false);
   }, []);
 
   const loadPage = useCallback(async (targetPage: number) => {
@@ -50,7 +65,7 @@ export function usePaginatedAsyncResource<T, M extends { page: number }>(
     }
 
     setError(null);
-    setLoading(true);
+    beginFetch();
 
     try {
       const response = await fetchPageRef.current(targetPage);
@@ -70,10 +85,10 @@ export function usePaginatedAsyncResource<T, M extends { page: number }>(
       });
     } finally {
       if (mountedRef.current) {
-        setLoading(false);
+        endFetch();
       }
     }
-  }, [enabled, fallbackError, applyDisabledReset]);
+  }, [enabled, fallbackError, applyDisabledReset, beginFetch, endFetch]);
 
   const refetch = useCallback(async () => {
     await loadPage(page);
@@ -100,7 +115,7 @@ export function usePaginatedAsyncResource<T, M extends { page: number }>(
 
     const run = async () => {
       setError(null);
-      setLoading(true);
+      beginFetch();
       try {
         const response = await fetchPageRef.current(1);
         if (cancelled || !mountedRef.current) return;
@@ -119,7 +134,7 @@ export function usePaginatedAsyncResource<T, M extends { page: number }>(
         });
       } finally {
         if (!cancelled && mountedRef.current) {
-          setLoading(false);
+          endFetch();
         }
       }
     };
@@ -131,7 +146,7 @@ export function usePaginatedAsyncResource<T, M extends { page: number }>(
       mountedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- caller supplies deps; fetchPage via ref
-  }, [enabled, fallbackError, applyDisabledReset, ...deps]);
+  }, [enabled, fallbackError, applyDisabledReset, beginFetch, endFetch, ...deps]);
 
   return {
     data,
@@ -139,6 +154,7 @@ export function usePaginatedAsyncResource<T, M extends { page: number }>(
     page,
     setPage,
     loading,
+    refreshing,
     error,
     refetch,
     loadPage,

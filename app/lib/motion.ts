@@ -59,6 +59,59 @@ export const automationItem = {
   },
 };
 
+export const runsPanelReveal = {
+  hidden: { opacity: 0, y: 10 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.28, ease: standardEase },
+  },
+};
+
+export const runsContentFade = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { duration: 0.22, ease: standardEase },
+  },
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.16, ease: standardEase },
+  },
+};
+
+export const runsStagger = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.045, delayChildren: 0.03 },
+  },
+};
+
+export const runsRowReveal = {
+  hidden: { opacity: 0, y: 5 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.24, ease: standardEase },
+  },
+};
+
+export const drawerLogStagger = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.05, delayChildren: 0.04 },
+  },
+};
+
+export const drawerLogItem = {
+  hidden: { opacity: 0, y: 8 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.26, ease: standardEase },
+  },
+};
+
 export const flowListStagger = {
   hidden: {},
   show: {

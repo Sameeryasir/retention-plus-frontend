@@ -24,8 +24,17 @@ export function useStartAutomationRun(
     useState<AutomationExecutionStatusDto | null>(null);
   const pollGenerationRef = useRef(0);
 
+  type RunCallbacks = {
+    onStarted?: (status: AutomationExecutionStatusDto) => void;
+    onFinished?: (status: AutomationExecutionStatusDto) => void;
+  };
+
   const run = useCallback(
-    async (onFinished?: (result: AutomationExecutionStatusDto) => void) => {
+    async (callbacks?: RunCallbacks | ((result: AutomationExecutionStatusDto) => void)) => {
+      const { onStarted, onFinished } =
+        typeof callbacks === "function"
+          ? { onFinished: callbacks }
+          : (callbacks ?? {});
       if (automationActive === false) {
         toast.error("Automation must be active before starting a run.");
         return;
@@ -42,6 +51,7 @@ export function useStartAutomationRun(
         setActiveRun(initial);
         setStarting(false);
         setPolling(true);
+        onStarted?.(initial);
 
         const final = await pollExecutionStatus(
           initial.executionId,

@@ -18,7 +18,11 @@ import {
 } from "@/app/components/automation/execution-log-ui";
 import { AsyncErrorRetry } from "@/app/components/shared/AsyncErrorRetry";
 import { formatLogDrawerTimestamp } from "@/app/lib/datetime";
-import { automationEase, automationStagger, automationItem } from "@/app/lib/motion";
+import {
+  automationEase,
+  drawerLogItem,
+  drawerLogStagger,
+} from "@/app/lib/motion";
 import { useExecutionLogs } from "@/app/hooks/use-execution-logs";
 import { useOverlayLock } from "@/app/hooks/use-overlay-lock";
 
@@ -65,7 +69,7 @@ function ActivityCard({
     display.summary.trim() && title !== display.summary.trim();
 
   return (
-    <motion.li variants={automationItem} className="relative flex gap-3.5">
+    <motion.li variants={drawerLogItem} className="relative flex gap-3.5">
       <div className="flex w-5 shrink-0 flex-col items-center pt-4">
         <span
           className={`size-2.5 shrink-0 rounded-full ring-4 ring-[#f8f9fc] ${tone.dot}`}
@@ -161,7 +165,7 @@ export function ExecutionLogsDrawer({
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ duration: 0.34, ease: automationEase }}
+            transition={{ duration: 0.3, ease: automationEase }}
           >
             <header className="w-full shrink-0 bg-gradient-to-b from-[#0a0a0a] to-[#111111] px-6 pb-5 pt-5 text-white shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
               <div className="flex items-start justify-between gap-4">
@@ -252,7 +256,7 @@ export function ExecutionLogsDrawer({
               ) : (
                 <motion.ol
                   className="list-none"
-                  variants={automationStagger}
+                  variants={drawerLogStagger}
                   initial="hidden"
                   animate="show"
                 >

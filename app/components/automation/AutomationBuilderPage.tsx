@@ -1,12 +1,11 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { AutomationActivityPanel } from "@/app/components/automation/AutomationActivityPanel";
 import { AutomationExecutionsPanel } from "@/app/components/automation/AutomationExecutionsPanel";
 import { BlockSidebar } from "@/app/components/automation/builder/BlockSidebar";
 import { BuilderCanvas } from "@/app/components/automation/builder/BuilderCanvas";
@@ -45,7 +44,7 @@ import {
 } from "@/app/services/automation/node-api";
 import { isPositiveInt } from "@/app/lib/numbers";
 
-type BuilderTab = "builder" | "runs" | "activity";
+type BuilderTab = "builder" | "runs";
 
 function estimateWorkflowMinutes(nodes: WorkflowNode[]): string {
   let mins = 0;
@@ -63,7 +62,6 @@ function estimateWorkflowMinutes(nodes: WorkflowNode[]): string {
 const TABS: { id: BuilderTab; label: string }[] = [
   { id: "builder", label: "Flow" },
   { id: "runs", label: "Runs" },
-  { id: "activity", label: "Activity" },
 ];
 
 export function AutomationBuilderPage({
@@ -88,10 +86,9 @@ export function AutomationBuilderPage({
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
   const initialTab: BuilderTab =
-    tabFromUrl === "runs" || tabFromUrl === "activity" || tabFromUrl === "builder"
-      ? tabFromUrl
-      : "builder";
+    tabFromUrl === "runs" || tabFromUrl === "activity" ? "runs" : "builder";
   const [tab, setTab] = useState<BuilderTab>(initialTab);
+  const [, startTabTransition] = useTransition();
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
   const [connections, setConnections] = useState<AutomationConnection[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -149,14 +146,16 @@ export function AutomationBuilderPage({
   }, [loadAutomation]);
 
   useEffect(() => {
-    const next =
-      tabFromUrl === "runs" || tabFromUrl === "activity" || tabFromUrl === "builder"
-        ? tabFromUrl
-        : null;
-    if (next && next !== tab) {
+    const next: BuilderTab | null =
+      tabFromUrl === "runs" || tabFromUrl === "activity"
+        ? "runs"
+        : tabFromUrl === "builder"
+          ? "builder"
+          : null;
+    if (next) {
       setTab(next);
     }
-  }, [tabFromUrl, tab]);
+  }, [tabFromUrl]);
 
   const automationsListHref =
     listHref ?? `/restaurant/${restaurantId}/dashboard/automations`;
@@ -164,12 +163,14 @@ export function AutomationBuilderPage({
   const setBuilderTab = useCallback(
     (next: BuilderTab) => {
       setTab(next);
-      const q = new URLSearchParams(searchParams.toString());
-      q.set("tab", next);
-      if (funnelId != null && funnelId >= 1) {
-        q.set("funnelId", String(funnelId));
-      }
-      router.replace(`${pathname}?${q.toString()}`);
+      startTabTransition(() => {
+        const q = new URLSearchParams(searchParams.toString());
+        q.set("tab", next);
+        if (funnelId != null && funnelId >= 1) {
+          q.set("funnelId", String(funnelId));
+        }
+        router.replace(`${pathname}?${q.toString()}`);
+      });
     },
     [funnelId, pathname, router, searchParams],
   );
@@ -420,8 +421,8 @@ export function AutomationBuilderPage({
     [automationNumericId, connections, nodes, loadAutomation],
   );
 
-  const pageHeader = (
-    <>
+  const persistentHeader = (
+    <header className="shrink-0 border-b border-zinc-200/90 bg-white/80 px-4 py-3 backdrop-blur-xl sm:px-6">
       <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 shrink">
           <nav
@@ -470,7 +471,9 @@ export function AutomationBuilderPage({
               Activate
             </button>
           </div>
-        ) : null}
+        ) : (
+          <div className="hidden min-h-10 lg:block" aria-hidden />
+        )}
       </div>
 
       <div className="mt-4 min-w-0 -mx-4 overflow-x-auto overscroll-x-contain px-4 pb-0.5 sm:-mx-6 sm:px-6">
@@ -491,7 +494,7 @@ export function AutomationBuilderPage({
           ))}
         </div>
       </div>
-    </>
+    </header>
   );
 
   return (
@@ -501,11 +504,17 @@ export function AutomationBuilderPage({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, ease: automationEase }}
     >
+      {persistentHeader}
+      <AnimatePresence mode="wait">
       {tab === "builder" ? (
-        <>
-          <header className="shrink-0 border-b border-zinc-200/90 bg-white/80 px-4 py-3 backdrop-blur-xl sm:px-6">
-            {pageHeader}
-          </header>
+        <motion.div
+          key="builder"
+          className="flex min-h-0 min-w-0 flex-1 flex-col"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: automationEase }}
+        >
           <BuilderShell
             sidebar={<BlockSidebar onAddBlock={onAddBlock} />}
             canvas={
@@ -565,9 +574,16 @@ export function AutomationBuilderPage({
               </motion.aside>
             }
           />
-        </>
+        </motion.div>
       ) : automationNumericId == null ? (
-        <div className="flex flex-1 items-center justify-center px-4 py-12 text-center text-sm text-zinc-600">
+        <motion.div
+          key="not-found"
+          className="flex flex-1 items-center justify-center px-4 py-12 text-center text-sm text-zinc-600"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2, ease: automationEase }}
+        >
           <p>
             Automation not found.{" "}
             <Link
@@ -577,28 +593,24 @@ export function AutomationBuilderPage({
               Back to automations
             </Link>
           </p>
-        </div>
+        </motion.div>
       ) : (
-        <div className="min-h-0 min-w-0 flex-1 overflow-auto">
-          <header className="border-b border-zinc-200/90 bg-white px-4 py-3 sm:px-6">
-            {pageHeader}
-          </header>
-          {tab === "runs" ? (
-            <AutomationExecutionsPanel
-              automationId={automationNumericId}
-              automationActive={automationActive}
-              showRunButton={showRunAutomation}
-            />
-          ) : (
-            <AutomationActivityPanel
-              automationId={automationNumericId}
-              automationActive={automationActive}
-              showRunButton={showRunAutomation}
-              onRunStarted={() => setBuilderTab("runs")}
-            />
-          )}
-        </div>
+        <motion.div
+          key="runs"
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: automationEase }}
+        >
+          <AutomationExecutionsPanel
+            automationId={automationNumericId}
+            automationActive={automationActive}
+            showRunButton={showRunAutomation}
+          />
+        </motion.div>
       )}
+      </AnimatePresence>
     </motion.div>
   );
 }
