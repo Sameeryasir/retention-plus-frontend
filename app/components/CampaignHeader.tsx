@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Check, Circle, Copy, Link2, Pencil, X } from "lucide-react";
+import { ArrowLeft, Check, Circle, Copy, Link2, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -31,7 +31,6 @@ export type CampaignHeaderProps = {
   activeTabId?: string;
   onTabChange?: (tabId: string) => void;
   onGenerateTrackingLink?: () => void;
-  onEdit?: () => void;
 };
 
 const TABS: { id: string; label: string; icon?: typeof Circle }[] = [
@@ -56,7 +55,6 @@ export default function CampaignHeader({
   activeTabId: activeTabIdProp,
   onTabChange,
   onGenerateTrackingLink,
-  onEdit,
 }: CampaignHeaderProps) {
   const campaignsHref = `/restaurant/${restaurantId}/dashboard/campaigns`;
   const offerLine = offer?.trim() ?? "";
@@ -141,9 +139,7 @@ export default function CampaignHeader({
     }
   }, [landingTrackingUrl]);
 
-  const handleEdit = useCallback(() => {
-    onEdit?.();
-  }, [onEdit]);
+  const isFunnelTab = activeTabId === "funnel";
 
   return (
     <>
@@ -169,24 +165,18 @@ export default function CampaignHeader({
           <button
             type="button"
             onClick={handleGenerate}
-            disabled={campaignId == null}
+            disabled={campaignId == null || !isFunnelTab}
             title={
               campaignId == null
                 ? "Campaign id missing"
-                : "Get link for Facebook ads"
+                : !isFunnelTab
+                  ? "Open the Funnel tab to generate a tracking link"
+                  : "Get link for Facebook ads"
             }
             className="inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-black px-2.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 enabled:cursor-pointer disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-100 sm:gap-2 sm:px-3 sm:text-sm"
           >
             <Link2 className="size-4 shrink-0" aria-hidden strokeWidth={2} />
             <span className="truncate">Generate Tracking Link</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleEdit}
-            aria-label="Edit campaign"
-            className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-700 transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 focus-visible:ring-offset-2"
-          >
-            <Pencil className="size-[1.125rem]" aria-hidden strokeWidth={2} />
           </button>
         </div>
       </div>
