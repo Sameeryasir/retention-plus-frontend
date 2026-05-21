@@ -21,27 +21,31 @@ import { useExecutionLogs } from "@/app/hooks/use-execution-logs";
 
 const TONE_STYLES: Record<
   LogDisplayTone,
-  { dot: string; label: string; heading: string }
+  { dot: string; label: string; card: string; accent: string }
 > = {
   info: {
-    dot: "bg-sky-500",
-    label: "text-sky-700",
-    heading: "text-zinc-900",
+    dot: "bg-sky-500 shadow-[0_0_0_4px_rgba(14,165,233,0.25)]",
+    label: "text-sky-600",
+    accent: "border-l-sky-400",
+    card: "border-sky-100/90 bg-white ring-1 ring-sky-100/60",
   },
   success: {
-    dot: "bg-emerald-500",
-    label: "text-emerald-700",
-    heading: "text-zinc-900",
+    dot: "bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.25)]",
+    label: "text-emerald-600",
+    accent: "border-l-emerald-400",
+    card: "border-emerald-100/90 bg-white ring-1 ring-emerald-100/60",
   },
   warning: {
-    dot: "bg-amber-500",
-    label: "text-amber-800",
-    heading: "text-zinc-900",
+    dot: "bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.25)]",
+    label: "text-amber-700",
+    accent: "border-l-amber-400",
+    card: "border-amber-100/90 bg-white ring-1 ring-amber-100/60",
   },
   error: {
-    dot: "bg-red-500",
-    label: "text-red-700",
-    heading: "text-zinc-900",
+    dot: "bg-red-500 shadow-[0_0_0_4px_rgba(239,68,68,0.25)]",
+    label: "text-red-600",
+    accent: "border-l-red-400",
+    card: "border-red-100/90 bg-white ring-1 ring-red-100/60",
   },
 };
 
@@ -53,42 +57,50 @@ function ActivityCard({
   isLast: boolean;
 }) {
   const tone = TONE_STYLES[display.tone];
+  const isEmailDelivered = display.stepLabel === "Email delivered";
+  const title =
+    isEmailDelivered && display.summary.trim()
+      ? display.summary
+      : display.heading;
 
   return (
-    <motion.li variants={automationItem} className="relative flex gap-4">
-      <div className="flex w-5 shrink-0 flex-col items-center">
+    <motion.li variants={automationItem} className="relative flex gap-3.5">
+      <div className="flex w-5 shrink-0 flex-col items-center pt-4">
         <span
-          className={`mt-1.5 size-2.5 shrink-0 rounded-full ring-4 ring-white ${tone.dot}`}
+          className={`size-2.5 shrink-0 rounded-full ring-4 ring-[#f8f9fc] ${tone.dot}`}
           aria-hidden
         />
         {!isLast ? (
           <span
-            className="mt-2 w-px flex-1 min-h-[1.5rem] bg-zinc-200"
+            className="mt-2 w-px flex-1 min-h-[1.25rem] bg-gradient-to-b from-zinc-200 via-violet-200/80 to-emerald-200/80"
             aria-hidden
           />
         ) : null}
       </div>
 
-      <article className={`min-w-0 flex-1 ${isLast ? "" : "pb-6"}`}>
+      <article
+        className={`min-w-0 flex-1 rounded-xl border-l-[3px] p-4 shadow-sm ${tone.accent} ${tone.card} ${isLast ? "" : "mb-3.5"}`}
+      >
         <p
-          className={`text-[11px] font-semibold uppercase tracking-wide ${tone.label}`}
+          className={`text-[10px] font-bold uppercase tracking-[0.14em] ${tone.label}`}
         >
           {display.stepLabel}
         </p>
-        <h3
-          className={`mt-1.5 text-[15px] font-semibold leading-snug ${tone.heading}`}
-        >
-          {display.heading}
+        <h3 className="mt-1.5 text-[15px] font-semibold leading-snug text-zinc-900">
+          {title}
         </h3>
-        {display.summary.trim() ? (
+        {!isEmailDelivered && display.summary.trim() ? (
           <p className="mt-2 text-sm leading-relaxed text-zinc-600">
             {display.summary}
           </p>
         ) : null}
         {display.details.length > 0 ? (
-          <ul className="mt-2.5 space-y-1.5 text-sm text-zinc-600">
+          <ul className="mt-2.5 space-y-1.5">
             {display.details.map((line) => (
-              <li key={line} className="break-all leading-relaxed">
+              <li
+                key={line}
+                className="rounded-lg bg-zinc-50 px-2.5 py-1.5 text-[13px] leading-relaxed text-zinc-600"
+              >
                 {line.replace(/^Sent to /i, "")}
               </li>
             ))}
@@ -144,7 +156,7 @@ export function ExecutionLogsDrawer({
           <motion.button
             type="button"
             aria-label="Close activity"
-            className="absolute inset-0 cursor-pointer bg-zinc-950/35"
+            className="absolute inset-0 cursor-pointer bg-zinc-950/40 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -156,21 +168,26 @@ export function ExecutionLogsDrawer({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="absolute right-0 top-0 flex h-full w-full max-w-[22rem] flex-col border-l border-zinc-200 bg-white shadow-xl sm:max-w-[24rem]"
+            className="absolute right-0 top-0 flex h-full w-full max-w-[22rem] flex-col overflow-hidden bg-[#f8f9fc] shadow-[-8px_0_32px_rgba(15,23,42,0.12)] sm:max-w-[24rem]"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ duration: 0.34, ease: automationEase }}
           >
-            <header className="shrink-0 border-b border-black bg-[#0a0a0a] px-6 pb-5 pt-5 text-white">
+            <header className="w-full shrink-0 bg-gradient-to-b from-[#0a0a0a] to-[#111111] px-6 pb-5 pt-5 text-white shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">
-                    Run activity
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="flex size-8 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
+                      <ClipboardList className="size-4" aria-hidden />
+                    </span>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400">
+                      Run activity
+                    </p>
+                  </div>
                   <h2
                     id={titleId}
-                    className="mt-2 text-base font-bold leading-snug text-white"
+                    className="mt-3 text-[17px] font-bold leading-snug text-white"
                     title={runTitle}
                   >
                     {runTitle}
@@ -194,26 +211,26 @@ export function ExecutionLogsDrawer({
               </div>
 
               {!loading && !error && stepCount > 0 ? (
-                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-                  <span className="font-semibold text-zinc-300">
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-zinc-200 ring-1 ring-white/15">
                     {stepCount} step{stepCount === 1 ? "" : "s"}
                   </span>
                   {completed ? (
-                    <>
-                      <span className="text-zinc-600" aria-hidden>
-                        ·
-                      </span>
-                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-300">
-                        <CheckCircle2 className="size-3.5" aria-hidden />
-                        Completed
-                      </span>
-                    </>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 ring-1 ring-emerald-500/30">
+                      <CheckCircle2 className="size-3.5" aria-hidden />
+                      Completed
+                    </span>
                   ) : null}
                 </div>
               ) : null}
             </header>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+            <div className="relative min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
+              <div
+                className="pointer-events-none absolute inset-x-0 top-0 z-0 h-8 bg-gradient-to-b from-zinc-200/30 to-transparent"
+                aria-hidden
+              />
+              <div className="relative z-[1]">
               {loading ? (
                 <div
                   className="flex flex-col items-center justify-center gap-3 py-16"
@@ -231,12 +248,12 @@ export function ExecutionLogsDrawer({
                   onRetry={() => void refetch()}
                 />
               ) : activitySteps.length === 0 ? (
-                <div className="py-12 text-center">
+                <div className="rounded-xl border border-dashed border-zinc-200 bg-white px-5 py-10 text-center shadow-sm">
                   <ClipboardList
-                    className="mx-auto size-8 text-zinc-300"
+                    className="mx-auto size-8 text-violet-400"
                     aria-hidden
                   />
-                  <p className="mt-3 text-sm font-medium text-zinc-800">
+                  <p className="mt-3 text-sm font-semibold text-zinc-800">
                     Nothing to show yet
                   </p>
                   <p className="mt-1 text-xs text-zinc-500">
@@ -259,6 +276,7 @@ export function ExecutionLogsDrawer({
                   ))}
                 </motion.ol>
               )}
+              </div>
             </div>
           </motion.aside>
         </div>

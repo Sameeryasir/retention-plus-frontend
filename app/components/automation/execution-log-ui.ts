@@ -95,7 +95,7 @@ export function logDisplayForUser(log: AutomationLog): LogDisplay {
 
   if (/email sent to/i.test(message)) {
     return {
-      heading: "Emails sent",
+      heading: "Email sent",
       stepLabel: "Email delivered",
       summary: "1 email delivered",
       details: [],
