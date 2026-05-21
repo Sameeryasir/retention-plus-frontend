@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  LayoutTemplate,
   FileText,
   Heading1,
   Heading2,
@@ -31,18 +32,19 @@ import {
 } from "@/app/components/crm-template-editor/editor-layout";
 import { formDesignUsesSplitLayout } from "@/app/components/crm-template-editor/form-design-registry";
 import { FormDesignSwatch } from "@/app/components/crm-template-editor/form-designs/FormDesignSwatch";
+import { CheckoutTemplatePickerOption } from "@/app/components/crm-template-editor/CheckoutTemplatePickerOption";
 import { HeroDesignPickerOption } from "@/app/components/crm-template-editor/hero-designs/HeroDesignPickerOption";
 import { getHeroDesignStyle, normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
-import { LandingDesignPickerOption } from "@/app/components/crm-template-editor/landing-designs/LandingDesignPickerOption";
 import {
-  getLandingDesignStyle,
-  normalizeLandingDesign,
-} from "@/app/components/crm-template-editor/landing-designs/registry";
+  LANDING_SECTION_LABELS,
+  landingSectionOrder,
+} from "@/app/components/crm-template-editor/landing-sections";
+import { SortableSectionList } from "@/app/components/crm-template-editor/SortableSectionList";
 import {
   FORM_DESIGN_OPTIONS,
   FORM_FIELD_OPTIONS,
   HERO_DESIGN_OPTIONS,
-  LANDING_DESIGN_OPTIONS,
+  LAYOUT_OPTIONS,
 } from "@/app/components/crm-template-editor/template-data";
 import {
   IMAGE_SCALE_MAX,
@@ -54,7 +56,6 @@ import type {
   FormDesign,
   FormFieldId,
   HeroDesign,
-  LandingDesign,
   LandingTemplatePage,
   PaymentTemplatePage,
   SignUpTemplatePage,
@@ -63,10 +64,12 @@ import type {
 } from "@/app/components/crm-template-editor/template-types";
 
 type SectionId =
+  | "templates"
+  | "layout"
+  | "sections"
   | "content"
   | "media"
   | "form"
-  | "appearance"
   | "checkout-templates";
 
 const FORM_FIELD_ICONS: Record<FormFieldId, LucideIcon> = {
@@ -76,8 +79,7 @@ const FORM_FIELD_ICONS: Record<FormFieldId, LucideIcon> = {
   phone: Phone,
 };
 
-function defaultOpenSection(pageId: TemplatePage["id"]): SectionId | null {
-  if (pageId === "landing") return "appearance";
+function defaultOpenSection(_pageId: TemplatePage["id"]): SectionId | null {
   return "content";
 }
 
@@ -266,9 +268,11 @@ const inlineInputClass = `${contentInputClass} min-h-10 min-w-0 flex-1 py-2 text
 export function TemplateEditorSidebar({
   page,
   onChange,
+  onBrowseTemplates,
 }: {
   page: TemplatePage;
   onChange: (patch: TemplatePagePatch) => void;
+  onBrowseTemplates?: () => void;
 }) {
   const mediaFileId = useId();
   const [openSection, setOpenSection] = useState<SectionId | null>(() =>
@@ -294,9 +298,6 @@ export function TemplateEditorSidebar({
   const showLandingHeroEditor = page.id === "landing";
   const landingPage =
     page.id === "landing" ? (page as LandingTemplatePage) : null;
-  const activeLandingDesign = normalizeLandingDesign(
-    landingPage?.landingDesign,
-  );
   const activeHeroDesign = normalizeHeroDesign(landingPage?.heroDesign);
 
   const onImageFile = (e: ChangeEvent<HTMLInputElement>) => {
@@ -327,6 +328,78 @@ export function TemplateEditorSidebar({
     <div className="w-full bg-white [&_button]:cursor-pointer [&_select]:cursor-pointer">
         {showLandingHeroEditor ? (
           <>
+            <AccordionSection
+              id="templates"
+              title="Starter templates"
+              open={isOpen("templates")}
+              onToggle={toggle}
+            >
+              <p className="text-xs leading-relaxed text-zinc-500">
+                <strong className="font-semibold text-zinc-700">Page design</strong>{" "}
+                sets colors, hero, layout, form & checkout. Use{" "}
+                <strong className="font-semibold text-zinc-700">Starter copy</strong>{" "}
+                in Templates for headline & body text only.
+              </p>
+              <button
+                type="button"
+                onClick={onBrowseTemplates}
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-black bg-black px-3.5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-900"
+              >
+                <LayoutTemplate className="size-3.5" aria-hidden />
+                Browse templates
+              </button>
+            </AccordionSection>
+
+            <AccordionSection
+              id="layout"
+              title="Page layout"
+              open={isOpen("layout")}
+              onToggle={toggle}
+            >
+              <p className="mb-2 text-xs text-zinc-500">
+                Control alignment and column width — like Wix page layouts.
+              </p>
+              <div className="grid grid-cols-1 gap-1.5">
+                {LAYOUT_OPTIONS.map((opt) => {
+                  const on = page.layoutType === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => onChange({ layoutType: opt.value })}
+                      className={`rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition ${
+                        on
+                          ? "border-zinc-900 bg-zinc-900 text-white"
+                          : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-300"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </AccordionSection>
+
+            <AccordionSection
+              id="sections"
+              title="Section order"
+              open={isOpen("sections")}
+              onToggle={toggle}
+            >
+              <p className="mb-3 text-xs text-zinc-500">
+                Drag to reorder blocks on the landing page.
+              </p>
+              {landingPage ? (
+                <SortableSectionList
+                  items={landingSectionOrder(landingPage)}
+                  labels={LANDING_SECTION_LABELS}
+                  onReorder={(contentSectionOrder) =>
+                    onChange({ contentSectionOrder })
+                  }
+                />
+              ) : null}
+            </AccordionSection>
+
             <AccordionSection
               id="content"
               title="Content"
@@ -400,39 +473,6 @@ export function TemplateEditorSidebar({
                     fallbackHex="#FFFFFF"
                   />
                 </Field>
-              </div>
-            </AccordionSection>
-
-            <AccordionSection
-              id="appearance"
-              title="Page design"
-              open={isOpen("appearance")}
-              onToggle={toggle}
-            >
-              <div className={editorSidebarPickerPanelClass}>
-                <div className={editorSidebarPickerScrollClass}>
-                  <div className="grid grid-cols-1 gap-2 pb-1">
-                  {LANDING_DESIGN_OPTIONS.map((opt) => {
-                    const on = activeLandingDesign === opt.value;
-                    const tokens = getLandingDesignStyle(opt.value);
-                    return (
-                      <LandingDesignPickerOption
-                        key={opt.value}
-                        label={opt.label}
-                        description={opt.description}
-                        selected={on}
-                        style={tokens}
-                        onSelect={() =>
-                          onChange({
-                            landingDesign: opt.value as LandingDesign,
-                            backgroundColor: tokens.backgroundDefault,
-                          })
-                        }
-                      />
-                    );
-                  })}
-                </div>
-              </div>
               </div>
             </AccordionSection>
 
@@ -620,49 +660,28 @@ export function TemplateEditorSidebar({
               <p className="mb-2 text-xs font-medium text-zinc-600">
                 Choose a checkout layout
               </p>
-              <div className="grid grid-cols-1 gap-2">
-                {CHECKOUT_TEMPLATE_OPTIONS.map((opt) => {
-                  const on =
-                    normalizeCheckoutTemplate(payment.checkoutTemplate) ===
-                    opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() =>
-                        onChange({
-                          checkoutTemplate: opt.value as CheckoutTemplateType,
-                        })
-                      }
-                      className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
-                        on
-                          ? "border-zinc-900 bg-zinc-900 text-white shadow-md"
-                          : "border-zinc-200/90 bg-white shadow-sm hover:border-zinc-300"
-                      }`}
-                    >
-                      <span
-                        className={`flex size-4 shrink-0 items-center justify-center rounded-full border-2 ${
-                          on ? "border-white" : "border-zinc-300"
-                        }`}
-                        aria-hidden
-                      >
-                        {on ? (
-                          <span className="size-1.5 rounded-full bg-white" />
-                        ) : null}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-xs font-bold">{opt.label}</span>
-                        <span
-                          className={`mt-0.5 block text-[0.65rem] leading-snug ${
-                            on ? "text-zinc-300" : "text-zinc-500"
-                          }`}
-                        >
-                          {opt.description}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className={editorSidebarPickerPanelClass}>
+                <div className={editorSidebarPickerScrollClass}>
+                  <div className="grid grid-cols-1 gap-2 pb-1">
+                    {CHECKOUT_TEMPLATE_OPTIONS.map((opt) => (
+                      <CheckoutTemplatePickerOption
+                        key={opt.value}
+                        label={opt.label}
+                        description={opt.description}
+                        value={opt.value}
+                        selected={
+                          normalizeCheckoutTemplate(payment.checkoutTemplate) ===
+                          opt.value
+                        }
+                        onSelect={() =>
+                          onChange({
+                            checkoutTemplate: opt.value as CheckoutTemplateType,
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
               <div className="mt-4 space-y-3 border-t border-zinc-200/80 pt-4">
                 <p className="text-xs font-medium text-zinc-600">Display options</p>

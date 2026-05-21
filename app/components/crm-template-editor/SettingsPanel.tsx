@@ -12,10 +12,12 @@ export function SettingsPanel({
   page,
   onChange,
   open,
+  onBrowseTemplates,
 }: {
   page: TemplatePage;
   onChange: (patch: TemplatePagePatch) => void;
   open: boolean;
+  onBrowseTemplates?: () => void;
 }) {
   if (!open) {
     return (
@@ -34,7 +36,11 @@ export function SettingsPanel({
       className={`hidden h-full min-h-0 flex-col overflow-hidden border-l border-slate-200/90 bg-gradient-to-b from-white to-slate-50/80 lg:flex ${editorCardClass} !rounded-none !border-y-0 !border-r-0 !shadow-none`}
     >
       <div className={editorPanelScrollClass}>
-        <TemplateEditorSidebar page={page} onChange={onChange} />
+        <TemplateEditorSidebar
+          page={page}
+          onChange={onChange}
+          onBrowseTemplates={onBrowseTemplates}
+        />
       </div>
     </aside>
   );

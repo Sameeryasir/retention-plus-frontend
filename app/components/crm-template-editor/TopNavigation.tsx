@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import {
   Eye,
+  LayoutTemplate,
   Loader2,
   Redo2,
   Save,
@@ -30,6 +31,7 @@ export type TopNavigationProps = {
   onRedo: () => void;
   onSave: () => void;
   onPreview?: () => void;
+  onBrowseTemplates?: () => void;
   isSaving?: boolean;
   saveError?: string | null;
 };
@@ -45,6 +47,7 @@ export function TopNavigation({
   onRedo,
   onSave,
   onPreview,
+  onBrowseTemplates,
   isSaving = false,
   saveError,
 }: TopNavigationProps) {
@@ -118,6 +121,18 @@ export function TopNavigation({
               <Redo2 className="size-3.5" />
             </button>
           </motion.div>
+
+          {onBrowseTemplates ? (
+            <motion.button
+              type="button"
+              variants={headerActionItemVariants}
+              onClick={onBrowseTemplates}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <LayoutTemplate className="size-3.5" aria-hidden />
+              Templates
+            </motion.button>
+          ) : null}
 
           {onPreview ? (
             <motion.button

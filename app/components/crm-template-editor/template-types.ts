@@ -13,6 +13,7 @@ import type {
 import type { FormDesign } from "@/app/components/crm-template-editor/form-designs/types";
 import type { HeroDesign } from "@/app/components/crm-template-editor/hero-designs/types";
 import type { LandingDesign } from "@/app/components/crm-template-editor/landing-designs/types";
+import type { LandingContentSectionId } from "@/app/components/crm-template-editor/landing-sections";
 export type { FormDesign, HeroDesign, LandingDesign };
 export type { CheckoutTemplateType, CheckoutTheme };
 
@@ -67,7 +68,9 @@ export type LandingTemplatePage = TemplatePageBase & {
   id: "landing";
   landingDesign: LandingDesign;
   heroDesign: HeroDesign;
-  /** Empty string = use colors from the selected page design preset. */
+  contentSectionOrder?: LandingContentSectionId[];
+  pageTemplateId?: string;
+  copyTemplateId?: string;
   headingColor: string;
   subheadingColor: string;
   bodyColor: string;
@@ -88,6 +91,9 @@ export type TemplatePagePatch = Partial<Omit<TemplatePageBase, "id">> &
       LandingTemplatePage,
       | "landingDesign"
       | "heroDesign"
+      | "contentSectionOrder"
+      | "pageTemplateId"
+      | "copyTemplateId"
       | "headingColor"
       | "subheadingColor"
       | "bodyColor"

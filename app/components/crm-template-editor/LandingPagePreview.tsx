@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { getHeroDesignStyle } from "@/app/components/crm-template-editor/hero-designs/registry";
 import { getLandingDesignStyle } from "@/app/components/crm-template-editor/landing-designs/registry";
@@ -10,6 +10,10 @@ import {
 } from "@/app/components/crm-template-editor/template-image";
 import { textColorStyle } from "@/app/components/crm-template-editor/landing-content-colors";
 import type { HeroDesignStyle } from "@/app/components/crm-template-editor/hero-designs/types";
+import {
+  landingSectionOrder,
+  type LandingContentSectionId,
+} from "@/app/components/crm-template-editor/landing-sections";
 import type {
   LandingTemplatePage,
   TemplatePage,
@@ -210,44 +214,65 @@ export function LandingPagePreview({
   const contentBg =
     page.backgroundColor?.trim() || style.backgroundDefault;
 
-  const content = (
-    <div
-      className={`flex flex-col ${align} px-5 pb-8 pt-6 sm:px-6`}
-      style={pageBackgroundStyle(page.backgroundColor, style.backgroundDefault)}
-    >
+  const sectionOrder =
+    landing != null
+      ? landingSectionOrder(landing)
+      : ([
+          "eyebrow",
+          "heading",
+          "subheading",
+          "divider",
+          "body",
+          "cta",
+          "trust",
+        ] as LandingContentSectionId[]);
+
+  const sectionNodes: Record<LandingContentSectionId, ReactNode> = {
+    eyebrow: (
       <span
+        key="eyebrow"
         className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] ${style.badgeClass} ${centered ? "mx-auto" : ""}`}
       >
         {style.eyebrow}
       </span>
-
+    ),
+    heading: (
       <h1
-        className={`mt-4 text-[1.65rem] font-bold leading-[1.15] sm:text-3xl ${headingColorStyle ? "" : style.headingClass} ${centered ? "mx-auto max-w-[18ch]" : ""}`}
+        key="heading"
+        className={`text-[1.65rem] font-bold leading-[1.15] sm:text-3xl ${headingColorStyle ? "" : style.headingClass} ${centered ? "mx-auto max-w-[18ch]" : ""}`}
         style={headingColorStyle}
       >
         {page.heading}
       </h1>
-
+    ),
+    subheading: (
       <p
-        className={`mt-3 text-base font-medium leading-snug ${subheadingColorStyle ? "" : style.subheadingClass} ${centered ? "mx-auto max-w-prose" : "max-w-prose"}`}
+        key="subheading"
+        className={`text-base font-medium leading-snug ${subheadingColorStyle ? "" : style.subheadingClass} ${centered ? "mx-auto max-w-prose" : "max-w-prose"}`}
         style={subheadingColorStyle}
       >
         {page.subheading}
       </p>
-
+    ),
+    divider: (
       <div
-        className={`mt-5 h-px w-12 ${style.dividerClass} ${centered ? "mx-auto" : ""}`}
+        key="divider"
+        className={`h-px w-12 ${style.dividerClass} ${centered ? "mx-auto" : ""}`}
         aria-hidden
       />
-
+    ),
+    body: (
       <LandingBody
+        key="body"
         body={page.body}
         centered={centered}
         bodyClass={style.bodyClass}
         colorStyle={bodyColorStyle}
       />
-
+    ),
+    cta: (
       <LandingCta
+        key="cta"
         label={page.buttonText}
         href={ctaHref}
         centered={centered}
@@ -256,12 +281,23 @@ export function LandingPagePreview({
         ctaShadow={style.ctaShadow}
         labelColorStyle={buttonTextColorStyle}
       />
-
+    ),
+    trust: (
       <p
-        className={`mt-4 text-[0.65rem] ${style.trustClass} ${centered ? "text-center" : ""}`}
+        key="trust"
+        className={`text-[0.65rem] ${style.trustClass} ${centered ? "text-center" : ""}`}
       >
         {style.trustLine}
       </p>
+    ),
+  };
+
+  const content = (
+    <div
+      className={`flex flex-col gap-4 ${align} px-5 pb-8 pt-6 sm:px-6`}
+      style={pageBackgroundStyle(page.backgroundColor, style.backgroundDefault)}
+    >
+      {sectionOrder.map((sectionId) => sectionNodes[sectionId])}
     </div>
   );
 

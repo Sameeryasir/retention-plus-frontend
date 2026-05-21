@@ -2,9 +2,10 @@ import { formDesignUsesSplitLayout } from "@/app/components/crm-template-editor/
 import { normalizeHexColor } from "@/app/components/crm-template-editor/landing-content-colors";
 import { normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
 import { normalizeLandingDesign } from "@/app/components/crm-template-editor/landing-designs/registry";
-import type { LandingTemplatePage } from "@/app/components/crm-template-editor/template-types";
+import { landingSectionOrder } from "@/app/components/crm-template-editor/landing-sections";
 import type {
   FormFieldId,
+  LandingTemplatePage,
   PaymentTemplatePage,
   SignUpTemplatePage,
   TemplatePage,
@@ -49,6 +50,9 @@ export type CreateFunnelLandingPagePayload = {
   subheadlineColor: string;
   bodyColor: string;
   ctaTextColor: string;
+  contentSectionOrder?: string[];
+  pageTemplateId?: string;
+  copyTemplateId?: string;
 };
 
 export type CreateFunnelSignupPagePayload = {
@@ -163,6 +167,13 @@ function buildLandingPayload(
     subheadlineColor: normalizeHexColor(page.subheadingColor),
     bodyColor: normalizeHexColor(page.bodyColor),
     ctaTextColor: normalizeHexColor(page.buttonTextColor),
+    contentSectionOrder: landingSectionOrder(page),
+    ...(page.pageTemplateId?.trim()
+      ? { pageTemplateId: page.pageTemplateId.trim() }
+      : {}),
+    ...(page.copyTemplateId?.trim()
+      ? { copyTemplateId: page.copyTemplateId.trim() }
+      : {}),
   };
 }
 

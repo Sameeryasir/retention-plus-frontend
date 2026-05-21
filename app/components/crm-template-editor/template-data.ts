@@ -2,6 +2,7 @@ import {
   CheckoutTemplateType,
   DEFAULT_CHECKOUT_THEME,
 } from "@/app/components/crm-template-editor/checkout-template-types";
+import { DEFAULT_LANDING_SECTION_ORDER } from "@/app/components/crm-template-editor/landing-sections";
 import type {
   FormDesign,
   FormFieldId,
@@ -40,6 +41,7 @@ export const INITIAL_TEMPLATE_PAGES: TemplatePagesState = {
     layoutType: "centered",
     landingDesign: "classic_offer",
     heroDesign: "edge_to_edge",
+    contentSectionOrder: [...DEFAULT_LANDING_SECTION_ORDER],
     headingColor: "",
     subheadingColor: "",
     bodyColor: "",

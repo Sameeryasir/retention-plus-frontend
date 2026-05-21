@@ -12,6 +12,7 @@ import type {
   TemplatePageId,
   TemplatePagesState,
 } from "@/app/components/crm-template-editor/template-types";
+import { normalizeLandingSectionOrder } from "@/app/components/crm-template-editor/landing-sections";
 import { cloneTemplatePages } from "@/app/lib/clone-template-pages";
 import { getApiBaseUrl, parseApiErrorMessage } from "@/app/lib/api";
 import { isPositiveInt } from "@/app/lib/numbers";
@@ -144,6 +145,20 @@ export function mapFunnelApiPagesToTemplateState(
     mapped.buttonTextColor = normalizeHexColor(
       landingApiColors.ctaTextColor ?? fb.buttonTextColor,
     );
+    const landingExtras = apiPages.landing as {
+      contentSectionOrder?: LandingTemplatePage["contentSectionOrder"];
+      pageTemplateId?: string;
+      copyTemplateId?: string;
+    };
+    mapped.contentSectionOrder = normalizeLandingSectionOrder(
+      landingExtras.contentSectionOrder ?? fb.contentSectionOrder,
+    );
+    if (landingExtras.pageTemplateId?.trim()) {
+      mapped.pageTemplateId = landingExtras.pageTemplateId.trim();
+    }
+    if (landingExtras.copyTemplateId?.trim()) {
+      mapped.copyTemplateId = landingExtras.copyTemplateId.trim();
+    }
     base.landing = mapped;
   }
 

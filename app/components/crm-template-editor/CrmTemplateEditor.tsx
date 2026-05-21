@@ -8,6 +8,10 @@ import { EditorShell } from "@/app/components/crm-template-editor/EditorShell";
 import { SettingsPanel } from "@/app/components/crm-template-editor/SettingsPanel";
 import { TopNavigation } from "@/app/components/crm-template-editor/TopNavigation";
 import type { EditorSaveStatus } from "@/app/components/crm-template-editor/editor-status";
+import { FunnelPageTemplateGallery } from "@/app/components/crm-template-editor/FunnelPageTemplateGallery";
+import type { FunnelLandingCopyTemplate } from "@/app/components/crm-template-editor/funnel-landing-copy-templates";
+import type { FunnelPageDesignTemplate } from "@/app/components/crm-template-editor/funnel-page-templates";
+import { getLandingDesignStyle } from "@/app/components/crm-template-editor/landing-designs/registry";
 import { TemplatePreview } from "@/app/components/crm-template-editor/TemplatePreview";
 import {
   buildFunnelPublicPath,
@@ -33,6 +37,9 @@ import {
 import { useEditorKeyboardShortcuts } from "@/app/hooks/use-editor-keyboard-shortcuts";
 import { useUndoRedo } from "@/app/hooks/use-undo-redo";
 import type {
+  LandingTemplatePage,
+  PaymentTemplatePage,
+  SignUpTemplatePage,
   TemplatePage,
   TemplatePageId,
   TemplatePagePatch,
@@ -83,6 +90,7 @@ export function CrmTemplateEditor({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [pendingNavId, setPendingNavId] = useState<TemplatePageId | null>(null);
+  const [templateGalleryOpen, setTemplateGalleryOpen] = useState(false);
   const editSnapshotRef = useRef<TemplatePagesState | null>(null);
 
   const activePage = pages[activeId];
@@ -318,6 +326,76 @@ export function CrmTemplateEditor({
   const displaySaveStatus: EditorSaveStatus =
     saveStatus === "idle" && !isDirty && isHydrated ? "draft" : saveStatus;
 
+  const landingPage =
+    pages.landing.id === "landing" ? (pages.landing as LandingTemplatePage) : null;
+  const activeDesignTemplateId = landingPage?.pageTemplateId ?? null;
+  const activeCopyTemplateId = landingPage?.copyTemplateId ?? null;
+
+  const applyFunnelPageDesign = useCallback(
+    (template: FunnelPageDesignTemplate) => {
+      const tokens = getLandingDesignStyle(template.landingDesign);
+      setSaveStatus("idle");
+      setSaveError(null);
+      setIsDirty(true);
+      commitPages((prev) => {
+        const landing = prev.landing as LandingTemplatePage;
+        const signup = prev.signup as SignUpTemplatePage;
+        const payment = prev.payment as PaymentTemplatePage;
+        const nextLanding: LandingTemplatePage = {
+          ...landing,
+          pageTemplateId: template.id,
+          landingDesign: template.landingDesign,
+          heroDesign: template.heroDesign,
+          layoutType: template.layoutType,
+          backgroundColor: tokens.backgroundDefault,
+        };
+        return {
+          ...prev,
+          landing: nextLanding,
+          signup: {
+            ...signup,
+            formDesign: template.formDesign,
+            layoutType: template.layoutType,
+            imageUrl: nextLanding.imageUrl,
+            imageScale: nextLanding.imageScale,
+          },
+          payment: {
+            ...payment,
+            checkoutTemplate: template.checkoutTemplate,
+            formDesign: template.formDesign,
+            layoutType: template.layoutType,
+          },
+        };
+      });
+      setTemplateGalleryOpen(false);
+    },
+    [commitPages],
+  );
+
+  const applyFunnelLandingCopy = useCallback(
+    (template: FunnelLandingCopyTemplate) => {
+      setSaveStatus("idle");
+      setSaveError(null);
+      setIsDirty(true);
+      commitPages((prev) => {
+        const landing = prev.landing as LandingTemplatePage;
+        return {
+          ...prev,
+          landing: {
+            ...landing,
+            copyTemplateId: template.id,
+            heading: template.copy.heading,
+            subheading: template.copy.subheading,
+            body: template.copy.body,
+            buttonText: template.copy.buttonText,
+          },
+        };
+      });
+      setTemplateGalleryOpen(false);
+    },
+    [commitPages],
+  );
+
   return (
     <>
       <EditorShell
@@ -333,6 +411,7 @@ export function CrmTemplateEditor({
             onRedo={redo}
             onSave={() => void handleSave()}
             onPreview={previewRouteId != null ? handlePreview : undefined}
+            onBrowseTemplates={() => setTemplateGalleryOpen(true)}
             isSaving={saveStatus === "saving"}
             saveError={saveError}
           />
@@ -364,6 +443,7 @@ export function CrmTemplateEditor({
             open={settingsOpen}
             page={activePage}
             onChange={patchPage}
+            onBrowseTemplates={() => setTemplateGalleryOpen(true)}
           />
         }
       />
@@ -374,6 +454,15 @@ export function CrmTemplateEditor({
         onCancel={cancelDiscard}
         onDiscard={confirmDiscard}
       />
+
+    <FunnelPageTemplateGallery
+      open={templateGalleryOpen}
+      onClose={() => setTemplateGalleryOpen(false)}
+      activeDesignTemplateId={activeDesignTemplateId}
+      activeCopyTemplateId={activeCopyTemplateId}
+      onApplyDesign={applyFunnelPageDesign}
+      onApplyCopy={applyFunnelLandingCopy}
+    />
     </>
   );
 }
