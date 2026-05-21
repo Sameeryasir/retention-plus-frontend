@@ -13,6 +13,7 @@ import { BuilderCanvas } from "@/app/components/automation/builder/BuilderCanvas
 import { NodeSettingsPanel } from "@/app/components/automation/builder/NodeSettingsPanel";
 import { automationStatusBadgeClass } from "@/app/lib/badge-variants";
 import { automationEase } from "@/app/lib/motion";
+import { workflowStartsWithCronTrigger } from "@/app/components/automation/automation-ui";
 import { AUTOMATION_BLOCKS } from "@/app/components/automation/mock-data";
 import type {
   AutomationListItem,
@@ -26,7 +27,12 @@ import {
 } from "@/app/services/automation/automation-api";
 import { BuilderShell } from "@/app/components/builder/BuilderShell";
 import { toastApiError } from "@/app/lib/toast-api-error";
-import { createAutomationConnection } from "@/app/services/automation/connection-api";
+import { reorderList } from "@/app/components/automation/builder/automation-dnd";
+import {
+  createAutomationConnection,
+  deleteAutomationConnection,
+} from "@/app/services/automation/connection-api";
+import type { AutomationConnection } from "@/app/services/automation/types";
 import {
   blockKindToNodeType,
   createAutomationNode,
@@ -87,6 +93,7 @@ export function AutomationBuilderPage({
       : "builder";
   const [tab, setTab] = useState<BuilderTab>(initialTab);
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
+  const [connections, setConnections] = useState<AutomationConnection[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [nodesLoading, setNodesLoading] = useState(false);
   const [deletingNode, setDeletingNode] = useState(false);
@@ -97,6 +104,7 @@ export function AutomationBuilderPage({
       if (!isPositiveInt(automationNumericId)) {
         setAutomation(null);
         setNodes([]);
+        setConnections([]);
         setSelectedId(null);
         return;
       }
@@ -113,6 +121,7 @@ export function AutomationBuilderPage({
           remote.connections ?? [],
         );
         setNodes(list);
+        setConnections(remote.connections ?? []);
         setSelectedId((current) => {
           if (current && list.some((n) => n.id === current)) {
             return current;
@@ -123,6 +132,7 @@ export function AutomationBuilderPage({
         if (!options?.silent) {
           setAutomation(null);
           setNodes([]);
+          setConnections([]);
           setSelectedId(null);
         }
       } finally {
@@ -176,6 +186,7 @@ export function AutomationBuilderPage({
     if (
       !selectedNode ||
       !isTriggerBlockKind(selectedNode.kind) ||
+      selectedNode.kind === "cron_trigger" ||
       selectedNode.numericId == null
     ) {
       return;
@@ -231,6 +242,11 @@ export function AutomationBuilderPage({
       customers: automation?.customersEntered ?? 0,
     }),
     [nodes, automation?.customersEntered],
+  );
+
+  const showRunAutomation = useMemo(
+    () => !workflowStartsWithCronTrigger(nodes),
+    [nodes],
   );
 
   const onAddBlock = useCallback(
@@ -348,7 +364,61 @@ export function AutomationBuilderPage({
     } finally {
       setDeletingNode(false);
     }
-  }, [selectedNode, loadAutomation]);
+  },     [selectedNode, loadAutomation]);
+
+  const onReorderNodes = useCallback(
+    async (fromIndex: number, toIndex: number) => {
+      if (!isPositiveInt(automationNumericId)) return;
+      if (fromIndex === toIndex) return;
+
+      const reordered = reorderList(nodes, fromIndex, toIndex);
+      const unchanged = reordered.every((n, i) => n.id === nodes[i]?.id);
+      if (unchanged) return;
+
+      setNodes(reordered);
+
+      try {
+        await Promise.all(
+          reordered.map((node, order) =>
+            node.numericId != null
+              ? updateAutomationNode(node.numericId, { order })
+              : Promise.resolve(),
+          ),
+        );
+
+        for (const connection of connections) {
+          try {
+            await deleteAutomationConnection(connection.id);
+          } catch {}
+        }
+
+        const newConnections: AutomationConnection[] = [];
+        for (let i = 0; i < reordered.length - 1; i++) {
+          const source = reordered[i]?.numericId;
+          const target = reordered[i + 1]?.numericId;
+          if (source == null || target == null) continue;
+          try {
+            const created = await createAutomationConnection({
+              automationId: automationNumericId,
+              sourceNodeId: source,
+              targetNodeId: target,
+            });
+            newConnections.push(created);
+          } catch (connErr) {
+            toastApiError(connErr, "Could not link steps after reorder.");
+            break;
+          }
+        }
+        setConnections(newConnections);
+        toast.success("Flow order updated.");
+        void loadAutomation({ silent: true });
+      } catch (err) {
+        toastApiError(err, "Could not reorder steps.");
+        void loadAutomation({ silent: true });
+      }
+    },
+    [automationNumericId, connections, nodes, loadAutomation],
+  );
 
   const pageHeader = (
     <>
@@ -444,6 +514,8 @@ export function AutomationBuilderPage({
                 loading={nodesLoading}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
+                onDropBlock={onAddBlock}
+                onReorderNodes={onReorderNodes}
               />
             }
             settingsPanel={
@@ -515,11 +587,13 @@ export function AutomationBuilderPage({
             <AutomationExecutionsPanel
               automationId={automationNumericId}
               automationActive={automationActive}
+              showRunButton={showRunAutomation}
             />
           ) : (
             <AutomationActivityPanel
               automationId={automationNumericId}
               automationActive={automationActive}
+              showRunButton={showRunAutomation}
               onRunStarted={() => setBuilderTab("runs")}
             />
           )}

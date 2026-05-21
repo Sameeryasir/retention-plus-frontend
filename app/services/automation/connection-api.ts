@@ -12,3 +12,9 @@ export async function createAutomationConnection(
     body: JSON.stringify(body),
   });
 }
+
+export async function deleteAutomationConnection(id: number): Promise<void> {
+  await automationFetch<void>(`/connection/${encodeURIComponent(String(id))}`, {
+    method: "DELETE",
+  });
+}

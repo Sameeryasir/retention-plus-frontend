@@ -2,10 +2,17 @@
 
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { normalizeExecutionStatusForDisplay } from "@/app/components/automation/execution-status-ui";
 import { pollExecutionStatus } from "@/app/lib/poll-execution-status";
 import { AutomationApiError } from "@/app/services/automation/automation-fetch";
 import { startExecution } from "@/app/services/automation/execution-api";
 import type { AutomationExecutionStatusDto } from "@/app/services/automation/types";
+
+const TERMINAL_BANNER_MS = 2500;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export function useStartAutomationRun(
   automationId: number,
@@ -47,15 +54,25 @@ export function useStartAutomationRun(
 
         if (generation !== pollGenerationRef.current) return;
 
+        const displayFinal = normalizeExecutionStatusForDisplay(final);
+        setActiveRun(displayFinal);
+        setPolling(false);
+
         if (final.status === "completed") {
+          const sent = displayFinal.emailsSent || displayFinal.totalRecipients;
+          const total = displayFinal.totalRecipients;
           toast.success(
-            `Run completed — ${final.emailsSent} of ${final.totalRecipients} email${final.totalRecipients === 1 ? "" : "s"} sent.`,
+            `Run completed — ${sent} of ${total} email${total === 1 ? "" : "s"} sent.`,
           );
         } else if (final.status === "failed") {
           toast.error(final.lastError ?? "Run failed.");
         }
 
         onFinished?.(final);
+
+        if (final.status === "completed" || final.status === "failed") {
+          await delay(TERMINAL_BANNER_MS);
+        }
       } catch (err) {
         if (generation !== pollGenerationRef.current) return;
 
@@ -83,7 +100,7 @@ export function useStartAutomationRun(
     [automationId, automationActive],
   );
 
-  const busy = starting || polling;
+  const busy = starting || polling || activeRun != null;
 
   return { starting, polling, busy, activeRun, run };
 }

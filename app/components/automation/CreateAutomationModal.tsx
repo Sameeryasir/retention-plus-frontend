@@ -18,7 +18,13 @@ import {
   type AutomationPurpose,
 } from "@/app/services/automation/types";
 
-const TRIGGERS = ["Signup", "Payment", "Funnel Complete", "Tag Added"];
+const TRIGGERS = [
+  "Signup",
+  "Payment",
+  "Funnel Complete",
+  "Cron Job",
+  "Tag Added",
+];
 const ICON_STROKE = 2.5;
 const fieldInputClass =
   "h-11 w-full rounded-xl border border-zinc-200/90 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-violet-500/25";

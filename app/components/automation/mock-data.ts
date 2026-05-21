@@ -8,6 +8,7 @@ import {
   Percent,
   Star,
   Tag,
+  CalendarClock,
   Timer,
   UserPlus,
   Workflow,
@@ -34,6 +35,13 @@ export const AUTOMATION_BLOCKS: BlockDefinition[] = [
     label: "Funnel Complete",
     section: "triggers",
     icon: Workflow,
+    tone: "emerald",
+  },
+  {
+    id: "cron_trigger",
+    label: "Cron Job",
+    section: "triggers",
+    icon: CalendarClock,
     tone: "emerald",
   },
   {

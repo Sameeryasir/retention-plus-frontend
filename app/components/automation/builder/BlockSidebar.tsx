@@ -1,11 +1,11 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { setBlockDragData } from "@/app/components/automation/builder/automation-dnd";
 import { AUTOMATION_BLOCKS } from "@/app/components/automation/mock-data";
 import { nodeToneClass } from "@/app/components/automation/automation-ui";
-import type { BlockSection } from "@/app/components/automation/types";
+import type { BlockSection, WorkflowNodeKind } from "@/app/components/automation/types";
 
 const SECTIONS: { id: BlockSection; label: string }[] = [
   { id: "triggers", label: "Triggers" },
@@ -17,9 +17,10 @@ const SECTIONS: { id: BlockSection; label: string }[] = [
 export function BlockSidebar({
   onAddBlock,
 }: {
-  onAddBlock: (blockId: (typeof AUTOMATION_BLOCKS)[number]["id"]) => void;
+  onAddBlock: (blockId: WorkflowNodeKind) => void;
 }) {
   const [query, setQuery] = useState("");
+  const didDragRef = useRef(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -31,6 +32,9 @@ export function BlockSidebar({
     <aside className="flex h-full w-[280px] shrink-0 flex-col border-r border-zinc-200/90 bg-white/80 backdrop-blur-xl lg:w-[300px]">
       <div className="border-b border-zinc-100 px-4 py-4">
         <h2 className="text-sm font-bold tracking-tight text-zinc-900">Blocks</h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          Drag onto the canvas or click to add.
+        </p>
         <div className="relative mt-3">
           <Search
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
@@ -59,16 +63,24 @@ export function BlockSidebar({
                   const tone = nodeToneClass(block.tone);
                   const Icon = block.icon;
                   return (
-                    <motion.button
+                    <button
                       key={block.id}
                       type="button"
-                      drag
-                      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-                      dragElastic={0.2}
-                      onClick={() => onAddBlock(block.id)}
-                      whileHover={{ scale: 1.02, x: 2 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`flex w-full cursor-grab items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left shadow-sm transition active:cursor-grabbing ${tone.shell}`}
+                      draggable
+                      onDragStart={(e: React.DragEvent<HTMLButtonElement>) => {
+                        didDragRef.current = true;
+                        setBlockDragData(e.dataTransfer, block.id);
+                      }}
+                      onDragEnd={() => {
+                        window.setTimeout(() => {
+                          didDragRef.current = false;
+                        }, 0);
+                      }}
+                      onClick={() => {
+                        if (didDragRef.current) return;
+                        onAddBlock(block.id);
+                      }}
+                      className={`flex w-full cursor-grab items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left shadow-sm transition hover:translate-x-0.5 hover:scale-[1.02] active:scale-[0.98] active:cursor-grabbing ${tone.shell}`}
                     >
                       <span
                         className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${tone.icon}`}
@@ -78,7 +90,7 @@ export function BlockSidebar({
                       <span className="text-sm font-semibold text-zinc-900">
                         {block.label}
                       </span>
-                    </motion.button>
+                    </button>
                   );
                 })}
               </div>

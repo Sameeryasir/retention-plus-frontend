@@ -3,6 +3,11 @@
 import { Maximize2, Minus, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import {
+  isBlockDrag,
+  readBlockDragData,
+} from "@/app/components/automation/builder/automation-dnd";
 import { WorkflowConnector } from "@/app/components/automation/builder/WorkflowConnector";
 import { WorkflowNodeCard } from "@/app/components/automation/builder/WorkflowNodeCard";
 import {
@@ -11,11 +16,22 @@ import {
   flowListStagger,
   flowStepReveal,
 } from "@/app/lib/motion";
-import type { WorkflowNode } from "@/app/components/automation/types";
+import type { WorkflowNode, WorkflowNodeKind } from "@/app/components/automation/types";
 
 const ZOOM_MIN = 0.72;
 const ZOOM_MAX = 1.2;
 const ZOOM_STEP = 0.08;
+const LONG_PRESS_MS = 450;
+const POINTER_MOVE_CANCEL_PX = 10;
+
+type DragPreview = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  offsetX: number;
+  offsetY: number;
+};
 
 function FlowLoadingPlaceholder() {
   return (
@@ -41,15 +57,36 @@ export function BuilderCanvas({
   loading = false,
   selectedId,
   onSelect,
+  onDropBlock,
+  onReorderNodes,
 }: {
   nodes: WorkflowNode[];
   loading?: boolean;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onDropBlock?: (blockId: WorkflowNodeKind) => void;
+  onReorderNodes?: (fromIndex: number, toIndex: number) => void;
 }) {
   const [zoom, setZoom] = useState(1);
   const [revealKey, setRevealKey] = useState(0);
   const wasLoadingRef = useRef(loading);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [pressingIndex, setPressingIndex] = useState<number | null>(null);
+  const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
+  const [canvasDragOver, setCanvasDragOver] = useState(false);
+
+  const nodeSlotRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerSessionRef = useRef<{
+    index: number;
+    startX: number;
+    startY: number;
+    pointerId: number;
+    didDrag: boolean;
+  } | null>(null);
+
+  const canDropBlocks = onDropBlock != null;
+  const canReorder = onReorderNodes != null && nodes.length > 1;
 
   const fitScreen = useCallback(() => setZoom(1), []);
 
@@ -59,6 +96,216 @@ export function BuilderCanvas({
     }
     wasLoadingRef.current = loading;
   }, [loading, nodes.length]);
+
+  const clearPointerReorder = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    pointerSessionRef.current = null;
+    setDraggingIndex(null);
+    setPressingIndex(null);
+    setDragPreview(null);
+  }, []);
+
+  const clearDragState = useCallback(() => {
+    clearPointerReorder();
+    setCanvasDragOver(false);
+  }, [clearPointerReorder]);
+
+  const resolveDropIndex = useCallback(
+    (clientY: number) => {
+      const slots = nodeSlotRefs.current;
+      for (let i = 0; i < slots.length; i++) {
+        const el = slots[i];
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (clientY < rect.top + rect.height / 2) return i;
+      }
+      return nodes.length;
+    },
+    [nodes.length],
+  );
+
+  const finishPointerReorder = useCallback(
+    (clientY: number) => {
+      const session = pointerSessionRef.current;
+      const fromIndex = draggingIndex;
+      clearPointerReorder();
+
+      if (fromIndex == null || !session?.didDrag || !onReorderNodes) return;
+
+      const toIndex = resolveDropIndex(clientY);
+      if (fromIndex !== toIndex) onReorderNodes(fromIndex, toIndex);
+    },
+    [clearPointerReorder, draggingIndex, onReorderNodes, resolveDropIndex],
+  );
+
+  const handleNodePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>, index: number) => {
+      if (!canReorder || e.button !== 0) return;
+
+      const target = e.currentTarget;
+      pointerSessionRef.current = {
+        index,
+        startX: e.clientX,
+        startY: e.clientY,
+        pointerId: e.pointerId,
+        didDrag: false,
+      };
+
+      longPressTimerRef.current = setTimeout(() => {
+        longPressTimerRef.current = null;
+        const rect = target.getBoundingClientRect();
+        const session = pointerSessionRef.current;
+        const pointerX = session?.startX ?? e.clientX;
+        const pointerY = session?.startY ?? e.clientY;
+        setPressingIndex(null);
+        setDraggingIndex(index);
+        setDragPreview({
+          x: pointerX,
+          y: pointerY,
+          width: rect.width,
+          height: rect.height,
+          offsetX: pointerX - rect.left,
+          offsetY: pointerY - rect.top,
+        });
+        pointerSessionRef.current = {
+          ...pointerSessionRef.current!,
+          didDrag: true,
+        };
+        target.setPointerCapture(e.pointerId);
+      }, LONG_PRESS_MS);
+
+      setPressingIndex(index);
+    },
+    [canReorder],
+  );
+
+  const handleNodePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const session = pointerSessionRef.current;
+      if (!session || e.pointerId !== session.pointerId) return;
+
+      const moved = Math.hypot(
+        e.clientX - session.startX,
+        e.clientY - session.startY,
+      );
+
+      if (draggingIndex == null) {
+        if (moved > POINTER_MOVE_CANCEL_PX) {
+          if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+          }
+          setPressingIndex(null);
+          pointerSessionRef.current = null;
+        }
+        return;
+      }
+
+      e.preventDefault();
+      setDragPreview((prev) =>
+        prev
+          ? { ...prev, x: e.clientX, y: e.clientY }
+          : null,
+      );
+    },
+    [draggingIndex],
+  );
+
+  const handleNodePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>, nodeId: string) => {
+      const session = pointerSessionRef.current;
+
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+
+      if (draggingIndex != null) {
+        finishPointerReorder(e.clientY);
+        return;
+      }
+
+      const moved = session
+        ? Math.hypot(e.clientX - session.startX, e.clientY - session.startY)
+        : 0;
+      clearPointerReorder();
+      if (moved < POINTER_MOVE_CANCEL_PX) onSelect(nodeId);
+    },
+    [clearPointerReorder, draggingIndex, finishPointerReorder, onSelect],
+  );
+
+  const handleNodePointerCancel = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (draggingIndex != null) finishPointerReorder(e.clientY);
+      else clearPointerReorder();
+    },
+    [clearPointerReorder, draggingIndex, finishPointerReorder],
+  );
+
+  const handleCanvasDragOver = useCallback(
+    (e: React.DragEvent) => {
+      if (!canDropBlocks || !isBlockDrag(e.dataTransfer)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      setCanvasDragOver(true);
+    },
+    [canDropBlocks],
+  );
+
+  const handleSlotDragOver = useCallback(
+    (e: React.DragEvent) => {
+      if (!canDropBlocks || !isBlockDrag(e.dataTransfer)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setCanvasDragOver(true);
+    },
+    [canDropBlocks],
+  );
+
+  const handleBlockDrop = useCallback(
+    (e: React.DragEvent) => {
+      if (!canDropBlocks || !isBlockDrag(e.dataTransfer)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      clearDragState();
+      const blockId = readBlockDragData(e.dataTransfer);
+      if (blockId) onDropBlock?.(blockId);
+    },
+    [canDropBlocks, clearDragState, onDropBlock],
+  );
+
+  useEffect(() => {
+    nodeSlotRefs.current.length = nodes.length;
+  }, [nodes.length]);
+
+  const draggedNode =
+    draggingIndex != null ? nodes[draggingIndex] : null;
+
+  const dragGhost =
+    typeof document !== "undefined" &&
+    draggedNode &&
+    dragPreview &&
+    createPortal(
+      <div
+        className="pointer-events-none fixed z-[200]"
+        style={{
+          left: dragPreview.x - dragPreview.offsetX,
+          top: dragPreview.y - dragPreview.offsetY,
+          width: dragPreview.width,
+        }}
+        aria-hidden
+      >
+        <WorkflowNodeCard
+          node={draggedNode}
+          selected={selectedId === draggedNode.id}
+          isGhost
+        />
+      </div>,
+      document.body,
+    );
 
   return (
     <motion.div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-zinc-100/80">
@@ -112,10 +359,18 @@ export function BuilderCanvas({
       </motion.div>
 
       <motion.div
-        className="min-h-0 flex-1 overflow-auto px-6 py-16"
+        className={`min-h-0 flex-1 overflow-auto px-6 py-16 transition-colors ${
+          canvasDragOver ? "bg-violet-50/50" : ""
+        }`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.35, ease: automationEase }}
+        onDragOver={handleCanvasDragOver}
+        onDragLeave={(e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+          setCanvasDragOver(false);
+        }}
+        onDrop={handleBlockDrop}
       >
         <motion.div
           className="mx-auto flex w-full max-w-lg flex-col items-center"
@@ -125,15 +380,23 @@ export function BuilderCanvas({
           {loading ? (
             <FlowLoadingPlaceholder />
           ) : nodes.length === 0 ? (
-            <motion.p
-              className="max-w-sm py-16 text-center text-sm text-zinc-500"
+            <motion.div
+              className={`max-w-sm rounded-2xl border-2 border-dashed px-6 py-16 text-center transition-colors ${
+                canvasDragOver
+                  ? "border-violet-400 bg-violet-50/80"
+                  : "border-zinc-300 bg-white/50"
+              }`}
               initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, ease: automationEase }}
             >
-              No steps yet. Pick a block from the left sidebar to build your
-              automation.
-            </motion.p>
+              <p className="text-sm font-medium text-zinc-700">
+                Drag a block here
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                Or click a block in the sidebar to add your first step.
+              </p>
+            </motion.div>
           ) : (
             <motion.div
               key={revealKey}
@@ -141,6 +404,8 @@ export function BuilderCanvas({
               variants={flowListStagger}
               initial="hidden"
               animate="show"
+              onDragOver={handleCanvasDragOver}
+              onDrop={handleBlockDrop}
             >
               {nodes.map((node, index) => (
                 <motion.div
@@ -148,25 +413,67 @@ export function BuilderCanvas({
                   className="flex w-full flex-col items-center"
                   variants={flowStepReveal}
                 >
-                  <WorkflowNodeCard
-                    node={node}
-                    selected={selectedId === node.id}
-                    onSelect={() => onSelect(node.id)}
-                  />
+                  <div
+                    ref={(el) => {
+                      nodeSlotRefs.current[index] = el;
+                    }}
+                    className={`w-full max-w-lg ${
+                      draggingIndex !== null || pressingIndex !== null
+                        ? "touch-none"
+                        : ""
+                    } ${
+                      canReorder ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+                    }`}
+                    onPointerDown={(e) => handleNodePointerDown(e, index)}
+                    onPointerMove={handleNodePointerMove}
+                    onPointerUp={(e) => handleNodePointerUp(e, node.id)}
+                    onPointerCancel={handleNodePointerCancel}
+                  >
+                    {draggingIndex === index ? (
+                      <div
+                        className="flex w-full items-center justify-center rounded-2xl border-2 border-dashed border-violet-300/90 bg-violet-50/50 px-4 text-xs font-semibold text-violet-500"
+                        style={{ minHeight: dragPreview?.height ?? 72 }}
+                        aria-hidden
+                      />
+                    ) : (
+                      <WorkflowNodeCard
+                        node={node}
+                        selected={selectedId === node.id}
+                        isPressing={pressingIndex === index}
+                      />
+                    )}
+                  </div>
                   {index < nodes.length - 1 ? (
                     <motion.div
-                      className="flex w-full justify-center"
+                      className="flex w-full justify-center py-1"
                       variants={flowConnectorReveal}
+                      onDragOver={handleSlotDragOver}
+                      onDrop={handleBlockDrop}
                     >
                       <WorkflowConnector />
                     </motion.div>
                   ) : null}
                 </motion.div>
               ))}
+              {canDropBlocks ? (
+                <div
+                  className="h-8 w-full max-w-lg"
+                  onDragOver={handleSlotDragOver}
+                  onDrop={handleBlockDrop}
+                />
+              ) : null}
             </motion.div>
           )}
         </motion.div>
       </motion.div>
+
+      {canReorder && nodes.length > 0 ? (
+        <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] font-medium text-zinc-500">
+          Press and hold a step, then drag to reorder
+        </p>
+      ) : null}
+
+      {dragGhost}
     </motion.div>
   );
 }

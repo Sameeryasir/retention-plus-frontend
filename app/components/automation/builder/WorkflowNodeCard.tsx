@@ -1,6 +1,5 @@
 "use client";
 
-import { GripVertical } from "lucide-react";
 import { motion } from "framer-motion";
 import { getBlockByKind } from "@/app/components/automation/mock-data";
 import { nodeToneClass } from "@/app/components/automation/automation-ui";
@@ -9,28 +8,30 @@ import type { WorkflowNode } from "@/app/components/automation/types";
 export function WorkflowNodeCard({
   node,
   selected,
-  onSelect,
+  isDragging = false,
+  isPressing = false,
+  isGhost = false,
 }: {
   node: WorkflowNode;
   selected: boolean;
-  onSelect: () => void;
+  isDragging?: boolean;
+  isPressing?: boolean;
+  isGhost?: boolean;
 }) {
   const block = getBlockByKind(node.kind);
   const tone = nodeToneClass(block.tone);
   const Icon = block.icon;
 
   return (
-    <motion.button
-      type="button"
-      drag
-      dragConstraints={{ left: -40, right: 40, top: 0, bottom: 0 }}
-      dragElastic={0.12}
-      onClick={onSelect}
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      className={`group flex w-full max-w-md cursor-grab items-center gap-3 rounded-2xl border px-4 py-3.5 text-left shadow-md transition active:cursor-grabbing ${tone.shell} ${
-        selected ? `ring-2 ${tone.ring}` : "ring-1 ring-zinc-950/[0.04]"
+    <motion.div
+      className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition select-none ${tone.shell} ${
+        isGhost
+          ? "scale-[1.03] shadow-2xl ring-2 ring-violet-400"
+          : `shadow-md ${selected ? `ring-2 ${tone.ring}` : "ring-1 ring-zinc-950/[0.04]"}`
+      } ${isDragging ? "opacity-30" : ""} ${
+        isPressing && !isDragging && !isGhost ? "scale-[0.99] ring-2 ring-violet-200" : ""
       }`}
+      animate={isGhost ? { scale: 1.03 } : isDragging ? { opacity: 0.3 } : { scale: 1 }}
     >
       <span
         className={`flex size-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${tone.icon}`}
@@ -51,10 +52,6 @@ export function WorkflowNodeCard({
           {node.label}
         </span>
       </span>
-      <GripVertical
-        className="size-4 shrink-0 text-zinc-300 opacity-0 transition group-hover:opacity-100"
-        aria-hidden
-      />
-    </motion.button>
+    </motion.div>
   );
 }

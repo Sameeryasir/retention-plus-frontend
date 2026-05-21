@@ -9,10 +9,12 @@ import { useStartAutomationRun } from "@/app/hooks/use-start-automation-run";
 export function AutomationActivityPanel({
   automationId,
   automationActive,
+  showRunButton = true,
   onRunStarted,
 }: {
   automationId: number;
   automationActive?: boolean;
+  showRunButton?: boolean;
   onRunStarted?: (executionId: number) => void;
 }) {
   const { busy, activeRun, run } = useStartAutomationRun(
@@ -27,24 +29,25 @@ export function AutomationActivityPanel({
           <div>
             <h2 className="text-lg font-bold text-zinc-900">Activity</h2>
             <p className="text-sm text-zinc-500">
-              Start a run here. Open the Runs tab to see each batch and who was
-              reached.
+              {showRunButton
+                ? "Start a run here. Open the Runs tab to see each batch and who was reached."
+                : "This flow starts on a cron schedule. Open the Runs tab to see past runs."}
             </p>
           </div>
-          <RunAutomationButton
-            busy={busy}
-            disabled={automationActive === false}
-            onClick={() =>
-              void run((result) => onRunStarted?.(result.executionId))
-            }
-          />
+          {showRunButton ? (
+            <RunAutomationButton
+              busy={busy}
+              disabled={automationActive === false}
+              onClick={() =>
+                void run((result) => onRunStarted?.(result.executionId))
+              }
+            />
+          ) : null}
         </div>
       </div>
 
       <div className="px-4 py-4 sm:px-6">
-        {activeRun && !activeRun.isTerminal ? (
-          <RunProgressBanner status={activeRun} />
-        ) : null}
+        {activeRun ? <RunProgressBanner status={activeRun} /> : null}
 
         <div className="flex items-center justify-center py-12">
           <div

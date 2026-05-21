@@ -21,6 +21,91 @@ const CONDITION_TYPES = [
 ];
 
 type WaitUnit = "minutes" | "hours" | "days";
+type CronIntervalUnit = WaitUnit;
+type CronFrequency = "daily" | "weekly" | "interval";
+const CRON_INTERVAL_MIN = 1;
+type CronDayOfWeek =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+
+const CRON_DAYS: { id: CronDayOfWeek; label: string }[] = [
+  { id: "monday", label: "Mon" },
+  { id: "tuesday", label: "Tue" },
+  { id: "wednesday", label: "Wed" },
+  { id: "thursday", label: "Thu" },
+  { id: "friday", label: "Fri" },
+  { id: "saturday", label: "Sat" },
+  { id: "sunday", label: "Sun" },
+];
+
+function configCronFrequency(config: Record<string, unknown>): CronFrequency {
+  if (config.frequency === "weekly") return "weekly";
+  if (config.frequency === "interval") return "interval";
+  return "daily";
+}
+
+function configCronIntervalUnit(config: Record<string, unknown>): CronIntervalUnit {
+  const value = config.unit;
+  if (value === "hours" || value === "days" || value === "minutes") return value;
+  return "minutes";
+}
+
+function configCronIntervalValue(config: Record<string, unknown>): number {
+  const fromInterval = configNumber(config, "interval", 0);
+  if (fromInterval >= CRON_INTERVAL_MIN) {
+    return Math.max(CRON_INTERVAL_MIN, Math.floor(fromInterval));
+  }
+  const legacyMinutes = configNumber(config, "intervalMinutes", 5);
+  return Math.max(CRON_INTERVAL_MIN, Math.floor(legacyMinutes));
+}
+
+function clampCronInterval(value: number): number {
+  if (!Number.isFinite(value)) return CRON_INTERVAL_MIN;
+  return Math.max(CRON_INTERVAL_MIN, Math.floor(value));
+}
+
+function cronIntervalUnitLabel(value: number, unit: CronIntervalUnit): string {
+  if (unit === "minutes") return value === 1 ? "minute" : "minutes";
+  if (unit === "hours") return value === 1 ? "hour" : "hours";
+  return value === 1 ? "day" : "days";
+}
+
+function configCronDay(config: Record<string, unknown>): CronDayOfWeek {
+  const value = config.dayOfWeek;
+  const match = CRON_DAYS.find((d) => d.id === value);
+  return match?.id ?? "monday";
+}
+
+function formatCronTime12h(time24: string): string {
+  const [hStr, mStr] = time24.split(":");
+  const h = Number.parseInt(hStr ?? "9", 10);
+  const m = Number.parseInt(mStr ?? "0", 10);
+  if (Number.isNaN(h)) return time24;
+  const period = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+export function formatCronScheduleSummary(config: Record<string, unknown>): string {
+  const frequency = configCronFrequency(config);
+  if (frequency === "interval") {
+    const value = configCronIntervalValue(config);
+    const unit = configCronIntervalUnit(config);
+    return `Every ${value} ${cronIntervalUnitLabel(value, unit)}`;
+  }
+  const time = configString(config, "time", "09:00");
+  const timeLabel = formatCronTime12h(time);
+  if (frequency === "weekly") {
+    const day = CRON_DAYS.find((d) => d.id === configCronDay(config))?.label ?? "Mon";
+    return `Every ${day} at ${timeLabel}`;
+  }
+  return `Every day at ${timeLabel}`;
+}
 
 function configString(
   config: Record<string, unknown>,
@@ -52,6 +137,7 @@ function hasEditableSettings(kind: WorkflowNode["kind"]): boolean {
   return [
     "wait",
     "delay",
+    "cron_trigger",
     "send_email",
     "condition",
     "send_sms",
@@ -70,9 +156,29 @@ function buildConfigForNode(
     conditionValue: string;
     message: string;
     whatsappTemplate: string;
+    cronFrequency: CronFrequency;
+    cronTime: string;
+    cronDayOfWeek: CronDayOfWeek;
+    cronInterval: number;
+    cronIntervalUnit: CronIntervalUnit;
   },
 ): Record<string, unknown> {
   switch (kind) {
+    case "cron_trigger":
+      if (values.cronFrequency === "interval") {
+        return {
+          trigger: "cron",
+          frequency: "interval",
+          interval: clampCronInterval(values.cronInterval),
+          unit: values.cronIntervalUnit,
+        };
+      }
+      return {
+        trigger: "cron",
+        frequency: values.cronFrequency,
+        time: values.cronTime,
+        dayOfWeek: values.cronDayOfWeek,
+      };
     case "wait":
     case "delay":
       return { delay: values.delay, unit: values.unit };
@@ -204,6 +310,21 @@ function NodeSettingsForm({
   const [whatsappTemplate, setWhatsappTemplate] = useState(() =>
     configString(config, "template", "order_reminder"),
   );
+  const [cronFrequency, setCronFrequency] = useState<CronFrequency>(() =>
+    configCronFrequency(config),
+  );
+  const [cronTime, setCronTime] = useState(() =>
+    configString(config, "time", "09:00"),
+  );
+  const [cronDayOfWeek, setCronDayOfWeek] = useState<CronDayOfWeek>(() =>
+    configCronDay(config),
+  );
+  const [cronInterval, setCronInterval] = useState(() =>
+    configCronIntervalValue(config),
+  );
+  const [cronIntervalUnit, setCronIntervalUnit] = useState<CronIntervalUnit>(() =>
+    configCronIntervalUnit(config),
+  );
 
   const configKey = JSON.stringify(node.config ?? {});
 
@@ -230,7 +351,20 @@ function NodeSettingsForm({
       ),
     );
     setWhatsappTemplate(configString(saved, "template", "order_reminder"));
+    setCronFrequency(configCronFrequency(saved));
+    setCronTime(configString(saved, "time", "09:00"));
+    setCronDayOfWeek(configCronDay(saved));
+    setCronInterval(configCronIntervalValue(saved));
+    setCronIntervalUnit(configCronIntervalUnit(saved));
   }, [node.id, configKey]);
+
+  const cronPreview = formatCronScheduleSummary({
+    frequency: cronFrequency,
+    time: cronTime,
+    dayOfWeek: cronDayOfWeek,
+    interval: cronInterval,
+    unit: cronIntervalUnit,
+  });
 
   return (
     <motion.form
@@ -252,6 +386,11 @@ function NodeSettingsForm({
             conditionValue,
             message,
             whatsappTemplate,
+            cronFrequency,
+            cronTime,
+            cronDayOfWeek,
+            cronInterval,
+            cronIntervalUnit,
           }),
         );
       }}
@@ -273,6 +412,21 @@ function NodeSettingsForm({
         </motion.div>
       </motion.div>
 
+      {node.kind === "cron_trigger" && (
+        <CronSettings
+          frequency={cronFrequency}
+          time={cronTime}
+          dayOfWeek={cronDayOfWeek}
+          interval={cronInterval}
+          intervalUnit={cronIntervalUnit}
+          summary={cronPreview}
+          onFrequencyChange={setCronFrequency}
+          onTimeChange={setCronTime}
+          onDayOfWeekChange={setCronDayOfWeek}
+          onIntervalChange={setCronInterval}
+          onIntervalUnitChange={setCronIntervalUnit}
+        />
+      )}
       {(node.kind === "wait" || node.kind === "delay") && (
         <WaitSettings
           delay={delay}
@@ -351,6 +505,137 @@ function fieldLabel(text: string) {
 
 function inputClass() {
   return "h-10 w-full rounded-xl border border-zinc-200/90 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10";
+}
+
+function CronSettings({
+  frequency,
+  time,
+  dayOfWeek,
+  interval,
+  intervalUnit,
+  summary,
+  onFrequencyChange,
+  onTimeChange,
+  onDayOfWeekChange,
+  onIntervalChange,
+  onIntervalUnitChange,
+}: {
+  frequency: CronFrequency;
+  time: string;
+  dayOfWeek: CronDayOfWeek;
+  interval: number;
+  intervalUnit: CronIntervalUnit;
+  summary: string;
+  onFrequencyChange: (value: CronFrequency) => void;
+  onTimeChange: (value: string) => void;
+  onDayOfWeekChange: (value: CronDayOfWeek) => void;
+  onIntervalChange: (value: number) => void;
+  onIntervalUnitChange: (value: CronIntervalUnit) => void;
+}) {
+  const frequencies: { id: CronFrequency; label: string }[] = [
+    { id: "daily", label: "Daily" },
+    { id: "weekly", label: "Weekly" },
+    { id: "interval", label: "Interval" },
+  ];
+
+  const intervalUnits: { id: CronIntervalUnit; label: string }[] = [
+    { id: "minutes", label: "Minutes" },
+    { id: "hours", label: "Hours" },
+    { id: "days", label: "Days" },
+  ];
+
+  return (
+    <motion.div className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      {fieldLabel("How often")}
+      <div className="grid grid-cols-3 gap-2">
+        {frequencies.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onFrequencyChange(item.id)}
+            className={`cursor-pointer rounded-xl border px-2 py-2.5 text-xs font-semibold transition ${
+              frequency === item.id
+                ? "border-zinc-900 bg-zinc-900 text-white"
+                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {frequency === "weekly" ? (
+        <>
+          {fieldLabel("Day of week")}
+          <select
+            value={dayOfWeek}
+            onChange={(e) => onDayOfWeekChange(e.target.value as CronDayOfWeek)}
+            className={inputClass()}
+          >
+            {CRON_DAYS.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.label}
+              </option>
+            ))}
+          </select>
+        </>
+      ) : null}
+
+      {frequency === "interval" ? (
+        <>
+          {fieldLabel("Run every")}
+          <input
+            type="number"
+            min={CRON_INTERVAL_MIN}
+            step={1}
+            inputMode="numeric"
+            value={interval}
+            onChange={(e) => {
+              const parsed = Number.parseInt(e.target.value, 10);
+              onIntervalChange(clampCronInterval(parsed));
+            }}
+            onBlur={() => onIntervalChange(clampCronInterval(interval))}
+            className={inputClass()}
+            aria-describedby="cron-interval-hint"
+          />
+          {fieldLabel("Unit")}
+          <div className="grid grid-cols-3 gap-2">
+            {intervalUnits.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onIntervalUnitChange(item.id)}
+                className={`cursor-pointer rounded-xl border px-2 py-2 text-xs font-semibold transition ${
+                  intervalUnit === item.id
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <p id="cron-interval-hint" className="text-xs text-zinc-500">
+            At least {CRON_INTERVAL_MIN} {cronIntervalUnitLabel(1, intervalUnit)}.
+          </p>
+        </>
+      ) : (
+        <>
+          {fieldLabel("Run at")}
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => onTimeChange(e.target.value)}
+            className={inputClass()}
+          />
+        </>
+      )}
+
+      <p className="rounded-xl border border-emerald-200/80 bg-emerald-50/80 px-3 py-2.5 text-xs font-medium leading-relaxed text-emerald-900">
+        {summary}
+      </p>
+    </motion.div>
+  );
 }
 
 function WaitSettings({

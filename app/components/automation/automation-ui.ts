@@ -7,6 +7,7 @@ const TRIGGER_NODE_KINDS = new Set<WorkflowNodeKind>([
   "signup_trigger",
   "payment_trigger",
   "funnel_complete",
+  "cron_trigger",
 ]);
 
 export function isTriggerNodeKind(kind: WorkflowNodeKind): boolean {
@@ -16,6 +17,10 @@ export function isTriggerNodeKind(kind: WorkflowNodeKind): boolean {
 export function workflowStartsWithTrigger(nodes: WorkflowNode[]): boolean {
   const first = nodes[0];
   return first != null && isTriggerNodeKind(first.kind);
+}
+
+export function workflowStartsWithCronTrigger(nodes: WorkflowNode[]): boolean {
+  return nodes[0]?.kind === "cron_trigger";
 }
 
 export function nodeToneClass(

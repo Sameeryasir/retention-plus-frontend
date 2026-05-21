@@ -35,6 +35,14 @@ const TRIGGER_DEFAULT_CONFIG_BY_KIND: Partial<
   signup_trigger: SIGNUP_TRIGGER_DEFAULT_CONFIG,
   payment_trigger: { trigger: "payment" },
   funnel_complete: { trigger: "funnel_complete" },
+  cron_trigger: {
+    trigger: "cron",
+    frequency: "daily",
+    time: "09:00",
+    dayOfWeek: "monday",
+    interval: 5,
+    unit: "minutes",
+  },
 };
 
 const TRIGGER_BLOCK_KINDS = new Set<WorkflowNodeKind>(
@@ -55,6 +63,7 @@ const BLOCK_TO_NODE_TYPE: Record<WorkflowNodeKind, ApiNodeType> = {
   signup_trigger: "trigger",
   payment_trigger: "trigger",
   funnel_complete: "trigger",
+  cron_trigger: "trigger",
   wait: "wait",
   delay: "wait",
   send_email: "email",
@@ -89,6 +98,7 @@ export function nodeTypeToBlockKind(
     const trigger = config?.trigger;
     if (trigger === "payment") return "payment_trigger";
     if (trigger === "funnel_complete") return "funnel_complete";
+    if (trigger === "cron") return "cron_trigger";
     return "signup_trigger";
   }
   if (API_NODE_TYPES.includes(type as ApiNodeType)) {

@@ -178,6 +178,10 @@ export interface AutomationLog {
   };
 }
 
+export interface ExecutionLogsResponse {
+  data: AutomationLog[];
+}
+
 export interface StartAutomationExecutionBody {
   automationId: number;
   currentNodeId?: number;

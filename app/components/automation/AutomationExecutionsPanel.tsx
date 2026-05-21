@@ -164,10 +164,12 @@ function RunRow({
   row,
   onDelete,
   deleting,
+  deleteLocked,
 }: {
   row: AutomationExecution;
   onDelete: (id: number) => void;
   deleting: boolean;
+  deleteLocked: boolean;
 }) {
   const StatusIcon = statusIcon(row.status);
   const countdown =
@@ -272,13 +274,18 @@ function RunRow({
       <button
         type="button"
         title={
-          inProgress
-            ? "Cannot delete while run is in progress"
-            : "Delete run"
+          deleteLocked
+            ? "Wait for the current delete to finish"
+            : inProgress
+              ? "Cannot delete while run is in progress"
+              : "Delete run"
         }
-        disabled={inProgress || deleting}
-        onClick={() => onDelete(row.id)}
-        className="flex size-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+        disabled={inProgress || deleting || deleteLocked}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(row.id);
+        }}
+        className="relative z-10 flex size-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {deleting ? (
           <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -293,10 +300,12 @@ function RunRow({
 export function AutomationExecutionsPanel({
   automationId,
   automationActive,
+  showRunButton = true,
   onExecutionStarted,
 }: {
   automationId: number;
   automationActive?: boolean;
+  showRunButton?: boolean;
   onExecutionStarted?: (id: number) => void;
 }) {
   const [statusFilter, setStatusFilter] = useState<
@@ -322,6 +331,18 @@ export function AutomationExecutionsPanel({
     deletingId,
   } = useAutomationExecutions(automationId, apiStatus);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+
+  const deleteTargetName = useMemo(() => {
+    if (deleteTargetId == null) return "this run";
+    const row = executions.find((e) => e.id === deleteTargetId);
+    if (!row) return `Run #${deleteTargetId}`;
+    const label = executionRunTitle(
+      row.executedRecipients,
+      row.customerId,
+      row.customer,
+    );
+    return label.trim() ? label : `Run #${row.id}`;
+  }, [deleteTargetId, executions]);
 
   const confirmDeleteRun = useCallback(async () => {
     const executionId = deleteTargetId;
@@ -388,25 +409,25 @@ export function AutomationExecutionsPanel({
               />
               Refresh
             </button>
-            <RunAutomationButton
-              busy={busy}
-              disabled={automationActive === false}
-              onClick={() =>
-                void run((result) => {
-                  setPage(1);
-                  onExecutionStarted?.(result.executionId);
-                })
-              }
-            />
+            {showRunButton ? (
+              <RunAutomationButton
+                busy={busy}
+                disabled={automationActive === false}
+                onClick={() =>
+                  void run((result) => {
+                    setPage(1);
+                    onExecutionStarted?.(result.executionId);
+                  })
+                }
+              />
+            ) : null}
             </div>
           </div>
         </div>
       </div>
 
       <div className="px-4 py-4 sm:px-6">
-        {activeRun && !activeRun.isTerminal ? (
-          <RunProgressBanner status={activeRun} />
-        ) : null}
+        {activeRun ? <RunProgressBanner status={activeRun} /> : null}
 
         {!loading && !error && executions.length > 0 ? (
           <div className="mb-5 -mx-4 overflow-x-auto overscroll-x-contain px-4 pb-1 sm:-mx-6 sm:px-6 xl:mx-0 xl:overflow-visible xl:px-0 xl:pb-0">
@@ -514,8 +535,12 @@ export function AutomationExecutionsPanel({
                 >
                   <RunRow
                     row={row}
-                    onDelete={setDeleteTargetId}
+                    onDelete={(id) => {
+                      if (deletingId != null) return;
+                      setDeleteTargetId(id);
+                    }}
                     deleting={deletingId === row.id}
+                    deleteLocked={deletingId != null}
                   />
                 </div>
               ))}
@@ -527,12 +552,14 @@ export function AutomationExecutionsPanel({
 
     <DeleteExecutionDialog
       open={deleteTargetId != null}
+      itemName={deleteTargetName}
       isDeleting={deletingId === deleteTargetId}
       onCancel={() => {
         if (deletingId == null) setDeleteTargetId(null);
       }}
       onConfirm={() => void confirmDeleteRun()}
     />
+
     </>
   );
 }

@@ -1,12 +1,39 @@
 import type {
   AutomationExecutionRecipient,
   AutomationExecutionStatus,
+  AutomationExecutionStatusDto,
 } from "@/app/services/automation/types";
 
 export function isExecutionInProgress(
   status: AutomationExecutionStatus,
 ): boolean {
   return status === "queued" || status === "running" || status === "waiting";
+}
+
+/** Backend sends all emails in one batch — no per-email progress until done. */
+export function isBulkEmailSendInProgress(
+  status: AutomationExecutionStatusDto,
+): boolean {
+  return (
+    status.status === "running" &&
+    status.totalRecipients > 0 &&
+    status.emailsSent === 0 &&
+    status.progressPercent === 0
+  );
+}
+
+/** Show 100% and full count when the run finishes (API may still report 0 until terminal). */
+export function normalizeExecutionStatusForDisplay(
+  status: AutomationExecutionStatusDto,
+): AutomationExecutionStatusDto {
+  if (status.status === "completed" && status.totalRecipients > 0) {
+    return {
+      ...status,
+      emailsSent: status.totalRecipients,
+      progressPercent: 100,
+    };
+  }
+  return status;
 }
 
 export function executionProgressLabel(

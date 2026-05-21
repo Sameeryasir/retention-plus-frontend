@@ -22,6 +22,7 @@ export type WorkflowNodeKind =
   | "signup_trigger"
   | "payment_trigger"
   | "funnel_complete"
+  | "cron_trigger"
   | "wait"
   | "send_email"
   | "send_sms"
