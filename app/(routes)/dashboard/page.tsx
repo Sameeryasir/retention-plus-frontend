@@ -3,16 +3,18 @@
 import RestaurantDashboardCard from "@/app/components/RestaurantDashboardCard";
 import SearchBar from "@/app/components/SearchBar";
 import SearchNoMatchFound from "@/app/components/SearchNoMatchFound";
+import { AsyncErrorRetry } from "@/app/components/shared/AsyncErrorRetry";
+import {
+  RestaurantCardSkeleton,
+  SkeletonGrid,
+} from "@/app/components/skeleton";
+import { useAsyncResource } from "@/app/hooks/use-async-resource";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
 import {
   fetchMyRestaurants,
   type AdminRestaurant,
 } from "@/app/services/restaurant/get-my-restaurant";
-import {
-  RestaurantCardSkeleton,
-  SkeletonGrid,
-} from "@/app/components/skeleton";
-import { AlertCircle, Plus, Store } from "lucide-react";
+import { Plus, Store } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -41,11 +43,6 @@ export default function DashboardPage() {
   const [tokenReady, setTokenReady] = useState(false);
   const [accessToken, setAccessToken] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [restaurants, setRestaurants] = useState<
-    AdminRestaurant[] | undefined
-  >(undefined);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -61,29 +58,25 @@ export default function DashboardPage() {
     }
   }, [tokenReady, accessToken, router]);
 
-  const loadRestaurants = useCallback(async () => {
-    if (!accessToken) return;
-    setLoading(true);
-    setErrorMessage(null);
-    try {
-      const data = await fetchMyRestaurants(accessToken);
-      setRestaurants(data);
-    } catch (e) {
-      setRestaurants(undefined);
-      setErrorMessage(
-        e instanceof Error ? e.message : "Could not load restaurants.",
-      );
-    } finally {
-      setLoading(false);
-    }
+  const fetchRestaurants = useCallback(async () => {
+    if (!accessToken) return [];
+    return fetchMyRestaurants(accessToken);
   }, [accessToken]);
 
-  useEffect(() => {
-    if (!tokenReady || !accessToken) return;
-    queueMicrotask(() => {
-      void loadRestaurants();
-    });
-  }, [tokenReady, accessToken, loadRestaurants]);
+  const {
+    data: restaurants,
+    isLoading: loading,
+    error: errorMessage,
+    refetch: loadRestaurants,
+  } = useAsyncResource<AdminRestaurant[]>(
+    tokenReady && Boolean(accessToken),
+    fetchRestaurants,
+    [accessToken],
+    {
+      fallbackError: "Could not load restaurants.",
+      resetWhenDisabled: [],
+    },
+  );
 
   const filteredRestaurants = useMemo(() => {
     if (!restaurants) return [];
@@ -91,15 +84,11 @@ export default function DashboardPage() {
   }, [restaurants, searchQuery]);
 
   const showSkeleton = !tokenReady || loading;
+  const list = restaurants ?? [];
 
-  const showCreateInHeader =
-    !showSkeleton && !errorMessage && restaurants !== undefined;
-
+  const showCreateInHeader = !showSkeleton && !errorMessage;
   const showDashboardSearch =
-    !showSkeleton &&
-    !errorMessage &&
-    restaurants !== undefined &&
-    restaurants.length > 0;
+    !showSkeleton && !errorMessage && list.length > 0;
 
   return (
     <div className="w-full px-4 py-8 sm:px-8 lg:px-10">
@@ -139,29 +128,13 @@ export default function DashboardPage() {
             Card={RestaurantCardSkeleton}
           />
         ) : errorMessage ? (
-          <div
-            className="rounded-2xl border border-red-200 bg-red-50/90 px-4 py-4 text-sm text-red-900 shadow-sm"
-            role="alert"
-          >
-            <div className="flex gap-3">
-              <AlertCircle
-                className="mt-0.5 h-5 w-5 shrink-0 text-red-600"
-                aria-hidden
-              />
-              <div>
-                <p className="font-semibold">Something went wrong</p>
-                <p className="mt-1 text-red-800/90">{errorMessage}</p>
-                <button
-                  type="button"
-                  onClick={() => void loadRestaurants()}
-                  className="mt-3 rounded-lg bg-red-900/90 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-950"
-                >
-                  Try again
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : restaurants !== undefined && restaurants.length === 0 ? (
+          <AsyncErrorRetry
+            layout="inline"
+            title="Something went wrong"
+            message={errorMessage}
+            onRetry={() => loadRestaurants()}
+          />
+        ) : list.length === 0 ? (
           <div className="rounded-3xl border border-zinc-200 bg-white px-6 py-12 text-center shadow-sm">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500 ring-1 ring-zinc-200">
               <Store className="h-7 w-7" strokeWidth={1.75} aria-hidden />
@@ -174,11 +147,9 @@ export default function DashboardPage() {
               above to add your first one.
             </p>
           </div>
-        ) : restaurants !== undefined &&
-          restaurants.length > 0 &&
-          filteredRestaurants.length === 0 ? (
+        ) : filteredRestaurants.length === 0 ? (
           <SearchNoMatchFound />
-        ) : filteredRestaurants.length > 0 ? (
+        ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredRestaurants.map((r, index) => (
               <RestaurantDashboardCard
@@ -187,7 +158,7 @@ export default function DashboardPage() {
               />
             ))}
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );

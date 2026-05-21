@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Filter } from "lucide-react";
 import { createPortal } from "react-dom";
-import { automationEase } from "@/app/components/automation/automation-ui";
+import { automationEase } from "@/app/lib/motion";
 import type { AutomationFilter } from "@/app/components/automation/types";
 import { useAnchoredMenu } from "@/app/hooks/use-anchored-menu";
 

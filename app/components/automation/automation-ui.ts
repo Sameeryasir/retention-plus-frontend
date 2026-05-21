@@ -1,5 +1,4 @@
 import type {
-  AutomationStatus,
   WorkflowNode,
   WorkflowNodeKind,
 } from "@/app/components/automation/types";
@@ -17,64 +16,6 @@ export function isTriggerNodeKind(kind: WorkflowNodeKind): boolean {
 export function workflowStartsWithTrigger(nodes: WorkflowNode[]): boolean {
   const first = nodes[0];
   return first != null && isTriggerNodeKind(first.kind);
-}
-import { automationEase } from "@/app/lib/motion";
-
-export { automationEase };
-
-export const automationStagger = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
-  },
-};
-
-export const automationItem = {
-  hidden: { opacity: 0, y: -28 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: automationEase },
-  },
-};
-
-export const flowListStagger = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.14, delayChildren: 0.06 },
-  },
-};
-
-export const flowStepReveal = {
-  hidden: { opacity: 0, y: -28 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.42, ease: automationEase },
-  },
-};
-
-export const flowConnectorReveal = {
-  hidden: { opacity: 0, scaleY: 0, originY: 0 },
-  show: {
-    opacity: 1,
-    scaleY: 1,
-    transition: { duration: 0.28, ease: automationEase },
-  },
-};
-
-export function statusBadgeClass(status: AutomationStatus): string {
-  switch (status) {
-    case "active":
-      return "bg-zinc-900 text-white";
-    case "published":
-      return "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200";
-    case "paused":
-      return "bg-amber-100 text-amber-900";
-    case "draft":
-    default:
-      return "bg-zinc-50 text-zinc-600 ring-1 ring-zinc-200";
-  }
 }
 
 export function nodeToneClass(

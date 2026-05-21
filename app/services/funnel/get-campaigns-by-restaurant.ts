@@ -1,8 +1,3 @@
-/**
- * Change: Accept GET body as either a raw campaign array or `{ data: [...] }`.
- * Why: Backend returns `[{ id, ... }]`; reading only `.data` yielded [] so the list never showed.
- * Related: `app/(routes)/restaurant/[restaurantId]/dashboard/campaigns/page.tsx`
- */
 import axios from "axios";
 import { getApiBaseUrl } from "@/app/lib/api";
 
@@ -13,7 +8,6 @@ export type Funnel = {
   websiteUrl: string;
   imageUrl?: string;
   offer?: string;
-  /** API may send a number or a decimal string (e.g. `"10.99"`). */
   price?: number | string;
   published?: boolean;
   status: string;

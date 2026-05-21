@@ -6,7 +6,8 @@ export function getApiErrorMessage(
   fallback: string,
 ): string {
   if (err instanceof AutomationApiError) return err.message;
-  if (err instanceof Error) return err.message;
+  if (err instanceof Error && err.message.trim()) return err.message.trim();
+  if (typeof err === "string" && err.trim()) return err.trim();
   return fallback;
 }
 

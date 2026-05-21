@@ -10,7 +10,7 @@ import {
   flowConnectorReveal,
   flowListStagger,
   flowStepReveal,
-} from "@/app/components/automation/automation-ui";
+} from "@/app/lib/motion";
 import type { WorkflowNode } from "@/app/components/automation/types";
 
 const ZOOM_MIN = 0.72;

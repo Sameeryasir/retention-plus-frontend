@@ -3,7 +3,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
-  AlertCircle,
   Building2,
   ChevronRight,
   CircleDot,
@@ -24,8 +23,15 @@ import {
   Workflow,
   Zap,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useAsyncResource } from "@/app/hooks/use-async-resource";
+import { triggerIconClass } from "@/app/lib/badge-variants";
+import { panelRowMotion, panelStagger, standardEase } from "@/app/lib/motion";
+import { AsyncErrorRetry } from "@/app/components/shared/AsyncErrorRetry";
+import { PanelEmptyState } from "@/app/components/shared/PanelEmptyState";
+import { TableColumnHeader } from "@/app/components/TableColumnHeader";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { useAnchoredMenu } from "@/app/hooks/use-anchored-menu";
@@ -37,7 +43,8 @@ import { Skeleton } from "@/app/components/skeleton";
 import { AutomationFilterDropdown } from "@/app/components/automation/AutomationFilterDropdown";
 import { CreateAutomationModal } from "@/app/components/automation/CreateAutomationModal";
 import { DeleteAutomationDialog } from "@/app/components/automation/DeleteAutomationDialog";
-import { statusBadgeClass } from "@/app/components/automation/automation-ui";
+import { automationStatusBadgeClass } from "@/app/lib/badge-variants";
+import { primaryButtonMdClass, reportTableShellClass } from "@/app/lib/panel-styles";
 import type {
   AutomationFilter,
   AutomationListItem,
@@ -84,24 +91,6 @@ function statusIcon(status: AutomationStatus): LucideIcon {
   }
 }
 
-function triggerBadgeClass(trigger: string): string {
-  const t = trigger.toLowerCase();
-  if (t.includes("signup")) return "ring-1 bg-emerald-100 text-emerald-700 ring-emerald-200";
-  if (t.includes("payment")) return "ring-1 bg-blue-100 text-blue-700 ring-blue-200";
-  if (t.includes("funnel")) return "ring-1 bg-violet-100 text-violet-700 ring-violet-200";
-  if (t.includes("tag")) return "ring-1 bg-amber-100 text-amber-700 ring-amber-200";
-  return "ring-1 bg-amber-100 text-amber-700 ring-amber-200";
-}
-
-function triggerIconClass(trigger: string): string {
-  const t = trigger.toLowerCase();
-  if (t.includes("signup")) return "text-emerald-700";
-  if (t.includes("payment")) return "text-blue-700";
-  if (t.includes("funnel")) return "text-violet-700";
-  if (t.includes("tag")) return "text-amber-700";
-  return "text-amber-700";
-}
-
 const ICON_STROKE = 2.5;
 
 function IconBadge({
@@ -122,27 +111,6 @@ function IconBadge({
   );
 }
 
-function TableHeaderCell({
-  icon: Icon,
-  label,
-  iconClassName,
-}: {
-  icon: LucideIcon;
-  label: string;
-  iconClassName: string;
-}) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <Icon
-        className={`size-3.5 shrink-0 ${iconClassName}`}
-        aria-hidden
-        strokeWidth={ICON_STROKE}
-      />
-      <span>{label}</span>
-    </span>
-  );
-}
-
 const FILTERS: { id: AutomationFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "draft", label: "Draft" },
@@ -157,7 +125,6 @@ export function AutomationListPage({
   funnelId: funnelIdProp,
   onOpenBuilder,
 }: {
-  /** Optional override; otherwise read from pathname (/restaurant/:id/...). */
   restaurantId?: number;
   campaignId?: number;
   funnelId?: number | null;
@@ -170,15 +137,37 @@ export function AutomationListPage({
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<AutomationFilter>("all");
-  const [items, setItems] = useState<AutomationListItem[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<AutomationListItem | null>(
     null,
   );
   const [deleting, setDeleting] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const fetchAutomations = useCallback(async () => {
+    if (restaurantId == null) {
+      throw new Error("Restaurant id is missing from the URL.");
+    }
+    const list = await getAutomations(restaurantId);
+    return list.map((a) => mapAutomationToListItem(a));
+  }, [restaurantId]);
+
+  const {
+    data: items,
+    isLoading: loading,
+    error: loadError,
+    setData: setItems,
+    refetch: loadAutomations,
+  } = useAsyncResource<AutomationListItem[]>(
+    restaurantId != null,
+    fetchAutomations,
+    [restaurantId],
+    {
+      fallbackError: "Could not load automations.",
+      initialLoading: true,
+      resetWhenDisabled: [],
+    },
+  );
 
   const createContextInput = useMemo(
     () => ({ restaurantId, campaignId }),
@@ -190,35 +179,9 @@ export function AutomationListPage({
     return result.ok ? null : result.message;
   }, [createContextInput]);
 
-  const loadAutomations = useCallback(async () => {
-    if (restaurantId == null) {
-      setItems([]);
-      setLoading(false);
-      setLoadError("Restaurant id is missing from the URL.");
-      return;
-    }
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const list = await getAutomations(restaurantId);
-      setItems(list.map((a) => mapAutomationToListItem(a)));
-    } catch (err) {
-      setItems([]);
-      setLoadError(
-        err instanceof Error ? err.message : "Could not load automations.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [restaurantId]);
-
-  useEffect(() => {
-    void loadAutomations();
-  }, [loadAutomations]);
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return items.filter((row) => {
+    return (items ?? []).filter((row) => {
       if (filter !== "all" && row.status !== filter) return false;
       if (!q) return true;
       return (
@@ -278,7 +241,7 @@ export function AutomationListPage({
               }
               setModalOpen(true);
             }}
-            className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:scale-[1.02] hover:bg-zinc-800 active:scale-[0.98]"
+            className={`inline-flex shrink-0 justify-center transition hover:scale-[1.02] active:scale-[0.98] ${primaryButtonMdClass}`}
           >
             <Plus className="size-4" aria-hidden />
             Create Automation
@@ -301,96 +264,102 @@ export function AutomationListPage({
         </div>
 
         {loadError ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-8 text-center text-sm text-red-800">
-            <AlertCircle
-              className="mx-auto size-8 text-red-600"
-              aria-hidden
-              strokeWidth={ICON_STROKE}
-            />
-            <p className="mt-3">{loadError}</p>
-            <button
-              type="button"
-              onClick={() => void loadAutomations()}
-              className="mt-3 cursor-pointer font-semibold underline"
-            >
-              Try again
-            </button>
-          </div>
+          <AsyncErrorRetry
+            message={loadError}
+            onRetry={() => loadAutomations()}
+          />
         ) : loading ? (
           <AutomationListSkeleton />
         ) : null}
 
         {!loading && !loadError ? (
-        <div className="mt-6 hidden overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-950/[0.04] lg:block">
+        <motion.div
+          className={`mt-6 hidden overflow-hidden ${reportTableShellClass} lg:block`}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: standardEase }}
+        >
           <div
             className={`${TABLE_GRID} border-b border-zinc-200 bg-zinc-50/90 px-5 py-3.5 text-xs font-bold uppercase tracking-wide text-zinc-500`}
           >
-            <TableHeaderCell
+            <TableColumnHeader
               icon={Workflow}
               label="Automation name"
               iconClassName="text-violet-600"
             />
-            <TableHeaderCell icon={Zap} label="Trigger" iconClassName="text-amber-600" />
-            <TableHeaderCell
+            <TableColumnHeader
+              icon={Zap}
+              label="Trigger"
+              iconClassName="text-amber-600"
+            />
+            <TableColumnHeader
               icon={Activity}
               label="Status"
               iconClassName="text-emerald-600"
             />
-            <TableHeaderCell
+            <TableColumnHeader
               icon={Building2}
               label="Restaurant"
               iconClassName="text-blue-600"
             />
-            <TableHeaderCell
+            <TableColumnHeader
               icon={Clock}
               label="Last updated"
               iconClassName="text-orange-600"
             />
-            <TableHeaderCell
+            <TableColumnHeader
               icon={Users}
               label="Customers"
               iconClassName="text-indigo-600"
             />
             <span aria-hidden />
           </div>
-          {filtered.map((row) => (
-            <AutomationTableRow
-              key={row.id}
-              row={row}
-              href={builderHref(row)}
-              onOpenBuilder={onOpenBuilder}
-              onDelete={() => setDeleteTarget(row)}
-            />
-          ))}
-        </div>
+          <motion.div
+            variants={panelStagger}
+            initial="hidden"
+            animate="show"
+          >
+            {filtered.map((row) => (
+              <motion.div key={row.id} variants={panelRowMotion}>
+                <AutomationTableRow
+                  row={row}
+                  href={builderHref(row)}
+                  onOpenBuilder={onOpenBuilder}
+                  onDelete={() => setDeleteTarget(row)}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
         ) : null}
 
         {!loading && !loadError ? (
-        <div className="mt-6 grid gap-4 lg:hidden">
+        <motion.div
+          className="mt-6 grid gap-4 lg:hidden"
+          variants={panelStagger}
+          initial="hidden"
+          animate="show"
+        >
           {filtered.map((row) => (
-            <AutomationCard
-              key={row.id}
-              row={row}
-              href={builderHref(row)}
-              onOpenBuilder={onOpenBuilder}
-              onDelete={() => setDeleteTarget(row)}
-            />
+            <motion.div key={row.id} variants={panelRowMotion}>
+              <AutomationCard
+                row={row}
+                href={builderHref(row)}
+                onOpenBuilder={onOpenBuilder}
+                onDelete={() => setDeleteTarget(row)}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
         ) : null}
 
         {!loading && !loadError && filtered.length === 0 ? (
-          <div className="mt-8 flex flex-col items-center rounded-2xl border border-zinc-200/90 bg-white px-4 py-14 text-center shadow-sm">
-            <span className="flex size-14 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
-              <SearchX className="size-7" aria-hidden strokeWidth={ICON_STROKE} />
-            </span>
-            <p className="mt-4 text-sm font-semibold text-zinc-900">
-              No automations match your search
-            </p>
-            <p className="mt-1 max-w-sm text-sm text-zinc-500">
-              Try a different keyword or filter to find your workflows.
-            </p>
-          </div>
+          <PanelEmptyState
+            className="mt-8 px-4 py-14"
+            icon={SearchX}
+            title="No automations match your search"
+            description="Try a different keyword or filter to find your workflows."
+          />
         ) : null}
       </div>
 
@@ -418,7 +387,7 @@ export function AutomationListPage({
               }),
             );
             const next = mapAutomationToListItem(created);
-            setItems((prev) => [next, ...prev]);
+            setItems((prev) => [next, ...(prev ?? [])]);
             setModalOpen(false);
             toast.success("Automation created.");
             const builderId = String(created.id);
@@ -447,7 +416,7 @@ export function AutomationListPage({
           setDeleting(true);
           try {
             await deleteAutomation(id);
-            setItems((prev) => prev.filter((row) => row.numericId !== id));
+            setItems((prev) => (prev ?? []).filter((row) => row.numericId !== id));
             setDeleteTarget(null);
             toast.success("Automation deleted.");
           } catch (err) {
@@ -467,7 +436,7 @@ const TABLE_GRID =
 function AutomationListSkeleton() {
   return (
     <div className="mt-6" aria-busy="true" aria-label="Loading automations">
-      <div className="hidden overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-sm ring-1 ring-zinc-950/[0.04] lg:block">
+      <div className={`hidden overflow-hidden ${reportTableShellClass} lg:block`}>
         <div
           className={`${TABLE_GRID} border-b border-zinc-200 bg-zinc-50/90 px-5 py-3.5`}
         >
@@ -641,7 +610,7 @@ function AutomationTableRow({
         </div>
         <span className="text-zinc-700">{row.trigger}</span>
         <span>
-          <StatusPill className={statusBadgeClass(row.status)}>
+          <StatusPill className={automationStatusBadgeClass(row.status)}>
             {row.status}
           </StatusPill>
         </span>
@@ -708,7 +677,7 @@ function AutomationCard({
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
           <StatusPill
-            className={`inline-flex items-center gap-1 ${statusBadgeClass(row.status)}`}
+            className={`inline-flex items-center gap-1 ${automationStatusBadgeClass(row.status)}`}
           >
             <StatusIcon
               className="size-3 shrink-0"

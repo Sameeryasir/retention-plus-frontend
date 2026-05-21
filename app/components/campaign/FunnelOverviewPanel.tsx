@@ -3,28 +3,11 @@
 import { DollarSign, TrendingUp, UserPlus, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
+import { MetricStatCard } from "@/app/components/shared/MetricStatCard";
 import { Skeleton } from "@/app/components/skeleton";
 import { useFunnelEventStats } from "@/app/hooks/use-funnel-event-stats";
 import { formatCents } from "@/app/lib/money";
-import { standardEase } from "@/app/lib/motion";
-
-const overviewEase = standardEase;
-
-const overviewStagger = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.1, delayChildren: 0.08 },
-  },
-};
-
-const overviewItem = {
-  hidden: { opacity: 0, y: 24 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: overviewEase },
-  },
-};
+import { funnelPanelItem, funnelPanelStagger, standardEase } from "@/app/lib/motion";
 
 function OverviewSkeleton() {
   return (
@@ -80,41 +63,6 @@ function OverviewSkeleton() {
               <Skeleton funnel className="h-2 w-full rounded-full" />
             </div>
           ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  accent,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: typeof Users;
-  accent: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-            {label}
-          </p>
-          <p className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
-            {value}
-          </p>
-          <p className="mt-1 text-xs text-zinc-500">{hint}</p>
-        </div>
-        <div
-          className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${accent}`}
-        >
-          <Icon className="size-5 text-white" strokeWidth={2} aria-hidden />
         </div>
       </div>
     </div>
@@ -222,7 +170,7 @@ export function FunnelOverviewPanel({
           className="mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: overviewEase }}
+          transition={{ duration: 0.4, ease: standardEase }}
         >
           <h2 className="text-lg font-semibold tracking-tight text-zinc-900 sm:text-xl">
             {campaignName?.trim() ? campaignName : "Campaign"} overview
@@ -247,7 +195,7 @@ export function FunnelOverviewPanel({
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: overviewEase }}
+            transition={{ duration: 0.4, ease: standardEase }}
           >
             <OverviewSkeleton />
           </motion.div>
@@ -263,16 +211,16 @@ export function FunnelOverviewPanel({
           <motion.div
             key="overview-content"
             className="space-y-6"
-            variants={overviewStagger}
+            variants={funnelPanelStagger}
             initial="hidden"
             animate="show"
           >
             <motion.div
               className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-              variants={overviewStagger}
+              variants={funnelPanelStagger}
             >
-              <motion.div variants={overviewItem}>
-                <StatCard
+              <motion.div variants={funnelPanelItem}>
+                <MetricStatCard
                 label="Signups"
                 value={String(stats.signups)}
                 hint="Completed signup on this funnel"
@@ -280,8 +228,8 @@ export function FunnelOverviewPanel({
                 accent="bg-zinc-900"
               />
               </motion.div>
-              <motion.div variants={overviewItem}>
-                <StatCard
+              <motion.div variants={funnelPanelItem}>
+                <MetricStatCard
                 label="Payments"
                 value={String(stats.payments)}
                 hint="Successful payments recorded"
@@ -289,8 +237,8 @@ export function FunnelOverviewPanel({
                 accent="bg-zinc-800"
               />
               </motion.div>
-              <motion.div variants={overviewItem}>
-                <StatCard
+              <motion.div variants={funnelPanelItem}>
+                <MetricStatCard
                 label="Revenue"
                 value={formatCents(stats.revenue, stats.currency ?? "usd")}
                 hint={`Currency: ${(stats.currency ?? "usd").toUpperCase()}`}
@@ -298,8 +246,8 @@ export function FunnelOverviewPanel({
                 accent="bg-zinc-900"
               />
               </motion.div>
-              <motion.div variants={overviewItem}>
-                <StatCard
+              <motion.div variants={funnelPanelItem}>
+                <MetricStatCard
                 label="Conversion"
                 value={`${conversionRate.toFixed(1)}%`}
                 hint="Payments ÷ signups"
@@ -311,13 +259,13 @@ export function FunnelOverviewPanel({
 
             <motion.div
               className="grid gap-6 lg:grid-cols-2"
-              variants={overviewStagger}
+              variants={funnelPanelStagger}
             >
-              <motion.div variants={overviewItem}>
+              <motion.div variants={funnelPanelItem}>
                 <TotalsBarChart signups={stats.signups} payments={stats.payments} />
               </motion.div>
               <motion.div
-                variants={overviewItem}
+                variants={funnelPanelItem}
                 className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5"
               >
                 <h3 className="text-sm font-semibold text-zinc-900">Breakdown</h3>
@@ -346,7 +294,7 @@ export function FunnelOverviewPanel({
             </motion.div>
 
             <motion.div
-              variants={overviewItem}
+              variants={funnelPanelItem}
               className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5"
             >
               <h3 className="text-sm font-semibold text-zinc-900">Funnel steps</h3>

@@ -44,7 +44,6 @@ export async function getExecutionById(
   return automationFetch<AutomationExecution>(`/execution/${id}`);
 }
 
-/** GET /automation/execution/:id/status — poll until isTerminal is true. */
 export async function getExecutionStatus(
   executionId: number,
 ): Promise<AutomationExecutionStatusDto> {
@@ -53,7 +52,6 @@ export async function getExecutionStatus(
   );
 }
 
-/** POST /automation/execution — only automationId (no customerId in body). */
 export async function startExecution(
   automationId: number,
   options?: Pick<StartAutomationExecutionBody, "currentNodeId">,
@@ -77,7 +75,6 @@ export async function resumeExecution(id: number): Promise<void> {
   await automationFetch<void>(`/execution/${id}/resume`, { method: "POST" });
 }
 
-/** DELETE /automation/execution/:id */
 export async function deleteExecution(id: number): Promise<void> {
   await automationFetch<void>(`/execution/${id}`, { method: "DELETE" });
 }

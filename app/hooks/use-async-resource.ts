@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { API_MIN_LOADING_MS, delay } from "@/app/lib/api";
+import { getApiErrorMessage } from "@/app/lib/toast-api-error";
 
 export function useAsyncResource<T>(
   enabled: boolean,
@@ -21,6 +22,11 @@ export function useAsyncResource<T>(
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(initialLoading);
   const [error, setError] = useState<string | null>(null);
+  const [reloadVersion, setReloadVersion] = useState(0);
+
+  const refetch = useCallback(() => {
+    setReloadVersion((v) => v + 1);
+  }, []);
 
   useEffect(() => {
     if (!enabled) {
@@ -43,7 +49,7 @@ export function useAsyncResource<T>(
       } catch (e) {
         if (!cancelled) {
           setData(resetWhenDisabled ?? null);
-          setError(e instanceof Error ? e.message : fallbackError);
+          setError(getApiErrorMessage(e, fallbackError));
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -55,8 +61,8 @@ export function useAsyncResource<T>(
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- caller supplies deps
-  }, [enabled, fetcher, fallbackError, ...deps]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- caller supplies deps + reloadVersion
+  }, [enabled, fetcher, fallbackError, reloadVersion, ...deps]);
 
-  return { data, isLoading, error, setData };
+  return { data, isLoading, error, setData, refetch };
 }

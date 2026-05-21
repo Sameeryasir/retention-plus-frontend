@@ -11,10 +11,8 @@ import { AutomationExecutionsPanel } from "@/app/components/automation/Automatio
 import { BlockSidebar } from "@/app/components/automation/builder/BlockSidebar";
 import { BuilderCanvas } from "@/app/components/automation/builder/BuilderCanvas";
 import { NodeSettingsPanel } from "@/app/components/automation/builder/NodeSettingsPanel";
-import {
-  automationEase,
-  statusBadgeClass,
-} from "@/app/components/automation/automation-ui";
+import { automationStatusBadgeClass } from "@/app/lib/badge-variants";
+import { automationEase } from "@/app/lib/motion";
 import { AUTOMATION_BLOCKS } from "@/app/components/automation/mock-data";
 import type {
   AutomationListItem,
@@ -371,7 +369,7 @@ export function AutomationBuilderPage({
           </nav>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${statusBadgeClass(status)}`}
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${automationStatusBadgeClass(status)}`}
             >
               {status}
             </span>

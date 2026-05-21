@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleDot, Loader2 } from "lucide-react";
-import { executionStatusBadgeClass } from "@/app/components/automation/execution-status-ui";
+import { executionStatusBadgeClass } from "@/app/lib/badge-variants";
 import type { AutomationExecutionStatusDto } from "@/app/services/automation/types";
 
 const ICON_STROKE = 2.25;

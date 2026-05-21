@@ -1,7 +1,9 @@
 "use client";
 
-import { Loader2, Play, Workflow } from "lucide-react";
+import { Workflow } from "lucide-react";
 import { RunProgressBanner } from "@/app/components/automation/RunProgressBanner";
+import { RunAutomationButton } from "@/app/components/shared/RunAutomationButton";
+import { panelCardClass } from "@/app/lib/panel-styles";
 import { useStartAutomationRun } from "@/app/hooks/use-start-automation-run";
 
 export function AutomationActivityPanel({
@@ -29,21 +31,13 @@ export function AutomationActivityPanel({
               reached.
             </p>
           </div>
-          <button
-            type="button"
-            disabled={busy || automationActive === false}
+          <RunAutomationButton
+            busy={busy}
+            disabled={automationActive === false}
             onClick={() =>
               void run((result) => onRunStarted?.(result.executionId))
             }
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {busy ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-            ) : (
-              <Play className="size-4" aria-hidden />
-            )}
-            {busy ? "Running…" : "Run automation"}
-          </button>
+          />
         </div>
       </div>
 
@@ -53,7 +47,9 @@ export function AutomationActivityPanel({
         ) : null}
 
         <div className="flex items-center justify-center py-12">
-          <div className="max-w-sm rounded-2xl border border-zinc-200/90 bg-white px-6 py-10 text-center shadow-sm">
+          <div
+            className={`max-w-sm px-6 py-10 text-center shadow-sm ${panelCardClass}`}
+          >
             <span className="mx-auto flex size-12 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
               <Workflow className="size-6" aria-hidden />
             </span>

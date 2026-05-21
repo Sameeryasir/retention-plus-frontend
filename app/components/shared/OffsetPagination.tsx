@@ -2,13 +2,14 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export function ExecutionsPagination({
+export function OffsetPagination({
   page,
   totalPages,
   total,
   limit,
   loading,
   onPageChange,
+  itemLabel = "items",
 }: {
   page: number;
   totalPages: number;
@@ -16,6 +17,7 @@ export function ExecutionsPagination({
   limit: number;
   loading?: boolean;
   onPageChange: (page: number) => void;
+  itemLabel?: string;
 }) {
   if (totalPages <= 1) {
     return null;
@@ -27,7 +29,7 @@ export function ExecutionsPagination({
   return (
     <div className="flex flex-col gap-3 border-t border-zinc-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-xs text-zinc-500">
-        Showing {start}–{end} of {total} runs
+        Showing {start}–{end} of {total} {itemLabel}
       </p>
       <div className="flex items-center gap-2">
         <button

@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { usePaginatedAsyncResource } from "@/app/hooks/use-paginated-async-resource";
 import {
   deleteExecution as deleteExecutionApi,
   getExecutions,
@@ -13,111 +14,78 @@ import {
   type PaginationMeta,
 } from "@/app/services/automation/types";
 
+type ExecutionsPageMeta = PaginationMeta & {
+  summary?: ExecutionListSummary;
+};
+
 export function useAutomationExecutions(
   automationId: number | null,
   status?: AutomationExecutionStatus,
   options?: { enabled?: boolean },
 ) {
   const enabled = options?.enabled ?? true;
-  const [executions, setExecutions] = useState<AutomationExecution[]>([]);
-  const [meta, setMeta] = useState<PaginationMeta | null>(null);
-  const [summary, setSummary] = useState<ExecutionListSummary | null>(null);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  const mountedRef = useRef(true);
 
   const fetchPage = useCallback(
-    async (targetPage: number) => {
-      if (!enabled || automationId == null) {
-        setExecutions([]);
-        setMeta(null);
-        setSummary(null);
-        setLoading(false);
-        return;
+    async (page: number) => {
+      if (automationId == null) {
+        throw new Error("Automation id is required.");
       }
-
-      setError(null);
-      setLoading(true);
-
-      try {
-        const response = await getExecutions({
-          automationId,
-          status,
-          page: targetPage,
-          limit: EXECUTIONS_PAGE_SIZE,
-        });
-        if (!mountedRef.current) return;
-
-        setExecutions(response.data);
-        setMeta(response.meta);
-        setSummary(response.meta.summary ?? null);
-        setPage(response.meta.page);
-      } catch (e) {
-        if (!mountedRef.current) return;
-        setError(e instanceof Error ? e.message : "Could not load runs.");
-        setExecutions([]);
-        setMeta(null);
-        setSummary(null);
-      } finally {
-        if (mountedRef.current) {
-          setLoading(false);
-        }
-      }
+      const response = await getExecutions({
+        automationId,
+        status,
+        page,
+        limit: EXECUTIONS_PAGE_SIZE,
+      });
+      return { data: response.data, meta: response.meta };
     },
-    [automationId, status, enabled],
+    [automationId, status],
   );
 
-  const refetch = useCallback(async () => {
-    await fetchPage(page);
-  }, [fetchPage, page]);
-
-  const goToPage = useCallback(
-    (nextPage: number) => {
-      void fetchPage(nextPage);
+  const {
+    data: executions,
+    meta,
+    page,
+    setPage,
+    loading,
+    error,
+    refetch,
+    loadPage,
+  } = usePaginatedAsyncResource<AutomationExecution, ExecutionsPageMeta>(
+    enabled && automationId != null,
+    fetchPage,
+    [automationId, status],
+    {
+      fallbackError: "Could not load runs.",
     },
-    [fetchPage],
   );
 
-  /** DELETE /automation/execution/:id — refreshes the current list after delete. */
+  const summary = useMemo(() => meta?.summary ?? null, [meta]);
+
   const deleteExecution = useCallback(
     async (executionId: number): Promise<void> => {
       setDeletingId(executionId);
       try {
         await deleteExecutionApi(executionId);
-        if (!mountedRef.current) return;
-
         const isLastOnPage = executions.length === 1;
-        const previousPage = page;
-        if (isLastOnPage && previousPage > 1) {
-          await fetchPage(previousPage - 1);
+        if (isLastOnPage && page > 1) {
+          await loadPage(page - 1);
         } else {
-          await fetchPage(previousPage);
+          await loadPage(page);
         }
       } finally {
-        if (mountedRef.current) {
-          setDeletingId(null);
-        }
+        setDeletingId(null);
       }
     },
-    [executions.length, page, fetchPage],
+    [executions.length, page, loadPage],
   );
-
-  useEffect(() => {
-    mountedRef.current = true;
-    void fetchPage(1);
-    return () => {
-      mountedRef.current = false;
-    };
-  }, [automationId, status, enabled, fetchPage]);
 
   return {
     executions,
     meta,
     summary,
     page,
-    setPage: goToPage,
+    setPage,
     loading,
     error,
     refetch,

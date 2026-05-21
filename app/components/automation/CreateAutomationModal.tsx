@@ -12,7 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { automationEase } from "@/app/components/automation/automation-ui";
+import { automationEase } from "@/app/lib/motion";
 import {
   AUTOMATION_PURPOSE_OPTIONS,
   type AutomationPurpose,

@@ -22,40 +22,6 @@ export function executionProgressLabel(
   return "In progress";
 }
 
-export function executionStatusBadgeClass(
-  status: AutomationExecutionStatus,
-): string {
-  switch (status) {
-    case "queued":
-      return "bg-violet-100 text-violet-900 ring-1 ring-violet-200";
-    case "running":
-      return "bg-blue-100 text-blue-900 ring-1 ring-blue-200";
-    case "waiting":
-      return "bg-amber-100 text-amber-900 ring-1 ring-amber-200";
-    case "completed":
-      return "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200";
-    case "failed":
-      return "bg-red-100 text-red-900 ring-1 ring-red-200";
-    default:
-      return "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200";
-  }
-}
-
-export function formatExecutionDateTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  } catch {
-    return "—";
-  }
-}
-
 export function formatScheduledCountdown(
   scheduledAt: string | null | undefined,
 ): string | null {

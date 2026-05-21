@@ -6,10 +6,12 @@ export function TableColumnHeader({
   icon: Icon,
   label,
   variant = "inline",
+  iconClassName = "text-zinc-400",
 }: {
   icon?: LucideIcon;
   label: string;
   variant?: "inline" | "boxed";
+  iconClassName?: string;
 }) {
   if (!label) return <span aria-hidden />;
 
@@ -34,7 +36,7 @@ export function TableColumnHeader({
     <span className="inline-flex items-center gap-1.5">
       {Icon ? (
         <Icon
-          className="size-3.5 shrink-0 text-zinc-400"
+          className={`size-3.5 shrink-0 ${iconClassName}`}
           aria-hidden
           strokeWidth={ICON_STROKE}
         />

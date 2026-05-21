@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getBlockByKind } from "@/app/components/automation/mock-data";
-import { automationEase } from "@/app/components/automation/automation-ui";
+import { automationEase } from "@/app/lib/motion";
+import { primaryButtonMdClass } from "@/app/lib/panel-styles";
 import type { WorkflowNode } from "@/app/components/automation/types";
 
 const EMAIL_TEMPLATES = [
@@ -316,7 +317,7 @@ function NodeSettingsForm({
           <button
             type="submit"
             disabled={saving || deleting}
-            className="w-full cursor-pointer rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+            className={`w-full ${primaryButtonMdClass}`}
           >
             {saving ? "Saving…" : "Save changes"}
           </button>

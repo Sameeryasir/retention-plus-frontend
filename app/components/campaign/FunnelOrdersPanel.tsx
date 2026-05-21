@@ -15,26 +15,10 @@ import { StripeIcon } from "@/app/components/StripeLogo";
 import { Skeleton } from "@/app/components/skeleton";
 import { TableColumnHeader } from "@/app/components/TableColumnHeader";
 import { useFunnelPayments } from "@/app/hooks/use-funnel-payments";
+import { paymentStatusBadgeClass } from "@/app/lib/badge-variants";
+import { formatPaidAtParts } from "@/app/lib/datetime";
 import { formatCents } from "@/app/lib/money";
-import { standardEase } from "@/app/lib/motion";
-
-const ordersEase = standardEase;
-
-const ordersStagger = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.08, delayChildren: 0.06 },
-  },
-};
-
-const ordersItem = {
-  hidden: { opacity: 0, y: 24 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: ordersEase },
-  },
-};
+import { funnelPanelItem, funnelPanelStagger, standardEase } from "@/app/lib/motion";
 
 const thClass =
   "whitespace-nowrap px-5 py-4 text-left align-middle sm:px-6";
@@ -70,36 +54,6 @@ function TableSkeleton() {
   );
 }
 
-function formatPaidAtParts(iso: string | null): { date: string; time: string } | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return {
-    date: d.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }),
-    time: d.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    }),
-  };
-}
-
-function statusTone(status: string): string {
-  const s = status.toLowerCase();
-  if (s === "paid" || s === "succeeded") {
-    return "bg-zinc-900 text-white";
-  }
-  if (s === "failed") return "bg-red-100 text-red-800";
-  if (s === "cancelled" || s === "canceled") {
-    return "bg-zinc-100 text-zinc-600";
-  }
-  return "bg-amber-100 text-amber-900";
-}
-
 export function FunnelOrdersPanel({
   funnelId,
   isFunnelIdLoading = false,
@@ -121,7 +75,7 @@ export function FunnelOrdersPanel({
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: ordersEase }}
+            transition={{ duration: 0.4, ease: standardEase }}
           >
             <TableSkeleton />
           </motion.div>
@@ -155,7 +109,7 @@ export function FunnelOrdersPanel({
           <motion.div
             key="orders-table"
             className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-md ring-1 ring-zinc-950/[0.06]"
-            variants={ordersStagger}
+            variants={funnelPanelStagger}
             initial="hidden"
             animate="show"
           >
@@ -190,7 +144,7 @@ export function FunnelOrdersPanel({
                   {payments.map((payment, index) => (
                     <motion.tr
                       key={payment.id}
-                      variants={ordersItem}
+                      variants={funnelPanelItem}
                       className={`group border-b border-zinc-100 transition-[background-color,box-shadow] duration-200 last:border-0 hover:bg-zinc-50/80 ${
                         index % 2 === 1 ? "bg-zinc-50/40" : "bg-white"
                       }`}
@@ -217,7 +171,7 @@ export function FunnelOrdersPanel({
                       </td>
                       <td className={`${tdClass} whitespace-nowrap`}>
                         <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize shadow-sm ring-1 ring-black/5 ${statusTone(payment.status)}`}
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize shadow-sm ring-1 ring-black/5 ${paymentStatusBadgeClass(payment.status)}`}
                         >
                           {payment.status}
                         </span>

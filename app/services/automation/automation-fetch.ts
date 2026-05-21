@@ -1,4 +1,5 @@
 import {
+  fetchWithTimeout,
   getApiBaseUrl,
   parseApiErrorMessage,
 } from "@/app/lib/api";
@@ -33,7 +34,7 @@ export async function automationFetch<T>(
     throw new AutomationApiError("Missing access token. Sign in again.", 401);
   }
 
-  const res = await fetch(`${getApiBaseUrl()}/automation${path}`, {
+  const res = await fetchWithTimeout(`${getApiBaseUrl()}/automation${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
