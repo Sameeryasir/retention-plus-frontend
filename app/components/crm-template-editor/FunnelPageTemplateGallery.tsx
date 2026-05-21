@@ -70,7 +70,6 @@ export function FunnelPageTemplateGallery({
 
   const tags = tab === "design" ? FUNNEL_TEMPLATE_TAGS : FUNNEL_COPY_TEMPLATE_TAGS;
   const activeTag = tab === "design" ? designTag : copyTag;
-  const setActiveTag = tab === "design" ? setDesignTag : setCopyTag;
 
   return (
     <AnimatePresence>

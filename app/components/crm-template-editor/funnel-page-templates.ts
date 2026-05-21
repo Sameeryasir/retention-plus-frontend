@@ -313,3 +313,7 @@ export function funnelDesignTemplatesForTag(tag: FunnelTemplateTag): FunnelPageD
   if (tag === "All") return FUNNEL_PAGE_DESIGN_TEMPLATES;
   return FUNNEL_PAGE_DESIGN_TEMPLATES.filter((t) => t.tags.includes(tag));
 }
+
+export const FUNNEL_PAGE_TEMPLATES = FUNNEL_PAGE_DESIGN_TEMPLATES;
+export type FunnelPageTemplate = FunnelPageDesignTemplate;
+export const funnelTemplatesForTag = funnelDesignTemplatesForTag;
