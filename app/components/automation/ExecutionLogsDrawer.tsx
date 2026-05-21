@@ -8,9 +8,11 @@ import {
   Loader2,
   X,
 } from "lucide-react";
-import { useEffect, useId, useMemo } from "react";
+import { useId, useMemo } from "react";
 import {
   groupLogsForDisplay,
+  isRunFinishedLogDisplay,
+  logActivityCardTitle,
   type LogDisplay,
   type LogDisplayTone,
 } from "@/app/components/automation/execution-log-ui";
@@ -18,6 +20,7 @@ import { AsyncErrorRetry } from "@/app/components/shared/AsyncErrorRetry";
 import { formatLogDrawerTimestamp } from "@/app/lib/datetime";
 import { automationEase, automationStagger, automationItem } from "@/app/lib/motion";
 import { useExecutionLogs } from "@/app/hooks/use-execution-logs";
+import { useOverlayLock } from "@/app/hooks/use-overlay-lock";
 
 const TONE_STYLES: Record<
   LogDisplayTone,
@@ -57,11 +60,9 @@ function ActivityCard({
   isLast: boolean;
 }) {
   const tone = TONE_STYLES[display.tone];
-  const isEmailDelivered = display.stepLabel === "Email delivered";
-  const title =
-    isEmailDelivered && display.summary.trim()
-      ? display.summary
-      : display.heading;
+  const title = logActivityCardTitle(display);
+  const showSummary =
+    display.summary.trim() && title !== display.summary.trim();
 
   return (
     <motion.li variants={automationItem} className="relative flex gap-3.5">
@@ -89,7 +90,7 @@ function ActivityCard({
         <h3 className="mt-1.5 text-[15px] font-semibold leading-snug text-zinc-900">
           {title}
         </h3>
-        {!isEmailDelivered && display.summary.trim() ? (
+        {showSummary ? (
           <p className="mt-2 text-sm leading-relaxed text-zinc-600">
             {display.summary}
           </p>
@@ -133,21 +134,9 @@ export function ExecutionLogsDrawer({
 
   const activitySteps = useMemo(() => groupLogsForDisplay(logs), [logs]);
   const stepCount = activitySteps.length;
-  const completed = activitySteps.some((s) => s.heading === "Run finished");
+  const completed = activitySteps.some(isRunFinishedLogDisplay);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prev;
-    };
-  }, [open, onClose]);
+  useOverlayLock(open, onClose);
 
   return (
     <AnimatePresence>

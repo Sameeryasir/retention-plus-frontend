@@ -104,7 +104,6 @@ export type AutomationExecutionStatus =
   | "completed"
   | "failed";
 
-/** GET /automation/execution/:id/status — used while polling a run. */
 export interface AutomationExecutionStatusDto {
   executionId: number;
   automationId: number;
@@ -159,7 +158,6 @@ export interface AutomationExecution {
     email?: string;
     name?: string;
   };
-  /** Customers who received emails during this batch run (from API logs). */
   executedRecipients?: AutomationExecutionRecipient[];
 }
 
@@ -186,7 +184,6 @@ export interface AutomationLog {
   node?: AutomationLogNode;
 }
 
-/** API returns a plain array of logs for GET /execution/:id/logs */
 export type ExecutionLogsResponse = AutomationLog[];
 
 export interface StartAutomationExecutionBody {

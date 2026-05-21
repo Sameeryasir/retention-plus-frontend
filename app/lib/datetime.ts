@@ -15,7 +15,6 @@ export function formatDateTimeShort(
   }
 }
 
-/** Directus-style log drawer header, e.g. "Oct 28, 2024 (2:56:00 PM)". */
 export function formatLogDrawerTimestamp(
   iso: string | null | undefined,
 ): string {

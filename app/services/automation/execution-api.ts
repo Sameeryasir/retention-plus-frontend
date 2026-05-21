@@ -45,17 +45,23 @@ export async function getExecutionById(
   return automationFetch<AutomationExecution>(`/execution/${id}`);
 }
 
-export async function getExecutionLogs(
-  executionId: number,
-): Promise<ExecutionLogsResponse> {
-  const raw = await automationFetch<ExecutionLogsResponse | { data: ExecutionLogsResponse }>(
-    `/execution/${executionId}/logs`,
-  );
+function normalizeExecutionLogsResponse(
+  raw: ExecutionLogsResponse | { data: ExecutionLogsResponse },
+): ExecutionLogsResponse {
   if (Array.isArray(raw)) return raw;
   if (raw && typeof raw === "object" && Array.isArray(raw.data)) {
     return raw.data;
   }
   return [];
+}
+
+export async function getExecutionLogs(
+  executionId: number,
+): Promise<ExecutionLogsResponse> {
+  const raw = await automationFetch<
+    ExecutionLogsResponse | { data: ExecutionLogsResponse }
+  >(`/execution/${executionId}/logs`);
+  return normalizeExecutionLogsResponse(raw);
 }
 
 export async function getExecutionStatus(

@@ -1,44 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { getExecutionLogs } from "@/app/services/automation/execution-api";
 import type { AutomationLog } from "@/app/services/automation/types";
+import { useAsyncResource } from "@/app/hooks/use-async-resource";
 
 export function useExecutionLogs(executionId: number | null) {
-  const [logs, setLogs] = useState<AutomationLog[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const fetcher = useCallback(async () => {
+    if (executionId == null) return [] as AutomationLog[];
+    return getExecutionLogs(executionId);
+  }, [executionId]);
 
-  const load = useCallback(async (id: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await getExecutionLogs(id);
-      setLogs(response);
-    } catch (err) {
-      setLogs([]);
-      setError(
-        err instanceof Error ? err.message : "Could not load activity logs.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data, isLoading, error, refetch } = useAsyncResource(
+    executionId != null,
+    fetcher,
+    [executionId],
+    {
+      fallbackError: "Could not load activity logs.",
+      resetWhenDisabled: [] as AutomationLog[],
+    },
+  );
 
-  useEffect(() => {
-    if (executionId == null) {
-      setLogs([]);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-    void load(executionId);
-  }, [executionId, load]);
-
-  const refetch = useCallback(() => {
-    if (executionId == null) return;
-    void load(executionId);
-  }, [executionId, load]);
-
-  return { logs, loading, error, refetch };
+  return { logs: data ?? [], loading: isLoading, error, refetch };
 }

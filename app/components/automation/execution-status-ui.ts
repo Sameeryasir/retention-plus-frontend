@@ -1,4 +1,5 @@
 import type {
+  AutomationExecution,
   AutomationExecutionRecipient,
   AutomationExecutionStatus,
   AutomationExecutionStatusDto,
@@ -10,7 +11,6 @@ export function isExecutionInProgress(
   return status === "queued" || status === "running" || status === "waiting";
 }
 
-/** Backend sends all emails in one batch — no per-email progress until done. */
 export function isBulkEmailSendInProgress(
   status: AutomationExecutionStatusDto,
 ): boolean {
@@ -22,7 +22,6 @@ export function isBulkEmailSendInProgress(
   );
 }
 
-/** Show 100% and full count when the run finishes (API may still report 0 until terminal). */
 export function normalizeExecutionStatusForDisplay(
   status: AutomationExecutionStatusDto,
 ): AutomationExecutionStatusDto {
@@ -100,4 +99,41 @@ export function executionRunSubtitle(
     return null;
   }
   return executedRecipients.map(recipientLabel).join(", ");
+}
+
+export function executionRunDisplayName(
+  row: Pick<
+    AutomationExecution,
+    "id" | "executedRecipients" | "customerId" | "customer"
+  >,
+): string {
+  const label = executionRunTitle(
+    row.executedRecipients,
+    row.customerId,
+    row.customer,
+  );
+  return label.trim() ? label : `Run #${row.id}`;
+}
+
+export function executionRunCustomersLine(
+  row: Pick<
+    AutomationExecution,
+    | "status"
+    | "emailsSentCount"
+    | "totalRecipients"
+    | "executedRecipients"
+    | "customerId"
+    | "customer"
+  >,
+): string {
+  const progress = executionProgressLabel(
+    row.status,
+    row.emailsSentCount,
+    row.totalRecipients,
+  );
+  return (
+    progress ??
+    executionRunSubtitle(row.executedRecipients) ??
+    customerLabel(row.customerId, row.customer)
+  );
 }

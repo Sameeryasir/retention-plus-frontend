@@ -34,10 +34,8 @@ import { formatDateTimeShort } from "@/app/lib/datetime";
 import { reportTableShellClass } from "@/app/lib/panel-styles";
 import { RunProgressBanner } from "@/app/components/automation/RunProgressBanner";
 import {
-  customerLabel,
-  executionProgressLabel,
-  executionRunSubtitle,
-  executionRunTitle,
+  executionRunCustomersLine,
+  executionRunDisplayName,
   formatScheduledCountdown,
   isExecutionInProgress,
 } from "@/app/components/automation/execution-status-ui";
@@ -177,20 +175,8 @@ function RunRow({
   const StatusIcon = statusIcon(row.status);
   const countdown =
     row.status === "waiting" ? formatScheduledCountdown(row.scheduledAt) : null;
-  const progress = executionProgressLabel(
-    row.status,
-    row.emailsSentCount,
-    row.totalRecipients,
-  );
-  const customersText =
-    progress ??
-    executionRunSubtitle(row.executedRecipients) ??
-    customerLabel(row.customerId, row.customer);
-  const runSummary = executionRunTitle(
-    row.executedRecipients,
-    row.customerId,
-    row.customer,
-  );
+  const customersText = executionRunCustomersLine(row);
+  const runSummary = executionRunDisplayName(row);
 
   const inProgress = isExecutionInProgress(row.status);
   const StepIcon = stepTypeIcon(row.currentNode?.type);
@@ -353,12 +339,7 @@ export function AutomationExecutionsPanel({
     if (deleteTargetId == null) return "this run";
     const row = executions.find((e) => e.id === deleteTargetId);
     if (!row) return `Run #${deleteTargetId}`;
-    const label = executionRunTitle(
-      row.executedRecipients,
-      row.customerId,
-      row.customer,
-    );
-    return label.trim() ? label : `Run #${row.id}`;
+    return executionRunDisplayName(row);
   }, [deleteTargetId, executions]);
 
   const confirmDeleteRun = useCallback(async () => {
@@ -384,15 +365,10 @@ export function AutomationExecutionsPanel({
   }, [meta?.total, summary]);
 
   const openRunLogs = useCallback((row: AutomationExecution) => {
-    const label = executionRunTitle(
-      row.executedRecipients,
-      row.customerId,
-      row.customer,
-    );
     setLogsDrawer({
       executionId: row.id,
       runStartedAt: row.createdAt,
-      runTitle: label.trim() ? label : `Run #${row.id}`,
+      runTitle: executionRunDisplayName(row),
     });
   }, []);
 
