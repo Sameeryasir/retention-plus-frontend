@@ -113,9 +113,9 @@ export function WorkflowNodeCard({
       ) : null}
 
       <div
-        className={`relative flex items-center gap-4 rounded-2xl border bg-white py-4 pl-4 pr-4 text-left transition-all duration-300 ease-out select-none ${nodeBorderClass(block.tone, isActive)} ${
+        className={`relative flex items-center gap-2.5 rounded-xl border bg-white py-2.5 pl-2.5 pr-2.5 text-left transition-all duration-300 ease-out select-none sm:gap-3 sm:rounded-2xl sm:py-3 sm:pl-3 sm:pr-3 xl:gap-4 xl:py-4 xl:pl-4 xl:pr-4 ${nodeBorderClass(block.tone, isActive)} ${
           isActive
-            ? `ring-2 ring-offset-2 ring-offset-[#ececee] ${selectedRingClass(block.tone)} ${tone.accent} pl-3.5`
+            ? `ring-2 ring-offset-2 ring-offset-[#ececee] ${selectedRingClass(block.tone)} ${tone.accent} sm:pl-2.5 xl:pl-3.5`
             : "hover:-translate-y-0.5 hover:shadow-[0_10px_32px_rgba(0,0,0,0.09)]"
         } ${
           isGhost
@@ -131,22 +131,22 @@ export function WorkflowNodeCard({
         />
 
         <span
-          className={`relative flex size-12 shrink-0 items-center justify-center rounded-xl ring-2 ring-white/90 ${tone.icon}`}
+          className={`relative flex size-9 shrink-0 items-center justify-center rounded-lg ring-2 ring-white/90 sm:size-10 sm:rounded-xl xl:size-12 ${tone.icon}`}
         >
           <span
-            className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-b from-white/30 to-transparent"
+            className="pointer-events-none absolute inset-0 rounded-lg bg-gradient-to-b from-white/30 to-transparent sm:rounded-xl"
             aria-hidden
           />
-          <Icon className="relative size-5" strokeWidth={2.25} aria-hidden />
+          <Icon className="relative size-4 sm:size-[1.125rem] xl:size-5" strokeWidth={2.25} aria-hidden />
         </span>
 
         <span className="min-w-0 flex-1">
           <span
-            className={`inline-flex rounded-full px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.14em] ${tone.badge}`}
+            className={`inline-flex rounded-full px-1.5 py-px text-[0.55rem] font-bold uppercase tracking-[0.12em] sm:px-2 sm:py-0.5 sm:text-[0.6rem] sm:tracking-[0.14em] ${tone.badge}`}
           >
             {sectionLabel}
           </span>
-          <span className="mt-1.5 block truncate text-base font-semibold leading-tight tracking-tight text-zinc-900">
+          <span className="mt-1 block truncate text-sm font-semibold leading-tight tracking-tight text-zinc-900 sm:mt-1.5 sm:text-[0.9375rem] xl:text-base">
             {node.label}
           </span>
         </span>

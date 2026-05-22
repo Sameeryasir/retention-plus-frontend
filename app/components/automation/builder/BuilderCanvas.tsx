@@ -328,8 +328,8 @@ export function BuilderCanvas({
       />
 
       <motion.div
-        className="absolute right-4 top-4 z-20 flex items-center gap-0.5 rounded-2xl border border-white/70 bg-white/75 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)] ring-1 ring-zinc-950/[0.04] backdrop-blur-md"
-        initial={{ opacity: 0, y: -8 }}
+        className="absolute bottom-4 left-4 z-20 flex items-center gap-0.5 rounded-xl border border-white/70 bg-white/75 p-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.08)] ring-1 ring-zinc-950/[0.04] backdrop-blur-md sm:bottom-5 sm:left-5 sm:rounded-2xl sm:p-1"
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, ease: automationEase }}
       >
@@ -337,18 +337,18 @@ export function BuilderCanvas({
           type="button"
           aria-label="Zoom out"
           onClick={() => setZoom((z) => Math.max(ZOOM_MIN, z - ZOOM_STEP))}
-          className="flex size-9 cursor-pointer items-center justify-center rounded-xl text-zinc-500 transition hover:bg-zinc-100/90 hover:text-zinc-900 active:scale-95"
+          className="flex size-8 cursor-pointer items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100/90 hover:text-zinc-900 active:scale-95 sm:size-9 sm:rounded-xl"
         >
           <Minus className="size-4" aria-hidden />
         </button>
-        <span className="min-w-[3.25rem] text-center text-[0.7rem] font-bold tabular-nums tracking-wide text-zinc-500">
+        <span className="min-w-[2.75rem] text-center text-[0.65rem] font-bold tabular-nums tracking-wide text-zinc-500 sm:min-w-[3.25rem] sm:text-[0.7rem]">
           {Math.round(zoom * 100)}%
         </span>
         <button
           type="button"
           aria-label="Zoom in"
           onClick={() => setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))}
-          className="flex size-9 cursor-pointer items-center justify-center rounded-xl text-zinc-500 transition hover:bg-zinc-100/90 hover:text-zinc-900 active:scale-95"
+          className="flex size-8 cursor-pointer items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100/90 hover:text-zinc-900 active:scale-95 sm:size-9 sm:rounded-xl"
         >
           <Plus className="size-4" aria-hidden />
         </button>
@@ -357,15 +357,15 @@ export function BuilderCanvas({
           type="button"
           aria-label="Fit screen"
           onClick={fitScreen}
-          className="flex h-9 cursor-pointer items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-100/90 hover:text-zinc-900 active:scale-95"
+          className="flex h-8 cursor-pointer items-center gap-1 rounded-lg px-2 text-[0.65rem] font-semibold text-zinc-600 transition hover:bg-zinc-100/90 hover:text-zinc-900 active:scale-95 sm:h-9 sm:gap-1.5 sm:rounded-xl sm:px-2.5 sm:text-xs"
         >
-          <Maximize2 className="size-3.5" aria-hidden />
-          Fit
+          <Maximize2 className="size-3 sm:size-3.5" aria-hidden />
+          <span className="hidden sm:inline">Fit</span>
         </button>
       </motion.div>
 
       <motion.div
-        className={`min-h-0 flex-1 overflow-auto px-6 py-16 transition-colors duration-300 ${
+        className={`min-h-0 flex-1 overflow-auto px-3 py-10 pb-20 transition-colors duration-300 sm:px-4 sm:py-12 sm:pb-24 lg:px-5 lg:py-14 xl:px-6 xl:py-16 ${
           canvasDragOver ? "bg-violet-50/40" : ""
         }`}
         initial={{ opacity: 0 }}
@@ -379,7 +379,7 @@ export function BuilderCanvas({
         onDrop={handleBlockDrop}
       >
         <motion.div
-          className="mx-auto flex w-full max-w-lg flex-col items-center"
+          className="mx-auto flex w-full max-w-[min(100%,15rem)] flex-col items-center sm:max-w-xs lg:max-w-[14.5rem] xl:max-w-sm 2xl:max-w-md"
           animate={{ scale: zoom }}
           transition={{ type: "spring", stiffness: 260, damping: 28 }}
         >
@@ -432,7 +432,7 @@ export function BuilderCanvas({
                     ref={(el) => {
                       nodeSlotRefs.current[index] = el;
                     }}
-                    className={`w-full max-w-lg ${
+                    className={`w-full max-w-[min(100%,15rem)] sm:max-w-xs lg:max-w-[14.5rem] xl:max-w-sm 2xl:max-w-md ${
                       draggingIndex !== null || pressingIndex !== null
                         ? "touch-none"
                         : ""
@@ -472,7 +472,7 @@ export function BuilderCanvas({
               ))}
               {canDropBlocks ? (
                 <div
-                  className="h-8 w-full max-w-lg"
+                  className="h-8 w-full max-w-[min(100%,15rem)] sm:max-w-xs lg:max-w-[14.5rem] xl:max-w-sm 2xl:max-w-md"
                   onDragOver={handleSlotDragOver}
                   onDrop={handleBlockDrop}
                 />
@@ -483,7 +483,7 @@ export function BuilderCanvas({
       </motion.div>
 
       {canReorder && nodes.length > 0 ? (
-        <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] font-medium text-zinc-500">
+        <p className="pointer-events-none absolute bottom-14 left-0 right-0 px-3 text-center text-[10px] font-medium text-zinc-500 sm:bottom-16 sm:text-[11px]">
           Press and hold a step, then drag to reorder
         </p>
       ) : null}

@@ -221,12 +221,12 @@ export function NodeSettingsPanel({
   const Icon = block?.icon;
 
   return (
-    <aside className="flex h-full w-[300px] shrink-0 flex-col border-l border-zinc-200/80 bg-white shadow-[inset_1px_0_0_rgba(0,0,0,0.02)] lg:w-[320px]">
-      <motion.div className="border-b border-zinc-100/90 bg-zinc-50/40 px-4 py-4">
+    <aside className="flex h-full w-full min-w-0 flex-col border-l border-zinc-200/80 bg-white shadow-[inset_1px_0_0_rgba(0,0,0,0.02)]">
+      <motion.div className="border-b border-zinc-100/90 bg-zinc-50/40 px-3 py-3 xl:px-4 xl:py-4">
         <h2 className="text-sm font-bold tracking-tight text-zinc-900">
           Settings
         </h2>
-        <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">
+        <p className="mt-0.5 hidden text-[0.65rem] leading-relaxed text-zinc-500 xl:block xl:text-xs">
           {node ? "Configure the selected block." : "Select a step on the canvas."}
         </p>
       </motion.div>
@@ -404,7 +404,7 @@ function NodeSettingsForm({
         );
       }}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 xl:px-4 xl:py-4">
       <motion.div
         className={`mb-4 flex items-center gap-3 rounded-xl border px-3 py-2.5 ${tone?.shell ?? "border-zinc-200/90 bg-zinc-50/80"}`}
         layout
@@ -482,7 +482,7 @@ function NodeSettingsForm({
       </div>
 
       {(editable && onSave) || onDelete ? (
-        <div className="shrink-0 border-t border-zinc-100/90 bg-white/95 px-4 pt-4 pb-5 backdrop-blur-sm">
+        <div className="shrink-0 border-t border-zinc-100/90 bg-white/95 px-3 pt-3 pb-4 backdrop-blur-sm xl:px-4 xl:pt-4 xl:pb-5">
           {editable && onSave ? (
             <button
               type="submit"

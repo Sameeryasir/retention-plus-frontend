@@ -83,7 +83,7 @@ function BlockChip({
         if (didDragRef.current) return;
         onAddBlock(block.id);
       }}
-      className={`group relative flex w-full cursor-grab items-center gap-3 overflow-hidden rounded-2xl border bg-white px-3 py-2.5 text-left shadow-[0_2px_10px_rgba(0,0,0,0.04)] ring-1 ring-zinc-950/[0.03] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_22px_rgba(0,0,0,0.08)] active:scale-[0.98] active:cursor-grabbing ${blockBorderClass(block.tone)}`}
+      className={`group relative flex w-full cursor-grab items-center gap-2 overflow-hidden rounded-xl border bg-white px-2.5 py-2 text-left shadow-[0_2px_10px_rgba(0,0,0,0.04)] ring-1 ring-zinc-950/[0.03] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_22px_rgba(0,0,0,0.08)] active:scale-[0.98] active:cursor-grabbing xl:gap-3 xl:rounded-2xl xl:px-3 xl:py-2.5 ${blockBorderClass(block.tone)}`}
     >
       <span
         className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-zinc-200/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
@@ -98,7 +98,7 @@ function BlockChip({
         />
         <Icon className="relative size-4" strokeWidth={2.25} aria-hidden />
       </span>
-      <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight text-zinc-900">
+      <span className="min-w-0 flex-1 truncate text-xs font-semibold tracking-tight text-zinc-900 xl:text-sm">
         {block.label}
       </span>
     </button>
@@ -120,22 +120,22 @@ export function BlockSidebar({
   }, [query]);
 
   return (
-    <aside className="flex h-full w-[280px] shrink-0 flex-col border-r border-zinc-200/60 bg-white shadow-[4px_0_28px_rgba(0,0,0,0.04)] lg:w-[300px]">
-      <div className="shrink-0 border-b border-zinc-100/90 bg-gradient-to-br from-zinc-50/90 via-white to-white px-4 py-4">
-        <div className="flex items-start gap-2.5">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/70 bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-950/[0.04]">
-            <LayoutGrid className="size-4" strokeWidth={2} aria-hidden />
+    <aside className="flex h-full w-full min-w-0 flex-col border-r border-zinc-200/60 bg-white shadow-[4px_0_28px_rgba(0,0,0,0.04)]">
+      <div className="shrink-0 border-b border-zinc-100/90 bg-gradient-to-br from-zinc-50/90 via-white to-white px-3 py-3 lg:px-3.5 lg:py-3.5 xl:px-4 xl:py-4">
+        <div className="flex items-start gap-2">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-200/70 bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-950/[0.04] xl:size-9 xl:rounded-xl">
+            <LayoutGrid className="size-3.5 xl:size-4" strokeWidth={2} aria-hidden />
           </span>
           <div className="min-w-0 pt-0.5">
-            <h2 className="text-[0.95rem] font-bold tracking-tight text-zinc-900">
+            <h2 className="text-sm font-bold tracking-tight text-zinc-900 xl:text-[0.95rem]">
               Blocks
             </h2>
-            <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">
+            <p className="mt-0.5 hidden text-[0.65rem] leading-relaxed text-zinc-500 xl:block xl:text-xs">
               Drag onto the canvas or click to add.
             </p>
           </div>
         </div>
-        <div className="relative mt-3.5">
+        <div className="relative mt-2.5 xl:mt-3.5">
           <Search
             className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
             aria-hidden
@@ -144,12 +144,12 @@ export function BlockSidebar({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search block…"
-            className="h-11 w-full rounded-xl border border-zinc-200/80 bg-white py-2 pl-10 pr-3 text-sm shadow-sm ring-1 ring-zinc-950/[0.03] outline-none placeholder:text-zinc-400 transition focus-visible:border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-900/10"
+            className="h-9 w-full rounded-lg border border-zinc-200/80 bg-white py-2 pl-9 pr-2.5 text-xs shadow-sm ring-1 ring-zinc-950/[0.03] outline-none placeholder:text-zinc-400 transition focus-visible:border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-900/10 xl:h-11 xl:rounded-xl xl:pl-10 xl:pr-3 xl:text-sm"
           />
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 [scrollbar-gutter:stable]">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3 [scrollbar-gutter:stable] xl:px-3 xl:py-4">
         {query.trim() && filtered.length === 0 ? (
           <p className="rounded-xl border border-dashed border-zinc-200/80 bg-zinc-50/60 px-3 py-8 text-center text-xs leading-relaxed text-zinc-500">
             No blocks match your search.
