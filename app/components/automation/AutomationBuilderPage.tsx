@@ -63,6 +63,55 @@ const TABS: { id: BuilderTab; label: string }[] = [
   { id: "runs", label: "Runs" },
 ];
 
+function BuilderTabToggle({
+  tab,
+  onChange,
+}: {
+  tab: BuilderTab;
+  onChange: (next: BuilderTab) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Automation views"
+      className="relative grid w-max min-w-[13rem] grid-cols-2 rounded-full border border-zinc-200/90 bg-white p-1 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_6px_20px_rgba(0,0,0,0.06)] ring-1 ring-zinc-950/[0.04]"
+    >
+      {TABS.map((t) => {
+        const active = tab === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(t.id)}
+            className={`relative z-10 cursor-pointer rounded-full px-6 py-2.5 text-sm font-semibold tracking-tight transition-colors duration-200 ${
+              active ? "" : "hover:bg-zinc-100/80"
+            }`}
+          >
+            {active ? (
+              <motion.span
+                layoutId="automation-builder-tab-pill"
+                className="absolute inset-0 rounded-full bg-gradient-to-b from-zinc-800 to-zinc-950 shadow-[0_2px_8px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.1)] ring-1 ring-black/20"
+                transition={{ type: "spring", stiffness: 420, damping: 32 }}
+              />
+            ) : null}
+            <motion.span
+              className={`relative block ${
+                active ? "text-white" : "text-zinc-500 hover:text-zinc-800"
+              }`}
+              animate={{ scale: active ? 1.02 : 1 }}
+              transition={{ duration: 0.2, ease: automationEase }}
+            >
+              {t.label}
+            </motion.span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AutomationBuilderPage({
   restaurantId,
   automationId,
@@ -471,22 +520,7 @@ export function AutomationBuilderPage({
       </div>
 
       <div className="mt-4 min-w-0 -mx-4 overflow-x-auto overscroll-x-contain px-4 pb-0.5 sm:-mx-6 sm:px-6">
-        <div className="flex w-max min-w-full gap-0.5 rounded-lg border border-zinc-200/80 bg-zinc-100/70 p-0.5 sm:w-auto">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setBuilderTab(t.id)}
-              className={`shrink-0 cursor-pointer rounded-md px-4 py-1.5 text-sm font-semibold transition ${
-                tab === t.id
-                  ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200/60"
-                  : "text-zinc-600 hover:bg-white/50 hover:text-zinc-900"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <BuilderTabToggle tab={tab} onChange={setBuilderTab} />
       </div>
     </header>
   );
