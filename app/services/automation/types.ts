@@ -127,6 +127,15 @@ export type AutomationExecutionRecipient = {
   email: string;
 };
 
+export type ExecutionListItem = {
+  runId: number;
+  id: number;
+  status: AutomationExecutionStatus;
+  startedAt: string;
+  customerCount: number;
+  stepType?: string | null;
+};
+
 export interface AutomationExecution {
   id: number;
   automationId: number;
@@ -202,6 +211,13 @@ export type ExecutionListSummary = {
   completed: number;
   inProgress: number;
   customersReached: number;
+};
+
+export type PaginatedExecutionsApiResponse = {
+  data: ExecutionListItem[] | AutomationExecution[];
+  meta: PaginationMeta & {
+    summary?: ExecutionListSummary;
+  };
 };
 
 export interface PaginatedExecutionsResponse {

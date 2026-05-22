@@ -1,9 +1,22 @@
+import { AUTOMATION_BLOCKS } from "@/app/components/automation/mock-data";
 import type {
   AutomationExecution,
   AutomationExecutionRecipient,
   AutomationExecutionStatus,
   AutomationExecutionStatusDto,
 } from "@/app/services/automation/types";
+
+export function formatExecutionStepType(type?: string | null): string {
+  const raw = type?.trim();
+  if (!raw) return "—";
+  const block = AUTOMATION_BLOCKS.find((b) => b.id === raw.toLowerCase());
+  if (block) return block.label;
+  return raw
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
 
 export function isExecutionInProgress(
   status: AutomationExecutionStatus,
@@ -104,9 +117,14 @@ export function executionRunSubtitle(
 export function executionRunDisplayName(
   row: Pick<
     AutomationExecution,
-    "id" | "executedRecipients" | "customerId" | "customer"
+    "id" | "executedRecipients" | "customerId" | "customer" | "totalRecipients"
   >,
 ): string {
+  const recipientCount =
+    row.executedRecipients?.length ?? row.totalRecipients ?? 0;
+  if (recipientCount > 1) {
+    return `Completed for ${recipientCount} customers`;
+  }
   const label = executionRunTitle(
     row.executedRecipients,
     row.customerId,
@@ -131,9 +149,15 @@ export function executionRunCustomersLine(
     row.emailsSentCount,
     row.totalRecipients,
   );
-  return (
-    progress ??
-    executionRunSubtitle(row.executedRecipients) ??
-    customerLabel(row.customerId, row.customer)
-  );
+  if (progress) return progress;
+
+  const subtitle = executionRunSubtitle(row.executedRecipients);
+  if (subtitle) return subtitle;
+
+  const total = row.totalRecipients ?? 0;
+  if (total > 0) {
+    return total === 1 ? "1 customer reached" : `${total} customers reached`;
+  }
+
+  return customerLabel(row.customerId, row.customer);
 }

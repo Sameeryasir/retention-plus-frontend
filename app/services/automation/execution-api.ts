@@ -1,10 +1,12 @@
 import { automationFetch } from "@/app/services/automation/automation-fetch";
+import { normalizeExecutionsListResponse } from "@/app/services/automation/map-execution-list";
 import {
   EXECUTIONS_PAGE_SIZE,
   type AutomationExecution,
   type AutomationExecutionStatus,
   type AutomationExecutionStatusDto,
   type ExecutionLogsResponse,
+  type PaginatedExecutionsApiResponse,
   type PaginatedExecutionsResponse,
   type StartAutomationExecutionBody,
   type StartAutomationExecutionResponse,
@@ -34,9 +36,10 @@ export async function getExecutions(
   q.set("page", String(params?.page ?? 1));
   q.set("limit", String(params?.limit ?? EXECUTIONS_PAGE_SIZE));
   const query = q.toString();
-  return automationFetch<PaginatedExecutionsResponse>(
+  const raw = await automationFetch<PaginatedExecutionsApiResponse>(
     `/execution?${query}`,
   );
+  return normalizeExecutionsListResponse(raw, params?.automationId);
 }
 
 export async function getExecutionById(

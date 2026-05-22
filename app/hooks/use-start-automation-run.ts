@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { normalizeExecutionStatusForDisplay } from "@/app/components/automation/execution-status-ui";
-import { pollExecutionStatus } from "@/app/lib/poll-execution-status";
+import { waitForExecutionTerminal } from "@/app/lib/wait-for-execution-terminal";
 import { AutomationApiError } from "@/app/services/automation/automation-fetch";
 import { startExecution } from "@/app/services/automation/execution-api";
 import type { AutomationExecutionStatusDto } from "@/app/services/automation/types";
@@ -53,8 +53,9 @@ export function useStartAutomationRun(
         setPolling(true);
         onStarted?.(initial);
 
-        const final = await pollExecutionStatus(
+        const final = await waitForExecutionTerminal(
           initial.executionId,
+          initial,
           (update) => {
             if (generation === pollGenerationRef.current) {
               setActiveRun(update);

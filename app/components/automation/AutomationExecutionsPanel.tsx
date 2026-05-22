@@ -38,6 +38,7 @@ import { RunProgressBanner } from "@/app/components/automation/RunProgressBanner
 import {
   executionRunCustomersLine,
   executionRunDisplayName,
+  formatExecutionStepType,
   formatScheduledCountdown,
   isExecutionInProgress,
 } from "@/app/components/automation/execution-status-ui";
@@ -187,9 +188,11 @@ function RunRow({
   const runSummary = executionRunDisplayName(row);
 
   const inProgress = isExecutionInProgress(row.status);
-  const StepIcon = stepTypeIcon(row.currentNode?.type);
-  const recipientCount = row.executedRecipients?.length ?? 0;
-  const stepLabel = row.currentNode?.type ?? "—";
+  const stepType = row.currentNode?.type;
+  const StepIcon = stepTypeIcon(stepType);
+  const recipientCount =
+    row.executedRecipients?.length ?? row.totalRecipients ?? 0;
+  const stepLabel = formatExecutionStepType(stepType);
 
   return (
     <div
@@ -248,7 +251,10 @@ function RunRow({
         <p className="min-w-0 truncate">{customersText}</p>
       </div>
 
-      <span className="inline-flex w-fit max-w-full items-center gap-1.5 truncate rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-semibold capitalize text-zinc-700 ring-1 ring-zinc-200/80">
+      <span
+        className="inline-flex w-fit max-w-full items-center gap-1.5 truncate rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200/80"
+        title={stepType ?? undefined}
+      >
         <StepIcon className="size-3.5 shrink-0 text-zinc-500" aria-hidden />
         {stepLabel}
       </span>
@@ -337,6 +343,7 @@ export function AutomationExecutionsPanel({
     deleteExecution,
     deletingId,
   } = useAutomationExecutions(automationId, apiStatus);
+
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [logsDrawer, setLogsDrawer] = useState<{
     executionId: number;
@@ -434,7 +441,11 @@ export function AutomationExecutionsPanel({
                 disabled={automationActive === false}
                 onClick={() =>
                   void run({
-                    onStarted: () => setPage(1),
+                    onStarted: () => {
+                      if (page !== 1) {
+                        setPage(1);
+                      }
+                    },
                     onFinished: (status) => {
                       void refetch();
                       onExecutionStarted?.(status.executionId);
