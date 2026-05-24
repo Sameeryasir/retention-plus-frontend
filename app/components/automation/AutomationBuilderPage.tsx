@@ -20,6 +20,7 @@ import type {
 import {
   getAutomationById,
   mapAutomationToListItem,
+  updateAutomation,
 } from "@/app/services/automation/automation-api";
 import { BuilderShell } from "@/app/components/builder/BuilderShell";
 import { toastApiError } from "@/app/lib/toast-api-error";
@@ -42,19 +43,6 @@ import {
 import { isPositiveInt } from "@/app/lib/numbers";
 
 type BuilderTab = "builder" | "runs";
-
-function estimateWorkflowMinutes(nodes: WorkflowNode[]): string {
-  let mins = 0;
-  for (const n of nodes) {
-    if (n.kind === "wait" || n.kind === "delay") mins += 30;
-    else if (n.kind === "send_email" || n.kind === "send_sms") mins += 2;
-    else mins += 1;
-  }
-  if (mins < 60) return `~${mins} min`;
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return m > 0 ? `~${h}h ${m}m` : `~${h}h`;
-}
 
 const TABS: { id: BuilderTab; label: string }[] = [
   { id: "builder", label: "Flow" },
@@ -140,6 +128,7 @@ export function AutomationBuilderPage({
   const [nodesLoading, setNodesLoading] = useState(false);
   const [deletingNode, setDeletingNode] = useState(false);
   const [savingNode, setSavingNode] = useState(false);
+  const [activating, setActivating] = useState(false);
 
   const loadAutomation = useCallback(
     async (options?: { silent?: boolean }) => {
@@ -232,8 +221,7 @@ export function AutomationBuilderPage({
     if (
       !selectedNode ||
       !isTriggerBlockKind(selectedNode.kind) ||
-      selectedNode.kind === "cron_trigger" ||
-      selectedNode.numericId == null
+      selectedNode.kind === "cron_trigger"
     ) {
       return;
     }
@@ -243,55 +231,119 @@ export function AutomationBuilderPage({
       return;
     }
 
-    let cancelled = false;
-    const nodeId = selectedNode.numericId;
-
-    (async () => {
-      setSavingNode(true);
-      try {
-        const updated = await updateAutomationNode(nodeId, {
-          config: defaultConfig,
-        });
-        if (cancelled) return;
-        const mapped = {
-          ...mapApiNodeToWorkflowNode(updated),
-          config:
-            updated.config && Object.keys(updated.config).length > 0
-              ? updated.config
-              : defaultConfig,
-        };
-        setNodes((prev) =>
-          prev.map((n) => (n.numericId === updated.id ? mapped : n)),
-        );
-      } catch (err) {
-        if (cancelled) return;
-        toastApiError(err, "Could not save trigger settings.");
-      } finally {
-        if (!cancelled) setSavingNode(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+    setNodes((prev) =>
+      prev.map((n) =>
+        n.id === selectedNode.id ? { ...n, config: defaultConfig } : n,
+      ),
+    );
   }, [
     selectedNode?.id,
     selectedNode?.kind,
-    selectedNode?.numericId,
     selectedNode?.config?.trigger,
   ]);
 
-  const stats = useMemo(
-    () => ({
-      nodeCount: nodes.length,
-      estimated: estimateWorkflowMinutes(nodes),
-      customers: automation?.customersEntered ?? 0,
-    }),
-    [nodes, automation?.customersEntered],
-  );
+  const persistFlowGraph = useCallback(async () => {
+    if (!isPositiveInt(automationNumericId)) {
+      throw new Error("Open a saved automation before activating.");
+    }
+
+    // Remove server nodes the user deleted locally before syncing the current canvas.
+    const remote = await getAutomationById(automationNumericId);
+    const localNumericIds = new Set(
+      nodes
+        .map((n) => n.numericId)
+        .filter((id): id is number => id != null),
+    );
+    for (const remoteNode of remote.nodes ?? []) {
+      if (!localNumericIds.has(remoteNode.id)) {
+        await deleteAutomationNode(remoteNode.id);
+      }
+    }
+
+    const syncedNodes: WorkflowNode[] = [];
+    for (let order = 0; order < nodes.length; order++) {
+      const node = nodes[order];
+      if (node.numericId != null) {
+        const updated = await updateAutomationNode(node.numericId, {
+          order,
+          config: node.config,
+        });
+        syncedNodes.push({
+          ...mapApiNodeToWorkflowNode(updated),
+          kind: node.kind,
+          label: node.label,
+          config: node.config,
+        });
+      } else {
+        const created = await createAutomationNode({
+          automationId: automationNumericId,
+          type: blockKindToNodeType(node.kind),
+          order,
+          config: node.config,
+          positionX: 100,
+          positionY: 200 + order * 120,
+        });
+        syncedNodes.push({
+          ...mapApiNodeToWorkflowNode(created),
+          kind: node.kind,
+          label: node.label,
+          config: node.config,
+        });
+      }
+    }
+
+    for (const connection of connections) {
+      try {
+        await deleteAutomationConnection(connection.id);
+      } catch {
+        // Connection may already be removed during a prior partial sync.
+      }
+    }
+
+    const newConnections: AutomationConnection[] = [];
+    for (let i = 0; i < syncedNodes.length - 1; i++) {
+      const source = syncedNodes[i]?.numericId;
+      const target = syncedNodes[i + 1]?.numericId;
+      if (source == null || target == null) continue;
+      const created = await createAutomationConnection({
+        automationId: automationNumericId,
+        sourceNodeId: source,
+        targetNodeId: target,
+      });
+      newConnections.push(created);
+    }
+
+    setNodes(syncedNodes);
+    setConnections(newConnections);
+    return syncedNodes;
+  }, [automationNumericId, connections, nodes]);
+
+  const handleActivate = useCallback(async () => {
+    if (!isPositiveInt(automationNumericId)) {
+      toast.error("Open a saved automation before activating.");
+      return;
+    }
+
+    setActivating(true);
+    try {
+      await persistFlowGraph();
+      const updated = await updateAutomation(automationNumericId, {
+        isActive: true,
+        published: true,
+      });
+      setAutomation(mapAutomationToListItem(updated));
+      setStatus("active");
+      toast.success("Automation activated.");
+      void loadAutomation({ silent: true });
+    } catch (err) {
+      toastApiError(err, "Could not activate automation.");
+    } finally {
+      setActivating(false);
+    }
+  }, [automationNumericId, loadAutomation, persistFlowGraph]);
 
   const onAddBlock = useCallback(
-    async (blockId: WorkflowNodeKind) => {
+    (blockId: WorkflowNodeKind) => {
       const block = AUTOMATION_BLOCKS.find((b) => b.id === blockId);
       if (!block) return;
 
@@ -300,85 +352,30 @@ export function AutomationBuilderPage({
         return;
       }
 
-      const order = nodes.length;
-      const previousNode = nodes[nodes.length - 1] ?? null;
       const defaultConfig = defaultConfigForBlockKind(blockId);
-      try {
-        const created = await createAutomationNode({
-          automationId: automationNumericId,
-          type: blockKindToNodeType(blockId),
-          order,
-          config: defaultConfig,
-          positionX: 100,
-          positionY: 200 + order * 120,
-        });
-        const next: WorkflowNode = {
-          ...mapApiNodeToWorkflowNode(created),
-          kind: blockId,
-          label: block.label,
-          config: {
-            ...defaultConfig,
-            ...(created.config ?? {}),
-          },
-        };
-        setNodes((prev) => [
-          ...prev.filter((n) => n.numericId !== created.id),
-          next,
-        ]);
-        setSelectedId(next.id);
-
-        if (previousNode?.numericId != null) {
-          try {
-            await createAutomationConnection({
-              automationId: automationNumericId,
-              sourceNodeId: previousNode.numericId,
-              targetNodeId: created.id,
-            });
-          } catch (connErr) {
-            toastApiError(
-              connErr,
-              "Node saved, but could not link to the previous step.",
-            );
-          }
-        }
-
-        void loadAutomation({ silent: true });
-      } catch (err) {
-        toastApiError(err, "Could not create node.");
-      }
+      const next: WorkflowNode = {
+        id: `local-${blockId}-${Date.now()}`,
+        automationId: automationNumericId,
+        kind: blockId,
+        label: block.label,
+        config: defaultConfig,
+      };
+      setNodes((prev) => [...prev, next]);
+      setSelectedId(next.id);
     },
-    [automationNumericId, nodes, loadAutomation],
+    [automationNumericId],
   );
 
   const onUpdateNode = useCallback(
     async (config: Record<string, unknown>) => {
-      if (!selectedNode?.numericId) {
-        toast.error("This step is not saved yet.");
-        return;
-      }
+      if (!selectedNode) return;
 
       setSavingNode(true);
-      try {
-        const updated = await updateAutomationNode(selectedNode.numericId, {
-          config,
-        });
-        const savedConfig =
-          updated.config && Object.keys(updated.config).length > 0
-            ? updated.config
-            : config;
-        const mapped = {
-          ...mapApiNodeToWorkflowNode(updated),
-          config: savedConfig,
-        };
-        setNodes((prev) =>
-          prev.map((n) => (n.numericId === updated.id ? mapped : n)),
-        );
-        toast.success("Step updated.");
-      } catch (err) {
-        toastApiError(err, "Could not update step.");
-      } finally {
-        setSavingNode(false);
-      }
+      setNodes((prev) =>
+        prev.map((n) => (n.id === selectedNode.id ? { ...n, config } : n)),
+      );
+      toast.success("Step updated.");
+      setSavingNode(false);
     },
     [selectedNode],
   );
@@ -386,80 +383,17 @@ export function AutomationBuilderPage({
   const onDeleteNode = useCallback(async () => {
     if (!selectedNode) return;
 
-    const nodeId = selectedNode.numericId;
-    if (nodeId == null) {
-      setNodes((prev) => prev.filter((n) => n.id !== selectedNode.id));
-      setSelectedId(null);
-      return;
-    }
-
     setDeletingNode(true);
-    try {
-      await deleteAutomationNode(nodeId);
-      setNodes((prev) => prev.filter((n) => n.numericId !== nodeId));
-      setSelectedId(null);
-      toast.success("Step removed.");
-      void loadAutomation({ silent: true });
-    } catch (err) {
-      toastApiError(err, "Could not delete step.");
-    } finally {
-      setDeletingNode(false);
-    }
-  },     [selectedNode, loadAutomation]);
+    setNodes((prev) => prev.filter((n) => n.id !== selectedNode.id));
+    setSelectedId(null);
+    toast.success("Step removed.");
+    setDeletingNode(false);
+  }, [selectedNode]);
 
-  const onReorderNodes = useCallback(
-    async (fromIndex: number, toIndex: number) => {
-      if (!isPositiveInt(automationNumericId)) return;
-      if (fromIndex === toIndex) return;
-
-      const reordered = reorderList(nodes, fromIndex, toIndex);
-      const unchanged = reordered.every((n, i) => n.id === nodes[i]?.id);
-      if (unchanged) return;
-
-      setNodes(reordered);
-
-      try {
-        await Promise.all(
-          reordered.map((node, order) =>
-            node.numericId != null
-              ? updateAutomationNode(node.numericId, { order })
-              : Promise.resolve(),
-          ),
-        );
-
-        for (const connection of connections) {
-          try {
-            await deleteAutomationConnection(connection.id);
-          } catch {}
-        }
-
-        const newConnections: AutomationConnection[] = [];
-        for (let i = 0; i < reordered.length - 1; i++) {
-          const source = reordered[i]?.numericId;
-          const target = reordered[i + 1]?.numericId;
-          if (source == null || target == null) continue;
-          try {
-            const created = await createAutomationConnection({
-              automationId: automationNumericId,
-              sourceNodeId: source,
-              targetNodeId: target,
-            });
-            newConnections.push(created);
-          } catch (connErr) {
-            toastApiError(connErr, "Could not link steps after reorder.");
-            break;
-          }
-        }
-        setConnections(newConnections);
-        toast.success("Flow order updated.");
-        void loadAutomation({ silent: true });
-      } catch (err) {
-        toastApiError(err, "Could not reorder steps.");
-        void loadAutomation({ silent: true });
-      }
-    },
-    [automationNumericId, connections, nodes, loadAutomation],
-  );
+  const onReorderNodes = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    setNodes((prev) => reorderList(prev, fromIndex, toIndex));
+  }, []);
 
   const persistentHeader = (
     <header className="relative shrink-0 border-b border-zinc-200/70 bg-gradient-to-b from-white via-white to-zinc-50/80 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] sm:px-4 sm:py-3 lg:px-6 lg:py-3.5">
@@ -484,10 +418,11 @@ export function AutomationBuilderPage({
             </button>
             <button
               type="button"
-              onClick={() => setStatus("active")}
-              className="cursor-pointer rounded-lg bg-gradient-to-b from-zinc-800 to-zinc-950 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_3px_12px_rgba(0,0,0,0.2)] ring-1 ring-black/20 transition hover:from-zinc-700 hover:to-zinc-900 active:scale-[0.98] sm:rounded-xl sm:px-5 sm:py-2 sm:text-sm"
+              onClick={() => void handleActivate()}
+              disabled={activating}
+              className="cursor-pointer rounded-lg bg-gradient-to-b from-zinc-800 to-zinc-950 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_3px_12px_rgba(0,0,0,0.2)] ring-1 ring-black/20 transition hover:from-zinc-700 hover:to-zinc-900 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:rounded-xl sm:px-5 sm:py-2 sm:text-sm"
             >
-              Activate
+              {activating ? "Activating…" : "Activate"}
             </button>
           </div>
         ) : null}
@@ -533,43 +468,6 @@ export function AutomationBuilderPage({
                 saving={savingNode}
                 deleting={deletingNode}
               />
-            }
-            overlay={
-              <motion.aside
-                className="pointer-events-none absolute bottom-4 left-1/2 z-30 max-w-[calc(100%-2rem)] -translate-x-1/2 sm:bottom-5 lg:max-w-none"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15, ease: automationEase }}
-              >
-                <div className="pointer-events-auto rounded-xl border border-white/70 bg-white/90 px-3 py-2 shadow-[0_8px_28px_rgba(0,0,0,0.08)] ring-1 ring-zinc-950/[0.05] backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3 xl:px-5 xl:py-3.5">
-                  <dl className="flex divide-x divide-zinc-200/70">
-                    <div className="min-w-[3.25rem] pr-3 sm:min-w-[4rem] sm:pr-4 xl:min-w-[5rem] xl:pr-5">
-                      <dt className="text-[0.55rem] font-bold uppercase tracking-[0.12em] text-zinc-400 sm:text-[0.6rem] sm:tracking-[0.14em]">
-                        Steps
-                      </dt>
-                      <dd className="mt-0.5 text-sm font-bold tabular-nums tracking-tight text-zinc-900 sm:mt-1 sm:text-base xl:text-lg">
-                        {stats.nodeCount}
-                      </dd>
-                    </div>
-                    <div className="min-w-[3.25rem] px-3 sm:min-w-[4rem] sm:px-4 xl:min-w-[5rem] xl:px-5">
-                      <dt className="text-[0.55rem] font-bold uppercase tracking-[0.12em] text-zinc-400 sm:text-[0.6rem] sm:tracking-[0.14em]">
-                        Est. time
-                      </dt>
-                      <dd className="mt-0.5 text-sm font-bold tracking-tight text-zinc-900 sm:mt-1 sm:text-base xl:text-lg">
-                        {stats.estimated}
-                      </dd>
-                    </div>
-                    <div className="min-w-[3.25rem] pl-3 sm:min-w-[4rem] sm:pl-4 xl:min-w-[5rem] xl:pl-5">
-                      <dt className="text-[0.55rem] font-bold uppercase tracking-[0.12em] text-zinc-400 sm:text-[0.6rem] sm:tracking-[0.14em]">
-                        In flow
-                      </dt>
-                      <dd className="mt-0.5 text-sm font-bold tabular-nums tracking-tight text-zinc-900 sm:mt-1 sm:text-base xl:text-lg">
-                        {stats.customers}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-              </motion.aside>
             }
           />
         </motion.div>

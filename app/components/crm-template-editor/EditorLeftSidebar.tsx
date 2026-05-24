@@ -10,12 +10,10 @@ import {
 import type { TemplatePageId } from "@/app/components/crm-template-editor/template-types";
 
 export function EditorLeftSidebar({
-  pages,
   activeId,
   onSelect,
   onEditPage,
 }: {
-  pages: { id: TemplatePageId; label: string }[];
   activeId: TemplatePageId;
   onSelect: (id: TemplatePageId) => void;
   onEditPage: (id: TemplatePageId) => void;
@@ -51,7 +49,6 @@ export function EditorLeftSidebar({
 
       <div className={`${editorPanelScrollClass} scroll-smooth`}>
         <TemplatePageList
-          pages={pages}
           activeId={activeId}
           onSelect={onSelect}
           onEditPage={onEditPage}

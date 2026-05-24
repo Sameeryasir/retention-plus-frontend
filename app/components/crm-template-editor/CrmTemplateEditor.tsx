@@ -223,15 +223,6 @@ export function CrmTemplateEditor({
     };
   }, [interactivePreview, previewRestaurantId, funnelId, activeId]);
 
-  const pageList = useMemo(
-    () =>
-      (Object.keys(pages) as TemplatePageId[]).map((id) => ({
-        id,
-        label: pages[id].label,
-      })),
-    [pages],
-  );
-
   const patchPage = useCallback(
     (patch: TemplatePagePatch) => {
       setSaveStatus((s) => (s === "saved" ? "idle" : s));
@@ -411,14 +402,12 @@ export function CrmTemplateEditor({
             onRedo={redo}
             onSave={() => void handleSave()}
             onPreview={previewRouteId != null ? handlePreview : undefined}
-            onBrowseTemplates={() => setTemplateGalleryOpen(true)}
             isSaving={saveStatus === "saving"}
             saveError={saveError}
           />
         }
         leftSidebar={
           <EditorLeftSidebar
-            pages={pageList}
             activeId={activeId}
             onSelect={requestSwitchActive}
             onEditPage={openEditorForPage}

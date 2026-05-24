@@ -5,9 +5,9 @@ import { getSetupAccessToken } from "@/app/lib/setup-access-token";
 import { uploadRestaurantMenu } from "@/app/services/restaurant/upload-menu";
 import { Upload } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
-export default function UploadMenuPage() {
+function UploadMenuPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultRestaurantId = useMemo(() => {
@@ -94,5 +94,19 @@ export default function UploadMenuPage() {
         </p>
       )}
     </div>
+  );
+}
+
+export default function UploadMenuPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+          <p className="text-sm text-zinc-500">Loading…</p>
+        </div>
+      }
+    >
+      <UploadMenuPageInner />
+    </Suspense>
   );
 }

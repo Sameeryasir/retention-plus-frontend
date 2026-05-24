@@ -5,21 +5,25 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  LayoutTemplate,
+  CreditCard,
   FileText,
   Heading1,
   Heading2,
   Image as ImageIcon,
+  LayoutTemplate,
+  ListOrdered,
   Mail,
   MousePointerClick,
   Phone,
   Trash2,
   Upload,
   User,
+  UserPlus,
   UserRound,
   ZoomIn,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { FUNNEL_STEP_META } from "@/app/components/crm-template-editor/editor-ui/funnel-step-meta";
 import {
   CHECKOUT_TEMPLATE_OPTIONS,
   CheckoutTemplateType,
@@ -77,9 +81,23 @@ const FORM_FIELD_ICONS: Record<FormFieldId, LucideIcon> = {
   phone: Phone,
 };
 
-function defaultOpenSection(_pageId: TemplatePage["id"]): SectionId | null {
-  return "content";
-}
+const SECTION_ICONS: Partial<Record<SectionId, LucideIcon>> = {
+  templates: LayoutTemplate,
+  sections: ListOrdered,
+  content: FileText,
+  media: ImageIcon,
+  form: UserPlus,
+  "checkout-templates": CreditCard,
+};
+
+const SECTION_HINTS: Partial<Record<SectionId, string>> = {
+  templates: "Design presets & starter copy",
+  sections: "Drag blocks on the page",
+  content: "Headlines, body & buttons",
+  media: "Upload hero & adjust zoom",
+  form: "Fields & form layout",
+  "checkout-templates": "Layout & display options",
+};
 
 const accordionEase = [0.22, 1, 0.36, 1] as const;
 
@@ -103,32 +121,61 @@ const accordionChevronTransition = {
 function AccordionSection({
   id,
   title,
+  hint,
   open,
   onToggle,
   children,
 }: {
   id: SectionId;
   title: string;
+  hint?: string;
   open: boolean;
   onToggle: (id: SectionId) => void;
   children: React.ReactNode;
 }) {
+  const Icon = SECTION_ICONS[id] ?? FileText;
+  const subtitle = hint ?? SECTION_HINTS[id];
+
   return (
-    <div className="border-b border-zinc-200">
+    <motion.div
+      layout="position"
+      className={`overflow-hidden rounded-xl border transition-[box-shadow,border-color,background-color] duration-300 ${
+        open
+          ? "border-zinc-900/12 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.08)] ring-1 ring-zinc-950/[0.04]"
+          : "border-zinc-200/90 bg-white shadow-sm hover:border-zinc-300/90 hover:shadow-[0_2px_12px_rgba(15,23,42,0.06)]"
+      }`}
+    >
       <button
         type="button"
         onClick={() => onToggle(id)}
-        className={`flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold transition-colors duration-300 ${
-          open
-            ? "bg-zinc-50 text-zinc-900"
-            : "text-zinc-900 hover:bg-zinc-50/80"
-        }`}
+        className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors duration-200"
       >
-        {title}
+        <span
+          className={`flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-300 ${
+            open
+              ? "bg-zinc-900 text-white shadow-sm"
+              : "bg-zinc-100 text-zinc-600"
+          }`}
+          aria-hidden
+        >
+          <Icon className="size-4" strokeWidth={2} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[0.8125rem] font-semibold leading-tight tracking-tight text-zinc-900">
+            {title}
+          </span>
+          {subtitle && !open ? (
+            <span className="mt-0.5 block truncate text-[0.65rem] leading-snug text-zinc-500">
+              {subtitle}
+            </span>
+          ) : null}
+        </span>
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
           transition={accordionChevronTransition}
-          className="flex text-zinc-400"
+          className={`flex size-7 shrink-0 items-center justify-center rounded-full transition-colors ${
+            open ? "bg-zinc-100 text-zinc-700" : "text-zinc-400"
+          }`}
         >
           <ChevronDown className="size-4" strokeWidth={2} aria-hidden />
         </motion.span>
@@ -147,11 +194,13 @@ function AccordionSection({
             transition={accordionPanelOpen}
             className="overflow-hidden"
           >
-            <div className="space-y-3 px-4 pb-4 pt-0.5">{children}</div>
+            <div className="border-t border-zinc-100/90 bg-gradient-to-b from-zinc-50/60 to-white px-3.5 pb-4 pt-3">
+              <div className="space-y-3">{children}</div>
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
 
@@ -273,12 +322,10 @@ export function TemplateEditorSidebar({
   onBrowseTemplates?: () => void;
 }) {
   const mediaFileId = useId();
-  const [openSection, setOpenSection] = useState<SectionId | null>(() =>
-    defaultOpenSection(page.id),
-  );
+  const [openSection, setOpenSection] = useState<SectionId | null>(null);
 
   useEffect(() => {
-    setOpenSection(defaultOpenSection(page.id));
+    setOpenSection(null);
   }, [page.id]);
 
   /** Only one section open — tapping another closes the rest. */

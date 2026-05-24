@@ -2,6 +2,7 @@ import { automationFetch } from "@/app/services/automation/automation-fetch";
 import type {
   Automation,
   CreateAutomationBody,
+  UpdateAutomationBody,
 } from "@/app/services/automation/types";
 import type {
   AutomationListItem,
@@ -96,5 +97,15 @@ export async function createAutomation(
 export async function deleteAutomation(id: number): Promise<void> {
   await automationFetch<void>(`/${encodeURIComponent(String(id))}`, {
     method: "DELETE",
+  });
+}
+
+export async function updateAutomation(
+  id: number,
+  body: UpdateAutomationBody,
+): Promise<Automation> {
+  return automationFetch<Automation>(`/${encodeURIComponent(String(id))}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
   });
 }

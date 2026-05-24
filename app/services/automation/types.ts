@@ -48,6 +48,13 @@ export interface CreateAutomationBody {
   campaignId: number;
 }
 
+export interface UpdateAutomationBody {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+  published?: boolean;
+}
+
 export interface AutomationNode {
   id: number;
   automationId: number;
