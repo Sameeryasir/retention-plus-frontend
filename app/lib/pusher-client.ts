@@ -118,6 +118,7 @@ function subscribeChannelTerminal(
 
   const bindHandlers = () => {
     channel.unbind("pusher:subscription_succeeded", bindHandlers);
+    console.log("[Pusher] channel subscribed:", channelName);
     for (const { eventName, handler } of handlers) {
       channel.bind(eventName, handler);
     }
@@ -143,6 +144,17 @@ export function subscribeExecutionTerminal(
   onTerminal: (payload: ExecutionTerminalPusherPayload) => void,
 ): () => void {
   return subscribeChannelTerminal(pusherExecutionChannel(executionId), onTerminal);
+}
+
+/** Catches cron (and manual) runs — backend always notifies automation-{id} on complete/fail. */
+export function subscribeAutomationTerminal(
+  automationId: number,
+  onTerminal: (payload: ExecutionTerminalPusherPayload) => void,
+): () => void {
+  return subscribeChannelTerminal(
+    pusherAutomationChannel(automationId),
+    onTerminal,
+  );
 }
 
 /**

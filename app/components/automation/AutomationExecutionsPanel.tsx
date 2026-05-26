@@ -20,7 +20,7 @@ import {
   Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AutomationFilterDropdown } from "@/app/components/automation/AutomationFilterDropdown";
 import { DeleteExecutionDialog } from "@/app/components/automation/DeleteExecutionDialog";
@@ -45,6 +45,7 @@ import {
 import { Skeleton } from "@/app/components/skeleton";
 import { useAutomationExecutions } from "@/app/hooks/use-automation-executions";
 import { useStartAutomationRun } from "@/app/hooks/use-start-automation-run";
+import { useAutomationPusherTerminal } from "@/app/hooks/use-automation-pusher-terminal";
 import {
   collectInProgressExecutionIds,
   useWatchExecutionsTerminal,
@@ -362,6 +363,18 @@ export function AutomationExecutionsPanel({
     executionIds: watchExecutionIds,
     onTerminal: applyPusherExecution,
   });
+
+  // Cron runs start in the background — subscribe at automation level, not only per execution id.
+  useAutomationPusherTerminal(automationId, applyPusherExecution);
+
+  // Cron can enqueue a run while this tab is open; poll so "queued/running" rows appear.
+  useEffect(() => {
+    if (!automationActive) return;
+    const intervalId = setInterval(() => {
+      void refetch();
+    }, 15_000);
+    return () => clearInterval(intervalId);
+  }, [automationActive, refetch]);
 
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [logsDrawer, setLogsDrawer] = useState<{

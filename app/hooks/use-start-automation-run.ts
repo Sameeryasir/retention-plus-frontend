@@ -45,8 +45,17 @@ export function useStartAutomationRun(
       setActiveRun(null);
 
       try {
+        console.log("[Automation Run] Run button tapped — starting execution", {
+          automationId,
+        });
+
         const { status: initial } = await startExecution(automationId);
         if (generation !== pollGenerationRef.current) return;
+
+        console.log(
+          "[Automation Run] Execution queued — waiting for completion (Pusher if configured, no status polling API)",
+          { executionId: initial.executionId },
+        );
 
         setActiveRun(initial);
         setStarting(false);
@@ -68,6 +77,13 @@ export function useStartAutomationRun(
         const displayFinal = normalizeExecutionStatusForDisplay(final);
         setActiveRun(displayFinal);
         setPolling(false);
+
+        console.log("[Automation Run] Execution finished", {
+          executionId: final.executionId,
+          status: final.status,
+          emailsSent: displayFinal.emailsSent,
+          totalRecipients: displayFinal.totalRecipients,
+        });
 
         if (final.status === "completed") {
           const sent = displayFinal.emailsSent || displayFinal.totalRecipients;

@@ -138,7 +138,6 @@ function AccordionSection({
 
   return (
     <motion.div
-      layout="position"
       className={`overflow-hidden rounded-xl border transition-[box-shadow,border-color,background-color] duration-300 ${
         open
           ? "border-zinc-900/12 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.08)] ring-1 ring-zinc-950/[0.04]"
@@ -370,7 +369,7 @@ export function TemplateEditorSidebar({
   };
 
   return (
-    <div className="w-full bg-white [&_button]:cursor-pointer [&_select]:cursor-pointer">
+    <div className="flex w-full flex-col gap-3 bg-white p-3 [&_button]:cursor-pointer [&_select]:cursor-pointer">
         {showLandingHeroEditor ? (
           <>
             <AccordionSection

@@ -6,9 +6,22 @@ import type {
   AutomationExecutionStatusDto,
 } from "@/app/services/automation/types";
 
+const API_NODE_TYPE_LABELS: Record<string, string> = {
+  trigger: "Trigger",
+  wait: "Wait",
+  email: "Send Email",
+  sms: "Send SMS",
+  whatsapp: "Send WhatsApp",
+  condition: "Condition",
+  coupon: "Create Coupon",
+  tag: "Tag Customer",
+};
+
 export function formatExecutionStepType(type?: string | null): string {
   const raw = type?.trim();
   if (!raw) return "—";
+  const apiLabel = API_NODE_TYPE_LABELS[raw.toLowerCase()];
+  if (apiLabel) return apiLabel;
   const block = AUTOMATION_BLOCKS.find((b) => b.id === raw.toLowerCase());
   if (block) return block.label;
   return raw

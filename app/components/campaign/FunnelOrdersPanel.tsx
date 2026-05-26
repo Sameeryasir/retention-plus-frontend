@@ -18,11 +18,27 @@ import { useFunnelPayments } from "@/app/hooks/use-funnel-payments";
 import { paymentStatusBadgeClass } from "@/app/lib/badge-variants";
 import { formatPaidAtParts } from "@/app/lib/datetime";
 import { formatCents } from "@/app/lib/money";
-import { funnelPanelItem, funnelPanelStagger, standardEase } from "@/app/lib/motion";
+import { standardEase } from "@/app/lib/motion";
 
 const thClass =
-  "whitespace-nowrap px-5 py-4 text-left align-middle sm:px-6";
-const tdClass = "px-5 py-4 text-left align-middle text-sm sm:px-6";
+  "whitespace-nowrap px-4 py-3.5 text-left align-middle sm:px-5";
+const tdClass = "px-4 py-3.5 text-left align-middle text-sm sm:px-5";
+
+const tableRowReveal = {
+  hidden: { opacity: 0, y: 18 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.38, ease: standardEase },
+  },
+};
+
+const tableBodyStagger = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.07, delayChildren: 0.12 },
+  },
+};
 
 function TableSkeleton() {
   return (
@@ -108,15 +124,20 @@ export function FunnelOrdersPanel({
         {!showSkeleton && !error && payments.length > 0 ? (
           <motion.div
             key="orders-table"
-            className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-md ring-1 ring-zinc-950/[0.06]"
-            variants={funnelPanelStagger}
-            initial="hidden"
-            animate="show"
+            className="overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.06)] ring-1 ring-zinc-950/[0.04]"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: standardEase }}
           >
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-zinc-200 bg-zinc-50/90">
+                  <motion.tr
+                    className="border-b border-zinc-200/90 bg-gradient-to-b from-zinc-50/95 to-white"
+                    initial={{ opacity: 0, y: -14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: standardEase }}
+                  >
                     <th className={`${thClass} w-12`}>
                       <TableColumnHeader variant="boxed" icon={Hash} label="" />
                     </th>
@@ -138,40 +159,43 @@ export function FunnelOrdersPanel({
                     <th className={`${thClass} whitespace-nowrap`}>
                       <TableColumnHeader variant="boxed" icon={Receipt} label="Receipt" />
                     </th>
-                  </tr>
+                  </motion.tr>
                 </thead>
-                <tbody>
+                <motion.tbody
+                  variants={tableBodyStagger}
+                  initial="hidden"
+                  animate="show"
+                >
                   {payments.map((payment, index) => (
                     <motion.tr
                       key={payment.id}
-                      variants={funnelPanelItem}
-                      className={`group border-b border-zinc-100 transition-[background-color,box-shadow] duration-200 last:border-0 hover:bg-zinc-50/80 ${
-                        index % 2 === 1 ? "bg-zinc-50/40" : "bg-white"
-                      }`}
+                      variants={tableRowReveal}
+                      className="group border-b border-zinc-100/90 bg-white transition-[background-color,box-shadow] duration-200 last:border-0 hover:bg-zinc-50/90 hover:shadow-[inset_3px_0_0_0_rgb(24_24_27)]"
                     >
                       <td className={`${tdClass} w-12`}>
-                        <span className="inline-flex size-7 items-center justify-center rounded-lg bg-zinc-100 text-xs font-semibold tabular-nums text-zinc-500 ring-1 ring-zinc-200/70">
+                        <span className="inline-flex size-7 items-center justify-center rounded-lg bg-zinc-100/90 text-xs font-semibold tabular-nums text-zinc-600 ring-1 ring-zinc-200/80">
                           {index + 1}
                         </span>
                       </td>
                       <td className={`${tdClass} w-16`}>
-                        <span className="inline-flex rounded-lg border border-zinc-200/80 bg-white p-1 shadow-sm ring-1 ring-zinc-950/[0.04] transition-transform duration-200 group-hover:scale-[1.02]">
-                          <StripeIcon className="!size-8 !rounded-md shadow-none ring-0" />
+                        <span className="inline-flex rounded-xl border border-zinc-200/80 bg-white p-1 shadow-sm ring-1 ring-zinc-950/[0.03] transition-transform duration-200 group-hover:scale-[1.03]">
+                          <StripeIcon className="!size-8 !rounded-lg shadow-none ring-0" />
                         </span>
                       </td>
                       <td
-                        className={`${tdClass} max-w-[300px] truncate font-medium text-zinc-900`}
+                        className={`${tdClass} max-w-[280px] truncate font-medium text-zinc-800`}
+                        title={payment.customerEmail?.trim() || undefined}
                       >
                         {payment.customerEmail?.trim() || "—"}
                       </td>
                       <td
-                        className={`${tdClass} whitespace-nowrap font-semibold tabular-nums tracking-tight text-zinc-900`}
+                        className={`${tdClass} whitespace-nowrap text-base font-bold tabular-nums tracking-tight text-zinc-900`}
                       >
                         {formatCents(payment.amount, payment.currency)}
                       </td>
                       <td className={`${tdClass} whitespace-nowrap`}>
                         <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold capitalize shadow-sm ring-1 ring-black/5 ${paymentStatusBadgeClass(payment.status)}`}
+                          className={`inline-flex rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold capitalize shadow-sm ring-1 ring-black/5 ${paymentStatusBadgeClass(payment.status)}`}
                         >
                           {payment.status}
                         </span>
@@ -186,7 +210,7 @@ export function FunnelOrdersPanel({
                           }
                           return (
                             <span className="inline-flex flex-col gap-0.5">
-                              <span className="font-medium text-zinc-700">
+                              <span className="text-sm font-medium text-zinc-800">
                                 {paid.date}
                               </span>
                               <span className="text-xs tabular-nums text-zinc-500">
@@ -202,11 +226,11 @@ export function FunnelOrdersPanel({
                             href={payment.receiptUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200/90 bg-zinc-50 px-2.5 py-1.5 text-xs font-semibold text-zinc-900 shadow-sm transition hover:bg-zinc-100"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950"
                           >
                             View receipt
                             <ExternalLink
-                              className="size-3.5 text-zinc-400"
+                              className="size-3.5 text-zinc-400 transition group-hover:text-zinc-600"
                               aria-hidden
                             />
                           </a>
@@ -216,7 +240,7 @@ export function FunnelOrdersPanel({
                       </td>
                     </motion.tr>
                   ))}
-                </tbody>
+                </motion.tbody>
               </table>
             </div>
           </motion.div>

@@ -1,3 +1,4 @@
+import { getApiBaseUrl } from "@/app/lib/api";
 import { automationFetch } from "@/app/services/automation/automation-fetch";
 import { normalizeExecutionsListResponse } from "@/app/services/automation/map-execution-list";
 import {
@@ -84,10 +85,30 @@ export async function startExecution(
   if (nodeId != null && Number.isInteger(nodeId) && nodeId >= 1) {
     payload.currentNodeId = nodeId;
   }
-  return automationFetch<StartAutomationExecutionResponse>("/execution", {
+
+  const path = "/execution";
+  console.log("[Automation Run] API call:", {
     method: "POST",
-    body: JSON.stringify(payload),
+    url: `${getApiBaseUrl()}/automation${path}`,
+    body: payload,
   });
+
+  const response = await automationFetch<StartAutomationExecutionResponse>(
+    path,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+
+  console.log("[Automation Run] API response:", {
+    method: "POST",
+    url: `${getApiBaseUrl()}/automation${path}`,
+    executionId: response.status.executionId,
+    status: response.status.status,
+  });
+
+  return response;
 }
 
 export async function processExecution(id: number): Promise<void> {

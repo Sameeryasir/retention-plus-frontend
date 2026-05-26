@@ -3,8 +3,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ActivateFlowPromptDialog } from "@/app/components/automation/ActivateFlowPromptDialog";
 import { AutomationExecutionsPanel } from "@/app/components/automation/AutomationExecutionsPanel";
 import { BlockSidebar } from "@/app/components/automation/builder/BlockSidebar";
 import { BuilderCanvas } from "@/app/components/automation/builder/BuilderCanvas";
@@ -27,7 +28,6 @@ import { toastApiError } from "@/app/lib/toast-api-error";
 import { reorderList } from "@/app/components/automation/builder/automation-dnd";
 import {
   createAutomationConnection,
-  deleteAutomationConnection,
 } from "@/app/services/automation/connection-api";
 import type { AutomationConnection } from "@/app/services/automation/types";
 import {
@@ -40,9 +40,14 @@ import {
   isTriggerBlockKind,
   updateAutomationNode,
 } from "@/app/services/automation/node-api";
+import { useFlowNavigationGuard } from "@/app/hooks/use-flow-navigation-guard";
 import { isPositiveInt } from "@/app/lib/numbers";
 
 type BuilderTab = "builder" | "runs";
+
+type PendingFlowNavigation =
+  | { kind: "href"; href: string }
+  | { kind: "tab"; tab: BuilderTab };
 
 const TABS: { id: BuilderTab; label: string }[] = [
   { id: "builder", label: "Flow" },
@@ -128,7 +133,14 @@ export function AutomationBuilderPage({
   const [nodesLoading, setNodesLoading] = useState(false);
   const [deletingNode, setDeletingNode] = useState(false);
   const [savingNode, setSavingNode] = useState(false);
+  const addingBlockRef = useRef(false);
   const [activating, setActivating] = useState(false);
+  const [automationPublished, setAutomationPublished] = useState(false);
+  const [isFlowDirty, setIsFlowDirty] = useState(false);
+  const [navPromptOpen, setNavPromptOpen] = useState(false);
+  const [pendingNav, setPendingNav] = useState<PendingFlowNavigation | null>(
+    null,
+  );
 
   const loadAutomation = useCallback(
     async (options?: { silent?: boolean }) => {
@@ -137,6 +149,7 @@ export function AutomationBuilderPage({
         setNodes([]);
         setConnections([]);
         setSelectedId(null);
+        setAutomationPublished(false);
         return;
       }
       if (!options?.silent) {
@@ -147,12 +160,14 @@ export function AutomationBuilderPage({
         const mapped = mapAutomationToListItem(remote);
         setAutomation(mapped);
         setStatus(mapped.status);
+        setAutomationPublished(remote.published === true);
         const list = mapAutomationGraphToWorkflowNodes(
           remote.nodes ?? [],
           remote.connections ?? [],
         );
         setNodes(list);
         setConnections(remote.connections ?? []);
+        setIsFlowDirty(false);
         setSelectedId((current) => {
           if (current && list.some((n) => n.id === current)) {
             return current;
@@ -165,6 +180,7 @@ export function AutomationBuilderPage({
           setNodes([]);
           setConnections([]);
           setSelectedId(null);
+          setAutomationPublished(false);
         }
       } finally {
         if (!options?.silent) {
@@ -194,7 +210,13 @@ export function AutomationBuilderPage({
   const automationsListHref =
     listHref ?? `/restaurant/${restaurantId}/dashboard/automations`;
 
-  const setBuilderTab = useCallback(
+  const automationActive =
+    status === "active" || automation?.status === "active";
+
+  const shouldBlockFlowNavigation =
+    tab === "builder" && isFlowDirty && !automationPublished;
+
+  const applyBuilderTab = useCallback(
     (next: BuilderTab) => {
       setTab(next);
       startTabTransition(() => {
@@ -209,8 +231,45 @@ export function AutomationBuilderPage({
     [funnelId, pathname, router, searchParams],
   );
 
-  const automationActive =
-    status === "active" || automation?.status === "active";
+  const setBuilderTab = useCallback(
+    (next: BuilderTab) => {
+      if (tab === "builder" && next !== "builder" && shouldBlockFlowNavigation) {
+        setPendingNav({ kind: "tab", tab: next });
+        setNavPromptOpen(true);
+        return;
+      }
+      applyBuilderTab(next);
+    },
+    [applyBuilderTab, shouldBlockFlowNavigation, tab],
+  );
+
+  const completePendingNavigation = useCallback(() => {
+    if (pendingNav == null) return;
+
+    if (pendingNav.kind === "href") {
+      router.push(pendingNav.href);
+    } else {
+      applyBuilderTab(pendingNav.tab);
+    }
+
+    setPendingNav(null);
+    setNavPromptOpen(false);
+  }, [applyBuilderTab, pendingNav, router]);
+
+  useFlowNavigationGuard(
+    shouldBlockFlowNavigation,
+    useCallback((href: string) => {
+      setPendingNav({ kind: "href", href });
+      setNavPromptOpen(true);
+    }, []),
+  );
+
+  useEffect(() => {
+    if (automationPublished && navPromptOpen) {
+      setNavPromptOpen(false);
+      setPendingNav(null);
+    }
+  }, [automationPublished, navPromptOpen]);
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedId) ?? null,
@@ -242,108 +301,65 @@ export function AutomationBuilderPage({
     selectedNode?.config?.trigger,
   ]);
 
-  const persistFlowGraph = useCallback(async () => {
-    if (!isPositiveInt(automationNumericId)) {
-      throw new Error("Open a saved automation before activating.");
-    }
-
-    // Remove server nodes the user deleted locally before syncing the current canvas.
-    const remote = await getAutomationById(automationNumericId);
-    const localNumericIds = new Set(
-      nodes
-        .map((n) => n.numericId)
-        .filter((id): id is number => id != null),
-    );
-    for (const remoteNode of remote.nodes ?? []) {
-      if (!localNumericIds.has(remoteNode.id)) {
-        await deleteAutomationNode(remoteNode.id);
-      }
-    }
-
-    const syncedNodes: WorkflowNode[] = [];
+  const syncDirtyNodesToServer = useCallback(async () => {
     for (let order = 0; order < nodes.length; order++) {
       const node = nodes[order];
-      if (node.numericId != null) {
-        const updated = await updateAutomationNode(node.numericId, {
-          order,
-          config: node.config,
-        });
-        syncedNodes.push({
-          ...mapApiNodeToWorkflowNode(updated),
-          kind: node.kind,
-          label: node.label,
-          config: node.config,
-        });
-      } else {
-        const created = await createAutomationNode({
-          automationId: automationNumericId,
-          type: blockKindToNodeType(node.kind),
-          order,
-          config: node.config,
-          positionX: 100,
-          positionY: 200 + order * 120,
-        });
-        syncedNodes.push({
-          ...mapApiNodeToWorkflowNode(created),
-          kind: node.kind,
-          label: node.label,
-          config: node.config,
-        });
-      }
-    }
-
-    for (const connection of connections) {
-      try {
-        await deleteAutomationConnection(connection.id);
-      } catch {
-        // Connection may already be removed during a prior partial sync.
-      }
-    }
-
-    const newConnections: AutomationConnection[] = [];
-    for (let i = 0; i < syncedNodes.length - 1; i++) {
-      const source = syncedNodes[i]?.numericId;
-      const target = syncedNodes[i + 1]?.numericId;
-      if (source == null || target == null) continue;
-      const created = await createAutomationConnection({
-        automationId: automationNumericId,
-        sourceNodeId: source,
-        targetNodeId: target,
+      if (node.numericId == null) continue;
+      await updateAutomationNode(node.numericId, {
+        order,
+        config: node.config,
       });
-      newConnections.push(created);
     }
+  }, [nodes]);
 
-    setNodes(syncedNodes);
-    setConnections(newConnections);
-    return syncedNodes;
-  }, [automationNumericId, connections, nodes]);
-
-  const handleActivate = useCallback(async () => {
+  const handleActivate = useCallback(async (): Promise<boolean> => {
     if (!isPositiveInt(automationNumericId)) {
       toast.error("Open a saved automation before activating.");
-      return;
+      return false;
     }
 
     setActivating(true);
     try {
-      await persistFlowGraph();
+      if (isFlowDirty) {
+        await syncDirtyNodesToServer();
+      }
+
       const updated = await updateAutomation(automationNumericId, {
         isActive: true,
         published: true,
       });
       setAutomation(mapAutomationToListItem(updated));
       setStatus("active");
+      setAutomationPublished(updated.published === true);
+      setIsFlowDirty(false);
       toast.success("Automation activated.");
-      void loadAutomation({ silent: true });
+      return true;
     } catch (err) {
       toastApiError(err, "Could not activate automation.");
+      return false;
     } finally {
       setActivating(false);
     }
-  }, [automationNumericId, loadAutomation, persistFlowGraph]);
+  }, [
+    automationNumericId,
+    isFlowDirty,
+    syncDirtyNodesToServer,
+  ]);
+
+  const handleDialogActivate = useCallback(async () => {
+    const ok = await handleActivate();
+    if (ok) {
+      completePendingNavigation();
+    }
+  }, [completePendingNavigation, handleActivate]);
+
+  const closeNavPrompt = useCallback(() => {
+    setPendingNav(null);
+    setNavPromptOpen(false);
+  }, []);
 
   const onAddBlock = useCallback(
-    (blockId: WorkflowNodeKind) => {
+    async (blockId: WorkflowNodeKind) => {
       const block = AUTOMATION_BLOCKS.find((b) => b.id === blockId);
       if (!block) return;
 
@@ -352,47 +368,143 @@ export function AutomationBuilderPage({
         return;
       }
 
+      if (addingBlockRef.current) return;
+
       const defaultConfig = defaultConfigForBlockKind(blockId);
-      const next: WorkflowNode = {
-        id: `local-${blockId}-${Date.now()}`,
+      const order = nodes.length;
+      const previousNode = nodes[nodes.length - 1];
+      const tempId = `local-${blockId}-${Date.now()}`;
+      const optimisticNode: WorkflowNode = {
+        id: tempId,
         automationId: automationNumericId,
         kind: blockId,
         label: block.label,
         config: defaultConfig,
       };
-      setNodes((prev) => [...prev, next]);
-      setSelectedId(next.id);
+
+      addingBlockRef.current = true;
+      setNodes((prev) => [...prev, optimisticNode]);
+      setSelectedId(tempId);
+      setIsFlowDirty(true);
+
+      try {
+        const created = await createAutomationNode({
+          automationId: automationNumericId,
+          type: blockKindToNodeType(blockId),
+          order,
+          config: defaultConfig,
+          positionX: 100,
+          positionY: 200 + order * 120,
+        });
+
+        const workflowNode: WorkflowNode = {
+          ...mapApiNodeToWorkflowNode(created),
+          kind: blockId,
+          label: block.label,
+          config: defaultConfig,
+        };
+
+        let newConnection: AutomationConnection | null = null;
+        if (
+          previousNode?.numericId != null &&
+          workflowNode.numericId != null
+        ) {
+          newConnection = await createAutomationConnection({
+            automationId: automationNumericId,
+            sourceNodeId: previousNode.numericId,
+            targetNodeId: workflowNode.numericId,
+          });
+        }
+
+        setNodes((prev) =>
+          prev.map((node) => (node.id === tempId ? workflowNode : node)),
+        );
+        if (newConnection) {
+          setConnections((prev) => [...prev, newConnection]);
+        }
+        setSelectedId(workflowNode.id);
+        toast.success("Step added.");
+      } catch (err) {
+        setNodes((prev) => prev.filter((node) => node.id !== tempId));
+        setSelectedId((current) => (current === tempId ? null : current));
+        toastApiError(err, "Could not add step.");
+      } finally {
+        addingBlockRef.current = false;
+      }
     },
-    [automationNumericId],
+    [automationNumericId, nodes],
   );
 
   const onUpdateNode = useCallback(
     async (config: Record<string, unknown>) => {
       if (!selectedNode) return;
 
+      const nodeId = selectedNode.id;
+      const numericId = selectedNode.numericId;
       setSavingNode(true);
-      setNodes((prev) =>
-        prev.map((n) => (n.id === selectedNode.id ? { ...n, config } : n)),
-      );
-      toast.success("Step updated.");
-      setSavingNode(false);
+
+      try {
+        if (numericId != null) {
+          const order = nodes.findIndex((n) => n.id === nodeId);
+          await updateAutomationNode(numericId, {
+            order: order >= 0 ? order : 0,
+            config,
+          });
+        }
+
+        setNodes((prev) =>
+          prev.map((n) => (n.id === nodeId ? { ...n, config } : n)),
+        );
+        if (numericId == null) {
+          setIsFlowDirty(true);
+        }
+        toast.success(
+          numericId != null ? "Step saved." : "Step updated locally.",
+        );
+      } catch (err) {
+        toastApiError(err, "Could not save step.");
+      } finally {
+        setSavingNode(false);
+      }
     },
-    [selectedNode],
+    [nodes, selectedNode],
   );
 
   const onDeleteNode = useCallback(async () => {
     if (!selectedNode) return;
 
+    const nodeId = selectedNode.id;
+    const numericId = selectedNode.numericId;
     setDeletingNode(true);
-    setNodes((prev) => prev.filter((n) => n.id !== selectedNode.id));
-    setSelectedId(null);
-    toast.success("Step removed.");
-    setDeletingNode(false);
+
+    try {
+      if (numericId != null) {
+        await deleteAutomationNode(numericId);
+      }
+
+      setNodes((prev) => prev.filter((n) => n.id !== nodeId));
+      if (numericId != null) {
+        setConnections((prev) =>
+          prev.filter(
+            (c) =>
+              c.sourceNodeId !== numericId && c.targetNodeId !== numericId,
+          ),
+        );
+      }
+      setSelectedId(null);
+      setIsFlowDirty(true);
+      toast.success("Step removed.");
+    } catch (err) {
+      toastApiError(err, "Could not delete step.");
+    } finally {
+      setDeletingNode(false);
+    }
   }, [selectedNode]);
 
   const onReorderNodes = useCallback((fromIndex: number, toIndex: number) => {
     if (fromIndex === toIndex) return;
     setNodes((prev) => reorderList(prev, fromIndex, toIndex));
+    setIsFlowDirty(true);
   }, []);
 
   const persistentHeader = (
@@ -449,14 +561,14 @@ export function AutomationBuilderPage({
           transition={{ duration: 0.22, ease: automationEase }}
         >
           <BuilderShell
-            sidebar={<BlockSidebar onAddBlock={onAddBlock} />}
+            sidebar={<BlockSidebar onAddBlock={(id) => void onAddBlock(id)} />}
             canvas={
               <BuilderCanvas
                 nodes={nodes}
                 loading={nodesLoading}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
-                onDropBlock={onAddBlock}
+                onDropBlock={(id) => void onAddBlock(id)}
                 onReorderNodes={onReorderNodes}
               />
             }
@@ -507,6 +619,13 @@ export function AutomationBuilderPage({
         </motion.div>
       )}
       </AnimatePresence>
+
+      <ActivateFlowPromptDialog
+        open={navPromptOpen && !automationPublished}
+        isLoading={activating}
+        onStay={closeNavPrompt}
+        onActivate={() => void handleDialogActivate()}
+      />
     </motion.div>
   );
 }

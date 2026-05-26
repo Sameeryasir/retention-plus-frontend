@@ -17,7 +17,7 @@ export function CanvasWorkspace({
 }) {
   return (
     <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-zinc-50">
-      <div className="relative flex min-h-0 flex-1 w-full flex-col items-center justify-start overflow-hidden p-2 sm:p-3 lg:justify-center lg:p-4 lg:py-10">
+      <div className="relative flex min-h-0 flex-1 w-full flex-col items-center justify-start overflow-hidden p-2 sm:p-3 lg:p-4">
         {loadError ? (
           <motion.p
             {...editorMotion.slideUp}

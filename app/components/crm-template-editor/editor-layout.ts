@@ -17,10 +17,10 @@ export const editorNavbarSlotClass =
   "order-1 min-h-0 w-full shrink-0 lg:order-none lg:col-span-2 lg:col-start-2 lg:row-start-1";
 
 export const editorCanvasSlotClass =
-  "order-3 flex min-h-0 h-full min-w-0 flex-col lg:order-none lg:col-start-2 lg:row-start-2";
+  "order-3 flex min-h-0 h-full min-w-0 flex-col overflow-hidden lg:order-none lg:col-start-2 lg:row-start-2";
 
 export const editorSettingsSlotClass =
-  "order-4 flex min-h-0 max-h-[38vh] min-w-0 flex-col overflow-hidden lg:order-none lg:col-start-3 lg:row-start-2 lg:h-full lg:max-h-none";
+  "order-4 flex min-h-0 max-h-[38vh] min-w-0 flex-col overflow-hidden overscroll-contain lg:order-none lg:col-start-3 lg:row-start-2 lg:h-full lg:max-h-full lg:overflow-hidden";
 
 export const editorPanelScrollClass =
   "min-h-0 flex-1 overflow-y-auto overscroll-contain";
