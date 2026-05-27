@@ -84,12 +84,14 @@ export function WorkflowNodeCard({
   isDragging = false,
   isPressing = false,
   isGhost = false,
+  reorderLocked = false,
 }: {
   node: WorkflowNode;
   selected: boolean;
   isDragging?: boolean;
   isPressing?: boolean;
   isGhost?: boolean;
+  reorderLocked?: boolean;
 }) {
   const block = getBlockByKind(node.kind);
   const tone = nodeToneClass(block.tone);
@@ -113,6 +115,12 @@ export function WorkflowNodeCard({
       ) : null}
 
       <div
+        title={reorderLocked ? "Cron Job stays at the start of the flow" : undefined}
+        aria-label={
+          reorderLocked
+            ? `${node.label}, fixed start step`
+            : undefined
+        }
         className={`relative flex items-center gap-2.5 rounded-xl border bg-white py-2.5 pl-2.5 pr-2.5 text-left transition-all duration-300 ease-out select-none sm:gap-3 sm:rounded-2xl sm:py-3 sm:pl-3 sm:pr-3 xl:gap-4 xl:py-4 xl:pl-4 xl:pr-4 ${nodeBorderClass(block.tone, isActive)} ${
           isActive
             ? `ring-2 ring-offset-2 ring-offset-[#ececee] ${selectedRingClass(block.tone)} ${tone.accent} sm:pl-2.5 xl:pl-3.5`

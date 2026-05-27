@@ -1,12 +1,10 @@
 import {
-  fetchWithTimeout,
   getApiBaseUrl,
   parseApiErrorMessage,
 } from "@/app/lib/api";
-import {
-  clearSetupAccessToken,
-  getSetupAccessToken,
-} from "@/app/lib/setup-access-token";
+import { authenticatedFetch, redirectToLogin } from "@/app/lib/authenticated-fetch";
+import { getSetupAccessToken } from "@/app/lib/setup-access-token";
+import { getSetupRefreshToken } from "@/app/lib/setup-refresh-token";
 
 export class AutomationApiError extends Error {
   readonly status: number;
@@ -18,35 +16,28 @@ export class AutomationApiError extends Error {
   }
 }
 
-function redirectToLogin(): void {
-  if (typeof window === "undefined") return;
-  clearSetupAccessToken();
-  window.location.href = "/auth/login";
+function redirectIfUnauthenticated(): void {
+  redirectToLogin();
 }
 
 export async function automationFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = getSetupAccessToken();
-  if (!token.trim()) {
-    redirectToLogin();
+  const token = getSetupAccessToken().trim();
+  const refreshToken = getSetupRefreshToken().trim();
+  if (!token && !refreshToken) {
+    redirectIfUnauthenticated();
     throw new AutomationApiError("Missing access token. Sign in again.", 401);
   }
 
-  const res = await fetchWithTimeout(`${getApiBaseUrl()}/automation${path}`, {
+  const res = await authenticatedFetch(`${getApiBaseUrl()}/automation${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
       ...options.headers,
     },
   });
-
-  if (res.status === 401) {
-    redirectToLogin();
-    throw new AutomationApiError("Session expired. Please sign in again.", 401);
-  }
 
   if (!res.ok) {
     const message = await parseApiErrorMessage(

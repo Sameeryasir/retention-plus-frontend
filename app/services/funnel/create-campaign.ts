@@ -1,4 +1,5 @@
 import { getApiBaseUrl, parseApiErrorMessage } from "@/app/lib/api";
+import { authenticatedFetch } from "@/app/lib/authenticated-fetch";
 
 export type CreateCampaignPayload = {
   restaurantId: number;
@@ -60,11 +61,8 @@ export async function createCampaign(
   form.append("offer", payload.offer.trim());
   form.append("price", String(payload.price));
 
-  const res = await fetch(`${getApiBaseUrl()}/campaign/create`, {
+  const res = await authenticatedFetch(`${getApiBaseUrl()}/campaign/create`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
     body: form,
   });
 

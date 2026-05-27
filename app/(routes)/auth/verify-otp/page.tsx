@@ -2,7 +2,7 @@
 
 import OtpForm from "@/app/components/OtpForm";
 import { useCredentialContext } from "@/app/contexts/credential-context";
-import { setSetupAccessToken } from "@/app/lib/setup-access-token";
+import { setAuthTokens } from "@/app/lib/auth-session";
 import { setSetupUser } from "@/app/lib/setup-user";
 import { verifyOtp } from "@/app/services/auth/verify-otp";
 import { useRouter } from "next/navigation";
@@ -14,8 +14,8 @@ export default function VerifyOtpPage() {
 
   const onVerifyOtp = useCallback(
     async (otp: number) => {
-      const { token, user } = await verifyOtp(email, otp);
-      setSetupAccessToken(token);
+      const { token, refreshToken, user } = await verifyOtp(email, otp);
+      setAuthTokens(token, refreshToken);
       setSetupUser(user);
       router.push("/auth/new-password");
     },

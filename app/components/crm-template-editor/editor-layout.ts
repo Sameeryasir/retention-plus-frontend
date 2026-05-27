@@ -35,12 +35,12 @@ export const editorSidebarPickerScrollClass = [
   "[&::-webkit-scrollbar]:w-1.5",
   "[&::-webkit-scrollbar-track]:bg-transparent",
   "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-300/90",
-  "[&::-webkit-scrollbar-thumb:hover]:bg-zinc-400",
+  "[&::-webkit-scrollbar-thumb:hover]:bg-zinc-400/90",
 ].join(" ");
 
 /** Wrapper around picker lists in Media / Page design accordions. */
 export const editorSidebarPickerPanelClass =
-  "overflow-hidden rounded-xl border border-zinc-200/90 bg-gradient-to-b from-zinc-50/50 to-white p-1.5 shadow-sm ring-1 ring-zinc-950/[0.03]";
+  "overflow-hidden rounded-xl border border-zinc-200/90 bg-gradient-to-b from-zinc-50/40 to-white p-1.5 shadow-sm ring-1 ring-zinc-950/[0.03]";
 
 export const previewPhoneFrameClass =
   "mx-auto w-full max-w-[min(390px,100%)] max-h-[calc(100dvh-5.5rem)] min-h-0 overflow-x-hidden overflow-y-auto rounded-2xl bg-white shadow-sm ring-1 ring-zinc-200/80 [scrollbar-width:thin]";

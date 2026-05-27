@@ -1,5 +1,6 @@
 import axios from "axios";
-import { getApiBaseUrl, parseApiMessage } from "@/app/lib/api";
+import { parseApiMessage } from "@/app/lib/api";
+import { authAxios } from "@/app/lib/auth-axios";
 
 export type Verify2faSetupResponse = {
   message: string;
@@ -26,13 +27,12 @@ export async function verify2faSetup(
   const code = String(otp).padStart(6, "0");
 
   try {
-    const response = await axios.post<Verify2faSetupResponse>(
-      `${getApiBaseUrl()}/auth/2fa/verify-setup`,
+    const response = await authAxios.post<Verify2faSetupResponse>(
+      "/auth/2fa/verify-setup",
       { code },
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
         },
       },
     );

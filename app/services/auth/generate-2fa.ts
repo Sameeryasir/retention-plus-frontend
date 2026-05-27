@@ -1,5 +1,6 @@
 import axios from "axios";
-import { getApiBaseUrl, parseApiMessage } from "@/app/lib/api";
+import { parseApiMessage } from "@/app/lib/api";
+import { authAxios } from "@/app/lib/auth-axios";
 
 export type Generate2faResponse = {
   qrCode: string;
@@ -12,13 +13,12 @@ export async function generate2fa(accessToken: string): Promise<Generate2faRespo
   }
 
   try {
-    const response = await axios.post<Generate2faResponse>(
-      `${getApiBaseUrl()}/auth/2fa/generate`,
+    const response = await authAxios.post<Generate2faResponse>(
+      "/auth/2fa/generate",
       undefined,
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
         },
       },
     );

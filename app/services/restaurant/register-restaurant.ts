@@ -1,5 +1,6 @@
 import axios from "axios";
-import { getApiBaseUrl, parseApiMessage } from "@/app/lib/api";
+import { parseApiMessage } from "@/app/lib/api";
+import { authAxios } from "@/app/lib/auth-axios";
 
 export type RegisterRestaurantPayload = {
   name: string;
@@ -84,13 +85,12 @@ export async function registerRestaurant(
   if (country !== undefined) body.country = country;
 
   try {
-    const response = await axios.post<RegisterRestaurantResponse>(
-      `${getApiBaseUrl()}/restaurant/create`,
+    const response = await authAxios.post<RegisterRestaurantResponse>(
+      "/restaurant/create",
       body,
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
         },
       },
     );

@@ -1,5 +1,6 @@
 import { AppToaster } from "@/app/components/AppToaster";
 import { CredentialProvider } from "@/app/contexts/credential-context";
+import { QueryProvider } from "@/app/providers/QueryProvider";
 import { StoreProvider } from "@/app/store/StoreProvider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -34,10 +35,12 @@ export default function RootLayout({
         className={`${geistSans.className} min-h-full flex flex-col antialiased`}
       >
         <StoreProvider>
-          <CredentialProvider>
-            {children}
-            <AppToaster />
-          </CredentialProvider>
+          <QueryProvider>
+            <CredentialProvider>
+              {children}
+              <AppToaster />
+            </CredentialProvider>
+          </QueryProvider>
         </StoreProvider>
       </body>
     </html>

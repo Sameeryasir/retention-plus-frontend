@@ -14,6 +14,7 @@ import type {
 } from "@/app/components/crm-template-editor/template-types";
 
 import { getApiBaseUrl, parseApiErrorMessage } from "@/app/lib/api";
+import { authenticatedFetch } from "@/app/lib/authenticated-fetch";
 
 export type CreateFunnelFormFieldId =
   | "first_name"
@@ -296,10 +297,9 @@ export async function createFunnel(
     throw new Error("Valid campaignId is required.");
   }
 
-  const res = await fetch(`${getApiBaseUrl()}/funnel/create`, {
+  const res = await authenticatedFetch(`${getApiBaseUrl()}/funnel/create`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),

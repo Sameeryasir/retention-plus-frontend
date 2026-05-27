@@ -1,8 +1,8 @@
 import {
-  fetchWithTimeout,
   getApiBaseUrl,
   parseApiErrorMessage,
 } from "@/app/lib/api";
+import { authenticatedFetch } from "@/app/lib/authenticated-fetch";
 import { isPositiveInt } from "@/app/lib/numbers";
 
 export type FunnelPayment = {
@@ -42,12 +42,11 @@ export async function getFunnelPayments(
     throw new Error("Valid funnel id is required.");
   }
 
-  const res = await fetchWithTimeout(
+  const res = await authenticatedFetch(
     `${getApiBaseUrl()}/payment/funnel/${encodeURIComponent(String(funnelId))}`,
     {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${accessToken.trim()}`,
         Accept: "application/json",
       },
     },

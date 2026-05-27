@@ -23,6 +23,7 @@ export type VerifyOtpUser = {
 export type VerifyOtpResponse = {
   message: string;
   token: string;
+  refreshToken: string;
   user: VerifyOtpUser;
 };
 

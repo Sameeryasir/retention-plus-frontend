@@ -26,7 +26,7 @@ import {
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useAsyncResource } from "@/app/hooks/use-async-resource";
+import { useQueryClient } from "@tanstack/react-query";
 import { triggerIconClass } from "@/app/lib/badge-variants";
 import { panelRowMotion, panelStagger, standardEase } from "@/app/lib/motion";
 import { AsyncErrorRetry } from "@/app/components/shared/AsyncErrorRetry";
@@ -55,9 +55,11 @@ import type {
 import {
   createAutomation,
   deleteAutomation,
-  getAutomations,
   mapAutomationToListItem,
 } from "@/app/services/automation/automation-api";
+import { automationQueryKeys } from "@/app/services/automation/automation-query-keys";
+import { syncAutomationQueryCache } from "@/app/services/automation/automation-query-cache";
+import { useAutomationsQuery } from "@/app/hooks/use-automations-query";
 import {
   buildCreateAutomationBody,
   validateAutomationCreateContext,
@@ -137,6 +139,7 @@ export function AutomationListPage({
   const campaignId = route.campaignId ?? campaignIdProp;
   const funnelId = funnelIdProp ?? route.funnelId;
 
+  const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<AutomationFilter>("all");
   const [modalOpen, setModalOpen] = useState(false);
@@ -146,30 +149,12 @@ export function AutomationListPage({
   );
   const [deleting, setDeleting] = useState(false);
 
-  const fetchAutomations = useCallback(async () => {
-    if (restaurantId == null) {
-      throw new Error("Restaurant id is missing from the URL.");
-    }
-    const list = await getAutomations(restaurantId);
-    return list.map((a) => mapAutomationToListItem(a));
-  }, [restaurantId]);
-
   const {
     data: items,
     isLoading: loading,
     error: loadError,
-    setData: setItems,
     refetch: loadAutomations,
-  } = useAsyncResource<AutomationListItem[]>(
-    restaurantId != null,
-    fetchAutomations,
-    [restaurantId],
-    {
-      fallbackError: "Could not load automations.",
-      initialLoading: true,
-      resetWhenDisabled: [],
-    },
-  );
+  } = useAutomationsQuery(restaurantId);
 
   const automationNumericIds = useMemo(
     () =>
@@ -180,8 +165,11 @@ export function AutomationListPage({
   );
 
   const handleListPusherTerminal = useCallback(() => {
-    void loadAutomations();
-  }, [loadAutomations]);
+    if (restaurantId == null) return;
+    void queryClient.invalidateQueries({
+      queryKey: automationQueryKeys.list(restaurantId),
+    });
+  }, [queryClient, restaurantId]);
 
   useEffect(() => {
     if (!isPusherConfigured() || loading || automationNumericIds.length === 0) {
@@ -411,7 +399,13 @@ export function AutomationListPage({
               }),
             );
             const next = mapAutomationToListItem(created);
-            setItems((prev) => [next, ...(prev ?? [])]);
+            if (restaurantId != null) {
+              queryClient.setQueryData<AutomationListItem[]>(
+                automationQueryKeys.list(restaurantId),
+                (prev) => [next, ...(prev ?? [])],
+              );
+            }
+            syncAutomationQueryCache(queryClient, created);
             setModalOpen(false);
             toast.success("Automation created.");
             const builderId = String(created.id);
@@ -440,7 +434,12 @@ export function AutomationListPage({
           setDeleting(true);
           try {
             await deleteAutomation(id);
-            setItems((prev) => (prev ?? []).filter((row) => row.numericId !== id));
+            if (restaurantId != null) {
+              queryClient.setQueryData<AutomationListItem[]>(
+                automationQueryKeys.list(restaurantId),
+                (prev) => (prev ?? []).filter((row) => row.numericId !== id),
+              );
+            }
             setDeleteTarget(null);
             toast.success("Automation deleted.");
           } catch (err) {

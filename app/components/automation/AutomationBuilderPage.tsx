@@ -1,9 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { Loader2, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ActivateFlowPromptDialog } from "@/app/components/automation/ActivateFlowPromptDialog";
 import { AutomationExecutionsPanel } from "@/app/components/automation/AutomationExecutionsPanel";
@@ -19,13 +21,19 @@ import type {
   WorkflowNodeKind,
 } from "@/app/components/automation/types";
 import {
-  getAutomationById,
   mapAutomationToListItem,
   updateAutomation,
 } from "@/app/services/automation/automation-api";
+import { syncAutomationQueryCache } from "@/app/services/automation/automation-query-cache";
+import { useAutomationQuery } from "@/app/hooks/use-automation-query";
 import { BuilderShell } from "@/app/components/builder/BuilderShell";
 import { toastApiError } from "@/app/lib/toast-api-error";
-import { reorderList } from "@/app/components/automation/builder/automation-dnd";
+import {
+  getWorkflowNodeInsertIndex,
+  hasCronTriggerNode,
+  insertWorkflowNode,
+  reorderWorkflowNodes,
+} from "@/app/components/automation/workflow-node-order";
 import {
   createAutomationConnection,
 } from "@/app/services/automation/connection-api";
@@ -116,6 +124,7 @@ export function AutomationBuilderPage({
   funnelId?: number | null;
   listHref?: string;
 }) {
+  const queryClient = useQueryClient();
   const [automation, setAutomation] = useState<AutomationListItem | null>(null);
   const [status, setStatus] = useState<AutomationStatus>("draft");
 
@@ -130,7 +139,6 @@ export function AutomationBuilderPage({
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
   const [connections, setConnections] = useState<AutomationConnection[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [nodesLoading, setNodesLoading] = useState(false);
   const [deletingNode, setDeletingNode] = useState(false);
   const [savingNode, setSavingNode] = useState(false);
   const addingBlockRef = useRef(false);
@@ -142,58 +150,49 @@ export function AutomationBuilderPage({
     null,
   );
 
-  const loadAutomation = useCallback(
-    async (options?: { silent?: boolean }) => {
-      if (!isPositiveInt(automationNumericId)) {
-        setAutomation(null);
-        setNodes([]);
-        setConnections([]);
-        setSelectedId(null);
-        setAutomationPublished(false);
-        return;
-      }
-      if (!options?.silent) {
-        setNodesLoading(true);
-      }
-      try {
-        const remote = await getAutomationById(automationNumericId);
-        const mapped = mapAutomationToListItem(remote);
-        setAutomation(mapped);
-        setStatus(mapped.status);
-        setAutomationPublished(remote.published === true);
-        const list = mapAutomationGraphToWorkflowNodes(
-          remote.nodes ?? [],
-          remote.connections ?? [],
-        );
-        setNodes(list);
-        setConnections(remote.connections ?? []);
-        setIsFlowDirty(false);
-        setSelectedId((current) => {
-          if (current && list.some((n) => n.id === current)) {
-            return current;
-          }
-          return list[0]?.id ?? null;
-        });
-      } catch {
-        if (!options?.silent) {
-          setAutomation(null);
-          setNodes([]);
-          setConnections([]);
-          setSelectedId(null);
-          setAutomationPublished(false);
-        }
-      } finally {
-        if (!options?.silent) {
-          setNodesLoading(false);
-        }
-      }
-    },
-    [automationNumericId],
-  );
+  const {
+    data: remoteAutomation,
+    isActive: automationIsActive,
+    isPublished: automationIsPublished,
+    status: remoteStatus,
+    isLoading: nodesLoading,
+  } = useAutomationQuery(automationNumericId);
 
   useEffect(() => {
-    void loadAutomation();
-  }, [loadAutomation]);
+    setIsFlowDirty(false);
+  }, [automationNumericId]);
+
+  useEffect(() => {
+    if (!isPositiveInt(automationNumericId)) {
+      setAutomation(null);
+      setNodes([]);
+      setConnections([]);
+      setSelectedId(null);
+      setAutomationPublished(false);
+      return;
+    }
+
+    if (!remoteAutomation || isFlowDirty) {
+      return;
+    }
+
+    const mapped = mapAutomationToListItem(remoteAutomation);
+    setAutomation(mapped);
+    setStatus(remoteStatus);
+    setAutomationPublished(automationIsPublished);
+    const list = mapAutomationGraphToWorkflowNodes(
+      remoteAutomation.nodes ?? [],
+      remoteAutomation.connections ?? [],
+    );
+    setNodes(list);
+    setConnections(remoteAutomation.connections ?? []);
+    setSelectedId((current) => {
+      if (current && list.some((n) => n.id === current)) {
+        return current;
+      }
+      return list[0]?.id ?? null;
+    });
+  }, [automationNumericId, remoteAutomation, remoteStatus, automationIsPublished, isFlowDirty]);
 
   useEffect(() => {
     const next: BuilderTab | null =
@@ -210,8 +209,7 @@ export function AutomationBuilderPage({
   const automationsListHref =
     listHref ?? `/restaurant/${restaurantId}/dashboard/automations`;
 
-  const automationActive =
-    status === "active" || automation?.status === "active";
+  const automationActive = automationIsActive;
 
   const shouldBlockFlowNavigation =
     tab === "builder" && isFlowDirty && !automationPublished;
@@ -328,6 +326,7 @@ export function AutomationBuilderPage({
         isActive: true,
         published: true,
       });
+      syncAutomationQueryCache(queryClient, updated);
       setAutomation(mapAutomationToListItem(updated));
       setStatus("active");
       setAutomationPublished(updated.published === true);
@@ -343,6 +342,7 @@ export function AutomationBuilderPage({
   }, [
     automationNumericId,
     isFlowDirty,
+    queryClient,
     syncDirtyNodesToServer,
   ]);
 
@@ -368,11 +368,19 @@ export function AutomationBuilderPage({
         return;
       }
 
+      if (blockId === "cron_trigger" && hasCronTriggerNode(nodes)) {
+        toast.error("This flow already has a Cron Job trigger at the start.");
+        return;
+      }
+
       if (addingBlockRef.current) return;
 
       const defaultConfig = defaultConfigForBlockKind(blockId);
-      const order = nodes.length;
-      const previousNode = nodes[nodes.length - 1];
+      const isCronTrigger = blockId === "cron_trigger";
+      const insertIndex = getWorkflowNodeInsertIndex(nodes, blockId);
+      const order = insertIndex;
+      const previousNode = isCronTrigger ? null : nodes[nodes.length - 1];
+      const firstNode = isCronTrigger && nodes.length > 0 ? nodes[0] : null;
       const tempId = `local-${blockId}-${Date.now()}`;
       const optimisticNode: WorkflowNode = {
         id: tempId,
@@ -383,7 +391,7 @@ export function AutomationBuilderPage({
       };
 
       addingBlockRef.current = true;
-      setNodes((prev) => [...prev, optimisticNode]);
+      setNodes((prev) => insertWorkflowNode(prev, optimisticNode));
       setSelectedId(tempId);
       setIsFlowDirty(true);
 
@@ -405,7 +413,18 @@ export function AutomationBuilderPage({
         };
 
         let newConnection: AutomationConnection | null = null;
-        if (
+        if (isCronTrigger) {
+          if (
+            firstNode?.numericId != null &&
+            workflowNode.numericId != null
+          ) {
+            newConnection = await createAutomationConnection({
+              automationId: automationNumericId,
+              sourceNodeId: workflowNode.numericId,
+              targetNodeId: firstNode.numericId,
+            });
+          }
+        } else if (
           previousNode?.numericId != null &&
           workflowNode.numericId != null
         ) {
@@ -417,7 +436,10 @@ export function AutomationBuilderPage({
         }
 
         setNodes((prev) =>
-          prev.map((node) => (node.id === tempId ? workflowNode : node)),
+          insertWorkflowNode(
+            prev.filter((node) => node.id !== tempId),
+            workflowNode,
+          ),
         );
         if (newConnection) {
           setConnections((prev) => [...prev, newConnection]);
@@ -502,9 +524,15 @@ export function AutomationBuilderPage({
   }, [selectedNode]);
 
   const onReorderNodes = useCallback((fromIndex: number, toIndex: number) => {
-    if (fromIndex === toIndex) return;
-    setNodes((prev) => reorderList(prev, fromIndex, toIndex));
-    setIsFlowDirty(true);
+    let changed = false;
+    setNodes((prev) => {
+      const next = reorderWorkflowNodes(prev, fromIndex, toIndex);
+      changed = next !== prev;
+      return next;
+    });
+    if (changed) {
+      setIsFlowDirty(true);
+    }
   }, []);
 
   const persistentHeader = (
@@ -513,30 +541,19 @@ export function AutomationBuilderPage({
         <BuilderTabToggle tab={tab} onChange={setBuilderTab} />
 
         {tab === "builder" ? (
-          <div className="flex min-h-9 flex-wrap items-center gap-1 rounded-xl border border-zinc-200/70 bg-zinc-100/60 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-zinc-950/[0.04] sm:min-h-10 sm:gap-1.5 sm:rounded-2xl sm:p-1.5">
-            <button
-              type="button"
-              onClick={() => setStatus("draft")}
-              className="cursor-pointer rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-600 shadow-sm ring-1 ring-zinc-950/[0.04] transition hover:text-zinc-900 active:scale-[0.98] sm:rounded-xl sm:px-4 sm:py-2 sm:text-sm"
-            >
-              Save draft
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatus("published")}
-              className="cursor-pointer rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-600 shadow-sm ring-1 ring-zinc-950/[0.04] transition hover:text-zinc-900 active:scale-[0.98] sm:rounded-xl sm:px-4 sm:py-2 sm:text-sm"
-            >
-              Publish
-            </button>
             <button
               type="button"
               onClick={() => void handleActivate()}
               disabled={activating}
-              className="cursor-pointer rounded-lg bg-gradient-to-b from-zinc-800 to-zinc-950 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_3px_12px_rgba(0,0,0,0.2)] ring-1 ring-black/20 transition hover:from-zinc-700 hover:to-zinc-900 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:rounded-xl sm:px-5 sm:py-2 sm:text-sm"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-zinc-950 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-black active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm"
             >
+              {activating ? (
+                <Loader2 className="size-3.5 animate-spin text-white sm:size-4" aria-hidden />
+              ) : (
+                <Zap className="size-3.5 text-white sm:size-4" aria-hidden />
+              )}
               {activating ? "Activating…" : "Activate"}
             </button>
-          </div>
         ) : null}
       </div>
     </header>

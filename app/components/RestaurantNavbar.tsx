@@ -1,7 +1,7 @@
 "use client";
 
 import { useCredentialContext } from "@/app/contexts/credential-context";
-import { clearSetupAccessToken } from "@/app/lib/setup-access-token";
+import { logoutSession } from "@/app/services/auth/logout";
 import { clearSetupUser, getSetupUser } from "@/app/lib/setup-user";
 import type { VerifyOtpUser } from "@/app/services/auth/verify-otp";
 import RestaurantSettingsDialog from "@/app/components/RestaurantSettingsDialog";
@@ -53,8 +53,8 @@ export default function RestaurantNavbar() {
     };
   }, [menuOpen]);
 
-  const handleLogout = useCallback(() => {
-    clearSetupAccessToken();
+  const handleLogout = useCallback(async () => {
+    await logoutSession();
     clearSetupUser();
     clearPassword();
     setMenuOpen(false);

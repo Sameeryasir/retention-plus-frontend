@@ -23,16 +23,11 @@ function UploadMenuPageInner() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    setAccessToken(getSetupAccessToken());
-    setTokenReady(true);
+    queueMicrotask(() => {
+      setAccessToken(getSetupAccessToken());
+      setTokenReady(true);
+    });
   }, []);
-
-  useEffect(() => {
-    if (!tokenReady) return;
-    if (!accessToken) {
-      router.replace("/auth/login");
-    }
-  }, [tokenReady, accessToken, router]);
 
   const onSubmit = useCallback(
     async (payload: Parameters<typeof uploadRestaurantMenu>[1]) => {
@@ -53,7 +48,7 @@ function UploadMenuPageInner() {
     [accessToken, router],
   );
 
-  if (!tokenReady || !accessToken) {
+  if (!tokenReady) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50">
         <p className="text-sm text-zinc-500">Loading…</p>

@@ -16,6 +16,11 @@ import {
   flowListStagger,
   flowStepReveal,
 } from "@/app/lib/motion";
+import {
+  clampWorkflowDropIndex,
+  hasCronTriggerNode,
+  isWorkflowNodeReorderLocked,
+} from "@/app/components/automation/workflow-node-order";
 import type { WorkflowNode, WorkflowNodeKind } from "@/app/components/automation/types";
 
 const ZOOM_MIN = 0.72;
@@ -116,17 +121,24 @@ export function BuilderCanvas({
   }, [clearPointerReorder]);
 
   const resolveDropIndex = useCallback(
-    (clientY: number) => {
+    (clientY: number, fromIndex: number | null) => {
       const slots = nodeSlotRefs.current;
       for (let i = 0; i < slots.length; i++) {
         const el = slots[i];
         if (!el) continue;
         const rect = el.getBoundingClientRect();
-        if (clientY < rect.top + rect.height / 2) return i;
+        if (clientY < rect.top + rect.height / 2) {
+          return fromIndex == null
+            ? i
+            : clampWorkflowDropIndex(nodes, i, fromIndex);
+        }
       }
-      return nodes.length;
+      const endIndex = nodes.length;
+      return fromIndex == null
+        ? endIndex
+        : clampWorkflowDropIndex(nodes, endIndex, fromIndex);
     },
-    [nodes.length],
+    [nodes],
   );
 
   const finishPointerReorder = useCallback(
@@ -137,7 +149,7 @@ export function BuilderCanvas({
 
       if (fromIndex == null || !session?.didDrag || !onReorderNodes) return;
 
-      const toIndex = resolveDropIndex(clientY);
+      const toIndex = resolveDropIndex(clientY, fromIndex);
       if (fromIndex !== toIndex) onReorderNodes(fromIndex, toIndex);
     },
     [clearPointerReorder, draggingIndex, onReorderNodes, resolveDropIndex],
@@ -146,6 +158,7 @@ export function BuilderCanvas({
   const handleNodePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>, index: number) => {
       if (!canReorder || e.button !== 0) return;
+      if (isWorkflowNodeReorderLocked(nodes, index)) return;
 
       const target = e.currentTarget;
       pointerSessionRef.current = {
@@ -181,7 +194,7 @@ export function BuilderCanvas({
 
       setPressingIndex(index);
     },
-    [canReorder],
+    [canReorder, nodes],
   );
 
   const handleNodePointerMove = useCallback(
@@ -422,7 +435,9 @@ export function BuilderCanvas({
               onDragOver={handleCanvasDragOver}
               onDrop={handleBlockDrop}
             >
-              {nodes.map((node, index) => (
+              {nodes.map((node, index) => {
+                const reorderLocked = isWorkflowNodeReorderLocked(nodes, index);
+                return (
                 <motion.div
                   key={node.id}
                   className="flex w-full flex-col items-center"
@@ -437,7 +452,11 @@ export function BuilderCanvas({
                         ? "touch-none"
                         : ""
                     } ${
-                      canReorder ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+                      reorderLocked
+                        ? "cursor-default"
+                        : canReorder
+                          ? "cursor-grab active:cursor-grabbing"
+                          : "cursor-pointer"
                     }`}
                     onPointerDown={(e) => handleNodePointerDown(e, index)}
                     onPointerMove={handleNodePointerMove}
@@ -455,6 +474,7 @@ export function BuilderCanvas({
                         node={node}
                         selected={selectedId === node.id}
                         isPressing={pressingIndex === index}
+                        reorderLocked={reorderLocked}
                       />
                     )}
                   </div>
@@ -469,7 +489,8 @@ export function BuilderCanvas({
                     </motion.div>
                   ) : null}
                 </motion.div>
-              ))}
+              );
+              })}
               {canDropBlocks ? (
                 <div
                   className="h-8 w-full max-w-[min(100%,15rem)] sm:max-w-xs lg:max-w-[14.5rem] xl:max-w-sm 2xl:max-w-md"
@@ -484,7 +505,9 @@ export function BuilderCanvas({
 
       {canReorder && nodes.length > 0 ? (
         <p className="pointer-events-none absolute bottom-14 left-0 right-0 px-3 text-center text-[10px] font-medium text-zinc-500 sm:bottom-16 sm:text-[11px]">
-          Press and hold a step, then drag to reorder
+          {hasCronTriggerNode(nodes)
+            ? "Cron Job stays at the start. Press and hold other steps to reorder."
+            : "Press and hold a step, then drag to reorder"}
         </p>
       ) : null}
 

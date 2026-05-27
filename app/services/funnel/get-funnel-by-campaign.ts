@@ -15,6 +15,7 @@ import type {
 import { normalizeLandingSectionOrder } from "@/app/components/crm-template-editor/landing-sections";
 import { cloneTemplatePages } from "@/app/lib/clone-template-pages";
 import { getApiBaseUrl, parseApiErrorMessage } from "@/app/lib/api";
+import { authenticatedFetch } from "@/app/lib/authenticated-fetch";
 import { isPositiveInt } from "@/app/lib/numbers";
 import type {
   CreateFunnelConfirmationPagePayload,
@@ -354,12 +355,11 @@ export async function fetchFunnelByCampaignId(
     throw new Error("Valid campaignId is required.");
   }
 
-  const res = await fetch(
+  const res = await authenticatedFetch(
     `${getApiBaseUrl()}/funnel/campaign/${encodeURIComponent(String(campaignId))}`,
     {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
         Accept: "application/json",
       },
     },

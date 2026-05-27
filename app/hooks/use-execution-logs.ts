@@ -1,37 +1,43 @@
 "use client";
 
 import { useCallback, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getExecutionLogs } from "@/app/services/automation/execution-api";
+import { automationQueryKeys } from "@/app/services/automation/automation-query-keys";
 import type { AutomationLog } from "@/app/services/automation/types";
-import { useAsyncResource } from "@/app/hooks/use-async-resource";
 import { useExecutionPusher } from "@/app/hooks/use-execution-pusher";
+import { getApiErrorMessage } from "@/app/lib/toast-api-error";
 
 export function useExecutionLogs(executionId: number | null) {
-  const fetcher = useCallback(async () => {
-    if (executionId == null) return [] as AutomationLog[];
-    return getExecutionLogs(executionId);
-  }, [executionId]);
-
-  const { data, isLoading, error, refetch } = useAsyncResource(
-    executionId != null,
-    fetcher,
-    [executionId],
-    {
-      fallbackError: "Could not load activity logs.",
-      resetWhenDisabled: [] as AutomationLog[],
+  const query = useQuery({
+    queryKey:
+      executionId != null
+        ? automationQueryKeys.executionLogs(executionId)
+        : automationQueryKeys.all,
+    queryFn: async () => {
+      if (executionId == null) return [] as AutomationLog[];
+      return getExecutionLogs(executionId);
     },
-  );
+    enabled: executionId != null,
+  });
 
   const onTerminalRef = useRef(() => {
-    void refetch();
+    void query.refetch();
   });
   onTerminalRef.current = () => {
-    void refetch();
+    void query.refetch();
   };
 
-  useExecutionPusher(executionId, () => {
+  useExecutionPusher(executionId, useCallback(() => {
     onTerminalRef.current();
-  });
+  }, []));
 
-  return { logs: data ?? [], loading: isLoading, error, refetch };
+  return {
+    logs: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error
+      ? getApiErrorMessage(query.error, "Could not load activity logs.")
+      : null,
+    refetch: query.refetch,
+  };
 }

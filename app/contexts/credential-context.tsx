@@ -1,6 +1,6 @@
 "use client";
 
-import { clearSetupAccessToken } from "@/app/lib/setup-access-token";
+import { clearAuthSession } from "@/app/lib/auth-session";
 import { clearSetupUser } from "@/app/lib/setup-user";
 import {
   createContext,
@@ -27,7 +27,7 @@ export function CredentialProvider({ children }: { children: ReactNode }) {
   const setCredentials = useCallback((nextEmail: string, nextPassword: string) => {
     setEmail(nextEmail);
     setPasswordState(nextPassword);
-    clearSetupAccessToken();
+    clearAuthSession();
     clearSetupUser();
   }, []);
 

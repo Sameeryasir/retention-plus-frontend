@@ -1,5 +1,4 @@
-import axios from "axios";
-import { getApiBaseUrl } from "@/app/lib/api";
+import { authAxios } from "@/app/lib/auth-axios";
 
 export type Funnel = {
   id: number;
@@ -36,13 +35,8 @@ export async function fetchCampaignsByRestaurant(
     throw new Error("Missing access token. Sign in again.");
   }
 
-  const response = await axios.get<unknown>(
-    `${getApiBaseUrl()}/campaign/restaurant/${restaurantId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
+  const response = await authAxios.get<unknown>(
+    `/campaign/restaurant/${restaurantId}`,
   );
 
   return campaignsFromResponseBody(response.data);

@@ -1,4 +1,5 @@
 import { getApiBaseUrl, parseApiErrorMessage } from "@/app/lib/api";
+import { authenticatedFetch } from "@/app/lib/authenticated-fetch";
 
 export type StripeConnectResponse = {
   url: string;
@@ -31,13 +32,10 @@ export async function connectStripe(
     throw new Error("Restaurant is required.");
   }
 
-  const res = await fetch(
+  const res = await authenticatedFetch(
     `${getApiBaseUrl()}/stripe/connect/${encodeURIComponent(String(restaurantId))}`,
     {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
     },
   );
 

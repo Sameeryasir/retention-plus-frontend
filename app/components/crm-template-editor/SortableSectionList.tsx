@@ -60,15 +60,15 @@ export function SortableSectionList<T extends string>({
               handleDrop(index);
             }}
             className={[
-              "flex items-center gap-2 rounded-xl border bg-white px-2.5 py-2 text-sm transition",
+              "flex items-center gap-2 rounded-xl border bg-white px-2.5 py-2 text-sm shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-[border-color,box-shadow,opacity] duration-200",
               dragging ? "opacity-40" : "",
               over
-                ? "border-violet-400 ring-2 ring-violet-200/80"
-                : "border-zinc-200/90",
+                ? "border-zinc-400 ring-2 ring-zinc-900/10"
+                : "border-zinc-200/90 hover:border-zinc-300/90",
             ].join(" ")}
           >
             <span
-              className="flex size-7 shrink-0 cursor-grab items-center justify-center rounded-lg text-zinc-400 active:cursor-grabbing"
+              className="flex size-7 shrink-0 cursor-grab items-center justify-center rounded-lg text-zinc-400 transition-colors duration-200 hover:text-zinc-600 active:cursor-grabbing"
               aria-hidden
             >
               <GripVertical className="size-4" />

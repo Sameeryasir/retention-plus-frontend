@@ -146,7 +146,6 @@ export function subscribeExecutionTerminal(
   return subscribeChannelTerminal(pusherExecutionChannel(executionId), onTerminal);
 }
 
-/** Catches cron (and manual) runs — backend always notifies automation-{id} on complete/fail. */
 export function subscribeAutomationTerminal(
   automationId: number,
   onTerminal: (payload: ExecutionTerminalPusherPayload) => void,

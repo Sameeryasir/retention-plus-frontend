@@ -23,11 +23,11 @@ export function HeroDesignPickerOption({
       onClick={onSelect}
       aria-pressed={selected}
       className={[
-        "group relative w-full overflow-hidden rounded-xl border border-zinc-200/90 bg-white text-left shadow-sm transition-all duration-200",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-1",
+        "group relative w-full overflow-hidden rounded-xl border border-zinc-200/90 bg-white text-left shadow-[0_1px_3px_rgba(15,23,42,0.05)] transition-[border-color,box-shadow] duration-200",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:ring-offset-1",
         selected
-          ? "ring-1 ring-zinc-200"
-          : "hover:border-zinc-300 hover:shadow-md",
+          ? "border-zinc-900 ring-1 ring-zinc-900/10 shadow-[0_4px_14px_rgba(15,23,42,0.08)]"
+          : "hover:border-zinc-300 hover:shadow-[0_4px_12px_rgba(15,23,42,0.06)]",
       ].join(" ")}
     >
       {selected ? (

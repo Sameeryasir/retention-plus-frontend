@@ -5,6 +5,14 @@ import {
   colorInputValue,
   normalizeHexColor,
 } from "@/app/components/crm-template-editor/landing-content-colors";
+import {
+  editorColorPickerBadgeClass,
+  editorColorPickerDividerClass,
+  editorColorPickerHexInputClass,
+  editorColorPickerResetClass,
+  editorColorPickerShellClass,
+  editorColorPickerSwatchClass,
+} from "@/app/components/crm-template-editor/editor-sidebar-theme";
 
 export function ContentTextColorPicker({
   value,
@@ -21,19 +29,17 @@ export function ContentTextColorPicker({
 
   return (
     <div
-      className="mt-1.5 flex items-center gap-2 rounded-xl border border-zinc-200/95 bg-gradient-to-br from-white to-zinc-50/90 px-2.5 py-1.5 shadow-sm ring-1 ring-inset ring-white/80"
+      className={editorColorPickerShellClass}
       role="group"
       aria-label="Text color"
     >
-      <span className="shrink-0 rounded-md bg-zinc-900/90 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-sm">
-        Color
-      </span>
+      <span className={editorColorPickerBadgeClass}>Color</span>
 
-      <span className="h-4 w-px shrink-0 bg-gradient-to-b from-transparent via-zinc-300 to-transparent" aria-hidden />
+      <span className={editorColorPickerDividerClass} aria-hidden />
 
       <label
         htmlFor={`${inputId}-picker`}
-        className="group relative block size-7 shrink-0 cursor-pointer overflow-hidden rounded-lg border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.35)] ring-1 ring-zinc-200/80 transition hover:scale-105 hover:shadow-md hover:ring-zinc-300"
+        className={editorColorPickerSwatchClass}
         style={{ backgroundColor: pickerValue }}
         title="Pick a color"
       >
@@ -46,12 +52,12 @@ export function ContentTextColorPicker({
           aria-label="Pick text color"
         />
         <span
-          className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent"
           aria-hidden
         />
         {!hasCustom ? (
           <span
-            className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,transparent_42%,rgba(255,255,255,0.55)_42%,rgba(255,255,255,0.55)_58%,transparent_58%)]"
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,transparent_42%,rgba(255,255,255,0.35)_42%,rgba(255,255,255,0.35)_58%,transparent_58%)]"
             aria-hidden
           />
         ) : null}
@@ -63,7 +69,7 @@ export function ContentTextColorPicker({
         onChange={(e) => onChange(normalizeHexColor(e.target.value))}
         placeholder="Default"
         className={[
-          "min-w-0 flex-1 border-0 bg-transparent py-0 font-mono text-[11px] outline-none",
+          editorColorPickerHexInputClass,
           hasCustom
             ? "font-semibold uppercase tracking-wide text-zinc-900"
             : "italic text-zinc-400 placeholder:not-italic placeholder:font-medium placeholder:text-zinc-400",
@@ -76,7 +82,7 @@ export function ContentTextColorPicker({
         <button
           type="button"
           onClick={() => onChange("")}
-          className="shrink-0 rounded-md border border-zinc-200/90 bg-white px-2 py-0.5 text-[10px] font-semibold text-zinc-600 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900"
+          className={editorColorPickerResetClass}
         >
           Reset
         </button>

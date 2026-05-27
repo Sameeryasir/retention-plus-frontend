@@ -1,8 +1,14 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, type LucideIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  CalendarClock,
+  MousePointerClick,
+  Sparkles,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import { SettingsSelectDropdown } from "@/app/components/automation/builder/SettingsSelectDropdown";
 import { getBlockByKind } from "@/app/components/automation/mock-data";
 import {
@@ -10,7 +16,6 @@ import {
   nodeToneClass,
 } from "@/app/components/automation/automation-ui";
 import { automationEase } from "@/app/lib/motion";
-import { primaryButtonMdClass } from "@/app/lib/panel-styles";
 import type { WorkflowNode } from "@/app/components/automation/types";
 
 const EMAIL_TEMPLATES = [
@@ -221,13 +226,13 @@ export function NodeSettingsPanel({
   const Icon = block?.icon;
 
   return (
-    <aside className="flex h-full w-full min-w-0 flex-col border-l border-zinc-200/80 bg-white shadow-[inset_1px_0_0_rgba(0,0,0,0.02)]">
-      <motion.div className="border-b border-zinc-100/90 bg-zinc-50/40 px-3 py-3 xl:px-4 xl:py-4">
-        <h2 className="text-sm font-bold tracking-tight text-zinc-900">
+    <aside className="relative flex h-full w-full min-w-0 flex-col overflow-hidden border-l border-zinc-200/60 bg-white">
+      <motion.div className="relative border-b border-zinc-100 px-5 py-5">
+        <h2 className="text-base font-semibold tracking-tight text-zinc-900">
           Settings
         </h2>
-        <p className="mt-0.5 hidden text-[0.65rem] leading-relaxed text-zinc-500 xl:block xl:text-xs">
-          {node ? "Configure the selected block." : "Select a step on the canvas."}
+        <p className="mt-1 text-sm leading-relaxed text-zinc-500">
+          {node ? "Configure the selected step." : "Select a step on the canvas."}
         </p>
       </motion.div>
 
@@ -239,11 +244,17 @@ export function NodeSettingsPanel({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.22, ease: automationEase }}
-            className="flex flex-1 flex-col items-center justify-center px-6 text-center"
+            className="relative flex flex-1 flex-col items-center justify-center px-5 py-8 text-center"
           >
-            <p className="text-sm text-zinc-500">
-              Click a workflow step to edit delay, message content, or conditions.
-            </p>
+            <div className="w-full max-w-[15rem] rounded-2xl border-2 border-dashed border-zinc-200/90 bg-white/70 px-5 py-8 shadow-sm ring-1 ring-zinc-950/[0.03] backdrop-blur-sm">
+              <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400 ring-1 ring-zinc-200/80">
+                <MousePointerClick className="size-5" strokeWidth={2} aria-hidden />
+              </div>
+              <p className="text-sm font-semibold text-zinc-800">No step selected</p>
+              <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
+                Click a workflow step to edit delay, messages, or schedule settings.
+              </p>
+            </div>
           </motion.div>
         ) : (
           <motion.div
@@ -404,28 +415,31 @@ function NodeSettingsForm({
         );
       }}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 xl:px-4 xl:py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 [scrollbar-gutter:stable]">
       <motion.div
-        className={`mb-4 flex items-center gap-3 rounded-xl border px-3 py-2.5 ${tone?.shell ?? "border-zinc-200/90 bg-zinc-50/80"}`}
+        className={`mb-8 flex items-center gap-3 rounded-2xl border border-zinc-200/70 bg-zinc-50/40 px-4 py-3.5 ${tone?.accent ?? "border-l-[3px] border-l-zinc-400"}`}
         layout
       >
         {Icon && tone ? (
           <span
-            className={`flex size-9 shrink-0 items-center justify-center rounded-lg shadow-sm ${tone.icon}`}
+            className={`relative flex size-10 shrink-0 items-center justify-center rounded-xl ${tone.icon}`}
           >
-            <Icon className="size-4" strokeWidth={2} aria-hidden />
+            <Icon className="relative size-[1.125rem]" strokeWidth={2.15} aria-hidden />
           </span>
         ) : null}
-        <motion.div className="min-w-0">
+        <div className="min-w-0">
           <span
-            className={`inline-flex rounded-md px-1.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide ${tone?.badge ?? "bg-zinc-100 text-zinc-600"}`}
+            className={`inline-flex rounded-full px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide ${tone?.badge ?? "bg-zinc-100 text-zinc-600"}`}
           >
             {blockSectionLabel(blockSection)}
           </span>
-          <p className="mt-1 truncate text-sm font-bold text-zinc-900">{node.label}</p>
-        </motion.div>
+          <p className="mt-1 truncate text-[0.9375rem] font-semibold tracking-tight text-zinc-900">
+            {node.label}
+          </p>
+        </div>
       </motion.div>
 
+      <div className="space-y-8">
       {node.kind === "cron_trigger" && (
         <CronSettings
           frequency={cronFrequency}
@@ -475,19 +489,22 @@ function NodeSettingsForm({
         />
       )}
       {!editable && (
-        <p className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 px-3 py-4 text-xs leading-relaxed text-zinc-500">
-          No additional settings for this block.
-        </p>
+        <SettingsSection>
+          <p className="text-sm leading-relaxed text-zinc-500">
+            No additional settings for this block.
+          </p>
+        </SettingsSection>
       )}
+      </div>
       </div>
 
       {(editable && onSave) || onDelete ? (
-        <div className="shrink-0 border-t border-zinc-100/90 bg-white/95 px-3 pt-3 pb-4 backdrop-blur-sm xl:px-4 xl:pt-4 xl:pb-5">
+        <div className="relative shrink-0 space-y-3 border-t border-zinc-100 bg-white px-5 py-6">
           {editable && onSave ? (
             <button
               type="submit"
               disabled={saving || deleting}
-              className={`mb-4 w-full ${primaryButtonMdClass}`}
+              className="inline-flex w-full cursor-pointer items-center justify-center rounded-xl bg-zinc-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save changes"}
             </button>
@@ -497,7 +514,7 @@ function NodeSettingsForm({
               type="button"
               disabled={deleting || saving}
               onClick={() => void onDelete()}
-              className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-200/90 bg-red-50/90 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
             >
               <Trash2 className="size-4" aria-hidden />
               {deleting ? "Removing…" : "Delete step"}
@@ -509,16 +526,109 @@ function NodeSettingsForm({
   );
 }
 
-function fieldLabel(text: string) {
+function SettingsSection({
+  title,
+  description,
+  children,
+}: {
+  title?: string;
+  description?: string;
+  children: ReactNode;
+}) {
   return (
-    <label className="mb-1.5 block text-xs font-semibold text-zinc-700">
-      {text}
-    </label>
+    <section className="space-y-5">
+      {title || description ? (
+        <div className="space-y-1">
+          {title ? (
+            <h3 className="text-sm font-semibold text-zinc-900">{title}</h3>
+          ) : null}
+          {description ? (
+            <p className="text-xs leading-relaxed text-zinc-500">{description}</p>
+          ) : null}
+        </div>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
+function FormField({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-2.5">
+      <label className="block text-sm font-medium text-zinc-700">{label}</label>
+      {children}
+    </div>
   );
 }
 
 function inputClass() {
-  return "h-10 w-full rounded-xl border border-zinc-200/90 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10";
+  return "h-11 w-full rounded-xl border border-zinc-200 bg-white px-3.5 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/5";
+}
+
+function textareaClass() {
+  return "w-full resize-none rounded-xl border border-zinc-200 bg-white px-3.5 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-300 focus:ring-2 focus:ring-zinc-900/5";
+}
+
+function SegmentGroup({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-3 gap-2 rounded-2xl bg-zinc-100/70 p-1.5">
+      {children}
+    </div>
+  );
+}
+
+function SegmentButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`cursor-pointer rounded-xl px-2 py-2.5 text-xs font-semibold transition ${
+        active
+          ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200/80"
+          : "text-zinc-500 hover:text-zinc-800"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SummaryBanner({
+  summary,
+  tone = "emerald",
+}: {
+  summary: string;
+  tone?: "emerald" | "violet" | "blue" | "orange";
+}) {
+  const styles = {
+    emerald: "border-emerald-100 bg-emerald-50/70 text-emerald-800",
+    violet: "border-violet-100 bg-violet-50/70 text-violet-800",
+    blue: "border-blue-100 bg-blue-50/70 text-blue-800",
+    orange: "border-orange-100 bg-orange-50/70 text-orange-800",
+  };
+
+  return (
+    <div
+      className={`flex items-start gap-2.5 rounded-xl border px-4 py-3.5 text-sm leading-relaxed ${styles[tone]}`}
+    >
+      <Sparkles className="mt-0.5 size-4 shrink-0 opacity-70" aria-hidden />
+      <span>{summary}</span>
+    </div>
+  );
 }
 
 function CronSettings({
@@ -559,91 +669,88 @@ function CronSettings({
   ];
 
   return (
-    <motion.div className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {fieldLabel("How often")}
-      <div className="grid grid-cols-3 gap-2">
-        {frequencies.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onFrequencyChange(item.id)}
-            className={`cursor-pointer rounded-xl border px-2 py-2.5 text-xs font-semibold transition ${
-              frequency === item.id
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+    <SettingsSection title="Schedule" description="Choose when this automation should run.">
+    <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <SummaryBanner summary={summary} tone="emerald" />
+
+      <FormField label="How often">
+        <SegmentGroup>
+          {frequencies.map((item) => (
+            <SegmentButton
+              key={item.id}
+              active={frequency === item.id}
+              onClick={() => onFrequencyChange(item.id)}
+            >
+              {item.label}
+            </SegmentButton>
+          ))}
+        </SegmentGroup>
+      </FormField>
 
       {frequency === "weekly" ? (
-        <>
-          {fieldLabel("Day of week")}
+        <FormField label="Day of week">
           <SettingsSelectDropdown
             value={dayOfWeek}
             options={CRON_DAYS.map((d) => ({ value: d.id, label: d.label }))}
             onChange={(v) => onDayOfWeekChange(v as CronDayOfWeek)}
             ariaLabel="Day of week"
           />
-        </>
+        </FormField>
       ) : null}
 
       {frequency === "interval" ? (
         <>
-          {fieldLabel("Run every")}
-          <input
-            type="number"
-            min={CRON_INTERVAL_MIN}
-            step={1}
-            inputMode="numeric"
-            value={interval}
-            onChange={(e) => {
-              const parsed = Number.parseInt(e.target.value, 10);
-              onIntervalChange(clampCronInterval(parsed));
-            }}
-            onBlur={() => onIntervalChange(clampCronInterval(interval))}
-            className={inputClass()}
-            aria-describedby="cron-interval-hint"
-          />
-          {fieldLabel("Unit")}
-          <div className="grid grid-cols-3 gap-2">
-            {intervalUnits.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onIntervalUnitChange(item.id)}
-                className={`cursor-pointer rounded-xl border px-2 py-2 text-xs font-semibold transition ${
-                  intervalUnit === item.id
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          <p id="cron-interval-hint" className="text-xs text-zinc-500">
+          <FormField label="Run every">
+            <input
+              type="number"
+              min={CRON_INTERVAL_MIN}
+              step={1}
+              inputMode="numeric"
+              value={interval}
+              onChange={(e) => {
+                const parsed = Number.parseInt(e.target.value, 10);
+                onIntervalChange(clampCronInterval(parsed));
+              }}
+              onBlur={() => onIntervalChange(clampCronInterval(interval))}
+              className={inputClass()}
+              aria-describedby="cron-interval-hint"
+            />
+          </FormField>
+          <FormField label="Unit">
+            <SegmentGroup>
+              {intervalUnits.map((item) => (
+                <SegmentButton
+                  key={item.id}
+                  active={intervalUnit === item.id}
+                  onClick={() => onIntervalUnitChange(item.id)}
+                >
+                  {item.label}
+                </SegmentButton>
+              ))}
+            </SegmentGroup>
+          </FormField>
+          <p id="cron-interval-hint" className="text-xs leading-relaxed text-zinc-500">
             At least {CRON_INTERVAL_MIN} {cronIntervalUnitLabel(1, intervalUnit)}.
           </p>
         </>
       ) : (
-        <>
-          {fieldLabel("Run at")}
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => onTimeChange(e.target.value)}
-            className={inputClass()}
-          />
-        </>
+        <FormField label="Run at">
+          <div className="relative">
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => onTimeChange(e.target.value)}
+              className={inputClass()}
+            />
+            <CalendarClock
+              className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
+              aria-hidden
+            />
+          </div>
+        </FormField>
       )}
-
-      <p className="rounded-xl border border-emerald-200/80 bg-emerald-50/80 px-3 py-2.5 text-xs font-medium leading-relaxed text-emerald-900">
-        {summary}
-      </p>
     </motion.div>
+    </SettingsSection>
   );
 }
 
@@ -665,33 +772,32 @@ function WaitSettings({
   ];
 
   return (
-    <motion.div className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {fieldLabel("Delay value")}
-      <input
-        type="number"
-        min={1}
-        value={delay}
-        onChange={(e) => onDelayChange(Number.parseInt(e.target.value, 10) || 1)}
-        className={inputClass()}
-      />
-      {fieldLabel("Unit")}
-      <div className="grid grid-cols-3 gap-2">
-        {units.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onUnitChange(item.id)}
-            className={`cursor-pointer rounded-xl border px-2 py-2 text-xs font-semibold transition ${
-              unit === item.id
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+    <SettingsSection title="Timing" description="Wait before the next step runs.">
+    <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <FormField label="Delay value">
+        <input
+          type="number"
+          min={1}
+          value={delay}
+          onChange={(e) => onDelayChange(Number.parseInt(e.target.value, 10) || 1)}
+          className={inputClass()}
+        />
+      </FormField>
+      <FormField label="Unit">
+        <SegmentGroup>
+          {units.map((item) => (
+            <SegmentButton
+              key={item.id}
+              active={unit === item.id}
+              onClick={() => onUnitChange(item.id)}
+            >
+              {item.label}
+            </SegmentButton>
+          ))}
+        </SegmentGroup>
+      </FormField>
     </motion.div>
+    </SettingsSection>
   );
 }
 
@@ -707,22 +813,26 @@ function EmailSettings({
   onSubjectChange: (value: string) => void;
 }) {
   return (
-    <motion.div className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {fieldLabel("Template")}
-      <SettingsSelectDropdown
-        value={template}
-        options={EMAIL_TEMPLATES.map((t) => ({ value: t, label: t }))}
-        onChange={onTemplateChange}
-        ariaLabel="Email template"
-      />
-      {fieldLabel("Subject")}
-      <input
-        type="text"
-        value={subject}
-        onChange={(e) => onSubjectChange(e.target.value)}
-        className={inputClass()}
-      />
+    <SettingsSection title="Email" description="Pick the template and subject line.">
+    <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <FormField label="Template">
+        <SettingsSelectDropdown
+          value={template}
+          options={EMAIL_TEMPLATES.map((t) => ({ value: t, label: t }))}
+          onChange={onTemplateChange}
+          ariaLabel="Email template"
+        />
+      </FormField>
+      <FormField label="Subject">
+        <input
+          type="text"
+          value={subject}
+          onChange={(e) => onSubjectChange(e.target.value)}
+          className={inputClass()}
+        />
+      </FormField>
     </motion.div>
+    </SettingsSection>
   );
 }
 
@@ -738,22 +848,26 @@ function ConditionSettings({
   onValueChange: (value: string) => void;
 }) {
   return (
-    <motion.div className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {fieldLabel("Condition type")}
-      <SettingsSelectDropdown
-        value={conditionType}
-        options={CONDITION_TYPES.map((t) => ({ value: t, label: t }))}
-        onChange={onConditionTypeChange}
-        ariaLabel="Condition type"
-      />
-      {fieldLabel("Value")}
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onValueChange(e.target.value)}
-        className={inputClass()}
-      />
+    <SettingsSection title="Condition" description="Define when this branch should run.">
+    <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <FormField label="Condition type">
+        <SettingsSelectDropdown
+          value={conditionType}
+          options={CONDITION_TYPES.map((t) => ({ value: t, label: t }))}
+          onChange={onConditionTypeChange}
+          ariaLabel="Condition type"
+        />
+      </FormField>
+      <FormField label="Value">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onValueChange(e.target.value)}
+          className={inputClass()}
+        />
+      </FormField>
     </motion.div>
+    </SettingsSection>
   );
 }
 
@@ -765,15 +879,18 @@ function SmsSettings({
   onMessageChange: (value: string) => void;
 }) {
   return (
-    <motion.div className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {fieldLabel("Message")}
-      <textarea
-        rows={4}
-        value={message}
-        onChange={(e) => onMessageChange(e.target.value)}
-        className="w-full resize-none rounded-xl border border-zinc-200/90 bg-white px-3 py-2.5 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10"
-      />
+    <SettingsSection title="SMS" description="Message sent to the customer.">
+    <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <FormField label="Message">
+        <textarea
+          rows={5}
+          value={message}
+          onChange={(e) => onMessageChange(e.target.value)}
+          className={textareaClass()}
+        />
+      </FormField>
     </motion.div>
+    </SettingsSection>
   );
 }
 
@@ -785,17 +902,20 @@ function WhatsappSettings({
   onTemplateChange: (value: string) => void;
 }) {
   return (
-    <motion.div className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {fieldLabel("Template")}
-      <SettingsSelectDropdown
-        value={template}
-        options={[
-          { value: "order_reminder", label: "Order reminder" },
-          { value: "welcome", label: "Welcome message" },
-        ]}
-        onChange={onTemplateChange}
-        ariaLabel="WhatsApp template"
-      />
+    <SettingsSection title="WhatsApp" description="Choose the template for this message.">
+    <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <FormField label="Template">
+        <SettingsSelectDropdown
+          value={template}
+          options={[
+            { value: "order_reminder", label: "Order reminder" },
+            { value: "welcome", label: "Welcome message" },
+          ]}
+          onChange={onTemplateChange}
+          ariaLabel="WhatsApp template"
+        />
+      </FormField>
     </motion.div>
+    </SettingsSection>
   );
 }

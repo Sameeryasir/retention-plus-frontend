@@ -16,7 +16,6 @@ import {
 } from "@/app/services/restaurant/get-my-restaurant";
 import { Plus, Store } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 function restaurantMatchesQuery(r: AdminRestaurant, q: string): boolean {
@@ -39,7 +38,6 @@ function restaurantMatchesQuery(r: AdminRestaurant, q: string): boolean {
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
   const [tokenReady, setTokenReady] = useState(false);
   const [accessToken, setAccessToken] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,13 +48,6 @@ export default function DashboardPage() {
       setTokenReady(true);
     });
   }, []);
-
-  useEffect(() => {
-    if (!tokenReady) return;
-    if (!accessToken) {
-      router.replace("/auth/login");
-    }
-  }, [tokenReady, accessToken, router]);
 
   const fetchRestaurants = useCallback(async () => {
     if (!accessToken) return [];

@@ -364,10 +364,8 @@ export function AutomationExecutionsPanel({
     onTerminal: applyPusherExecution,
   });
 
-  // Cron runs start in the background — subscribe at automation level, not only per execution id.
   useAutomationPusherTerminal(automationId, applyPusherExecution);
 
-  // Cron can enqueue a run while this tab is open; poll so "queued/running" rows appear.
   useEffect(() => {
     if (!automationActive) return;
     const intervalId = setInterval(() => {

@@ -6,6 +6,7 @@ import type {
   FunnelAutomationGraph,
   UpdateAutomationNodeBody,
 } from "@/app/services/automation/types";
+import { enforceCronTriggerFirst } from "@/app/components/automation/workflow-node-order";
 import { getBlockByKind } from "@/app/components/automation/mock-data";
 import type {
   WorkflowNode,
@@ -166,7 +167,10 @@ export function mapAutomationGraphToWorkflowNodes(
   nodes: AutomationNode[],
   connections: AutomationConnection[],
 ): WorkflowNode[] {
-  return orderNodesByConnections(nodes, connections).map(mapApiNodeToWorkflowNode);
+  const ordered = orderNodesByConnections(nodes, connections).map(
+    mapApiNodeToWorkflowNode,
+  );
+  return enforceCronTriggerFirst(ordered);
 }
 
 export function mapFunnelGraphToWorkflowNodes(

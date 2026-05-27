@@ -1,5 +1,6 @@
 import axios from "axios";
-import { getApiBaseUrl, parseApiMessage } from "@/app/lib/api";
+import { parseApiMessage } from "@/app/lib/api";
+import { authAxios } from "@/app/lib/auth-axios";
 
 export type SetupPasswordResponse = {
   message: string;
@@ -15,13 +16,12 @@ export async function setupPassword(
   }
 
   try {
-    const response = await axios.put<SetupPasswordResponse>(
-      `${getApiBaseUrl()}/auth/setup-password`,
+    const response = await authAxios.put<SetupPasswordResponse>(
+      "/auth/setup-password",
       { currentPassword, newPassword },
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
         },
       },
     );

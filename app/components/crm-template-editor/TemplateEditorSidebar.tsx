@@ -34,6 +34,40 @@ import {
   editorSidebarPickerPanelClass,
   editorSidebarPickerScrollClass,
 } from "@/app/components/crm-template-editor/editor-layout";
+import {
+  editorAccordionBodyClass,
+  editorAccordionChevronClosedClass,
+  editorAccordionChevronOpenClass,
+  editorAccordionHeaderButtonClass,
+  editorAccordionHintClass,
+  editorAccordionIconClosedClass,
+  editorAccordionIconOpenClass,
+  editorAccordionShellClosedClass,
+  editorAccordionShellOpenClass,
+  editorAccordionTitleClass,
+  editorContentInputClass,
+  editorFieldIconChipClass,
+  editorFieldIconChipInlineClass,
+  editorFieldLabelClass,
+  editorFieldLabelInlineClass,
+  editorFieldLabelPlainClass,
+  editorInlineInputClass,
+  editorSidebarBodyStrongClass,
+  editorSidebarBodyTextClass,
+  editorSidebarCaptionClass,
+  editorSidebarCheckboxLabelClass,
+  editorSidebarFormFieldIconOffClass,
+  editorSidebarFormFieldIconOnClass,
+  editorSidebarFormFieldRowClass,
+  editorSidebarMediaFrameClass,
+  editorSidebarPickerRowClass,
+  editorSidebarPickerRowSelectedClass,
+  editorSidebarPrimaryButtonClass,
+  editorSidebarRootClass,
+  editorSidebarSecondaryButtonClass,
+  editorSidebarSectionDividerClass,
+  editorSidebarUploadButtonClass,
+} from "@/app/components/crm-template-editor/editor-sidebar-theme";
 import { formDesignUsesSplitLayout } from "@/app/components/crm-template-editor/form-design-registry";
 import { FormDesignSwatch } from "@/app/components/crm-template-editor/form-designs/FormDesignSwatch";
 import { CheckoutTemplatePickerOption } from "@/app/components/crm-template-editor/CheckoutTemplatePickerOption";
@@ -103,18 +137,17 @@ const accordionEase = [0.22, 1, 0.36, 1] as const;
 
 /** Slower open/close so the sidebar accordion feels deliberate, not snappy. */
 const accordionPanelOpen = {
-  duration: 0.48,
-  delay: 0.1,
+  duration: 0.28,
+  delay: 0.04,
   ease: accordionEase,
 } as const;
 const accordionPanelClose = {
-  duration: 0.4,
-  delay: 0.06,
+  duration: 0.22,
+  delay: 0.02,
   ease: accordionEase,
 } as const;
 const accordionChevronTransition = {
-  duration: 0.42,
-  delay: 0.06,
+  duration: 0.22,
   ease: accordionEase,
 } as const;
 
@@ -138,45 +171,33 @@ function AccordionSection({
 
   return (
     <motion.div
-      className={`overflow-hidden rounded-xl border transition-[box-shadow,border-color,background-color] duration-300 ${
-        open
-          ? "border-zinc-900/12 bg-white shadow-[0_4px_24px_rgba(15,23,42,0.08)] ring-1 ring-zinc-950/[0.04]"
-          : "border-zinc-200/90 bg-white shadow-sm hover:border-zinc-300/90 hover:shadow-[0_2px_12px_rgba(15,23,42,0.06)]"
-      }`}
+      className={open ? editorAccordionShellOpenClass : editorAccordionShellClosedClass}
     >
       <button
         type="button"
         onClick={() => onToggle(id)}
-        className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors duration-200"
+        className={editorAccordionHeaderButtonClass}
       >
         <span
-          className={`flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-300 ${
-            open
-              ? "bg-zinc-900 text-white shadow-sm"
-              : "bg-zinc-100 text-zinc-600"
-          }`}
+          className={open ? editorAccordionIconOpenClass : editorAccordionIconClosedClass}
           aria-hidden
         >
-          <Icon className="size-4" strokeWidth={2} />
+          <Icon className="size-4" strokeWidth={2.25} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[0.8125rem] font-semibold leading-tight tracking-tight text-zinc-900">
-            {title}
-          </span>
+          <span className={editorAccordionTitleClass}>{title}</span>
           {subtitle && !open ? (
-            <span className="mt-0.5 block truncate text-[0.65rem] leading-snug text-zinc-500">
-              {subtitle}
-            </span>
+            <span className={editorAccordionHintClass}>{subtitle}</span>
           ) : null}
         </span>
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
           transition={accordionChevronTransition}
-          className={`flex size-7 shrink-0 items-center justify-center rounded-full transition-colors ${
-            open ? "bg-zinc-100 text-zinc-700" : "text-zinc-400"
-          }`}
+          className={
+            open ? editorAccordionChevronOpenClass : editorAccordionChevronClosedClass
+          }
         >
-          <ChevronDown className="size-4" strokeWidth={2} aria-hidden />
+          <ChevronDown className="size-4" strokeWidth={2.25} aria-hidden />
         </motion.span>
       </button>
       <AnimatePresence initial={false}>
@@ -193,7 +214,7 @@ function AccordionSection({
             transition={accordionPanelOpen}
             className="overflow-hidden"
           >
-            <div className="border-t border-zinc-100/90 bg-gradient-to-b from-zinc-50/60 to-white px-3.5 pb-4 pt-3">
+            <div className={editorAccordionBodyClass}>
               <div className="space-y-3">{children}</div>
             </div>
           </motion.div>
@@ -219,8 +240,7 @@ function Field({
   const groupLabelId = useId();
 
   if (icon) {
-    const chipClass =
-      "flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-900 bg-black text-white shadow-sm ring-1 ring-white/10 sm:size-9 sm:rounded-xl";
+    const chipClass = editorFieldIconChipInlineClass;
 
     if (layout === "inline") {
       const left = (
@@ -230,7 +250,7 @@ function Field({
           </span>
           <span
             id={as === "div" ? groupLabelId : undefined}
-            className="max-w-[5.5rem] truncate text-xs font-semibold tracking-tight text-zinc-800 sm:max-w-[7.5rem]"
+            className={editorFieldLabelInlineClass}
             title={label}
           >
             {label}
@@ -264,15 +284,12 @@ function Field({
 
     const labelRow = (
       <span className="mb-2 flex items-center gap-2.5">
-        <span
-          className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-zinc-900 bg-black text-white shadow-sm ring-1 ring-white/10"
-          aria-hidden
-        >
+        <span className={editorFieldIconChipClass} aria-hidden>
           {icon}
         </span>
         <span
           id={as === "div" ? groupLabelId : undefined}
-          className="text-xs font-semibold tracking-tight text-zinc-800"
+          className={editorFieldLabelClass}
         >
           {label}
         </span>
@@ -298,18 +315,11 @@ function Field({
 
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-zinc-600">
-        {label}
-      </span>
+      <span className={editorFieldLabelPlainClass}>{label}</span>
       {children}
     </label>
   );
 }
-
-const contentInputClass =
-  "w-full rounded-xl border border-zinc-200/95 bg-white px-3.5 py-2.5 text-sm text-zinc-900 shadow-sm outline-none ring-zinc-900/0 transition placeholder:text-zinc-400 focus:border-zinc-300 focus:shadow-md focus:ring-2 focus:ring-zinc-900/10";
-
-const inlineInputClass = `${contentInputClass} min-h-10 min-w-0 flex-1 py-2 text-sm`;
 
 export function TemplateEditorSidebar({
   page,
@@ -369,7 +379,7 @@ export function TemplateEditorSidebar({
   };
 
   return (
-    <div className="flex w-full flex-col gap-3 bg-white p-3 [&_button]:cursor-pointer [&_select]:cursor-pointer">
+    <div className={editorSidebarRootClass}>
         {showLandingHeroEditor ? (
           <>
             <AccordionSection
@@ -378,16 +388,16 @@ export function TemplateEditorSidebar({
               open={isOpen("templates")}
               onToggle={toggle}
             >
-              <p className="text-xs leading-relaxed text-zinc-500">
-                <strong className="font-semibold text-zinc-700">Page design</strong>{" "}
+              <p className={editorSidebarBodyTextClass}>
+                <strong className={editorSidebarBodyStrongClass}>Page design</strong>{" "}
                 sets colors, hero, layout, form & checkout. Use{" "}
-                <strong className="font-semibold text-zinc-700">Starter copy</strong>{" "}
+                <strong className={editorSidebarBodyStrongClass}>Starter copy</strong>{" "}
                 in Templates for headline & body text only.
               </p>
               <button
                 type="button"
                 onClick={onBrowseTemplates}
-                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-black bg-black px-3.5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-900"
+                className={editorSidebarPrimaryButtonClass}
               >
                 <LayoutTemplate className="size-3.5" aria-hidden />
                 Browse templates
@@ -400,7 +410,7 @@ export function TemplateEditorSidebar({
               open={isOpen("sections")}
               onToggle={toggle}
             >
-              <p className="mb-3 text-xs text-zinc-500">
+              <p className={`mb-3 ${editorSidebarBodyTextClass}`}>
                 Drag to reorder blocks on the landing page.
               </p>
               {landingPage ? (
@@ -429,7 +439,7 @@ export function TemplateEditorSidebar({
                     type="text"
                     value={page.heading}
                     onChange={(e) => onChange({ heading: e.target.value })}
-                    className={contentInputClass}
+                    className={editorContentInputClass}
                   />
                   <ContentTextColorPicker
                     value={landingPage?.headingColor ?? ""}
@@ -444,7 +454,7 @@ export function TemplateEditorSidebar({
                     value={page.subheading}
                     onChange={(e) => onChange({ subheading: e.target.value })}
                     rows={3}
-                    className={`${contentInputClass} resize-y`}
+                    className={`${editorContentInputClass} resize-y`}
                   />
                   <ContentTextColorPicker
                     value={landingPage?.subheadingColor ?? ""}
@@ -459,7 +469,7 @@ export function TemplateEditorSidebar({
                     value={page.body}
                     onChange={(e) => onChange({ body: e.target.value })}
                     rows={8}
-                    className={`${contentInputClass} resize-y`}
+                    className={`${editorContentInputClass} resize-y`}
                   />
                   <ContentTextColorPicker
                     value={landingPage?.bodyColor ?? ""}
@@ -479,7 +489,7 @@ export function TemplateEditorSidebar({
                     type="text"
                     value={page.buttonText}
                     onChange={(e) => onChange({ buttonText: e.target.value })}
-                    className={contentInputClass}
+                    className={editorContentInputClass}
                   />
                   <ContentTextColorPicker
                     value={landingPage?.buttonTextColor ?? ""}
@@ -525,7 +535,7 @@ export function TemplateEditorSidebar({
                   label="Hero image"
                   icon={<ImageIcon className="size-4 shrink-0" strokeWidth={2} />}
                 >
-                  <div className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 shadow-inner ring-1 ring-zinc-950/[0.04]">
+                  <div className={editorSidebarMediaFrameClass}>
                     {page.imageUrl.trim() ? (
                       <div className="aspect-video w-full overflow-hidden">
                         <img
@@ -537,7 +547,7 @@ export function TemplateEditorSidebar({
                       </div>
                     ) : (
                       <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 px-4 text-center">
-                        <span className="text-xs font-medium text-zinc-500">
+                        <span className="text-xs font-medium text-zinc-400">
                           No image yet
                         </span>
                       </div>
@@ -553,7 +563,7 @@ export function TemplateEditorSidebar({
                     />
                     <label
                       htmlFor={mediaFileId}
-                      className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-black bg-black px-3.5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-900"
+                      className={editorSidebarUploadButtonClass}
                     >
                       <Upload
                         className="size-3.5 shrink-0 text-white"
@@ -566,7 +576,7 @@ export function TemplateEditorSidebar({
                       <button
                         type="button"
                         onClick={() => onChange({ imageUrl: "", imageScale: 1 })}
-                        className="inline-flex items-center gap-2 rounded-xl border border-zinc-900/25 bg-zinc-100 px-3.5 py-2.5 text-xs font-semibold text-zinc-900 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-900"
+                        className={editorSidebarSecondaryButtonClass}
                       >
                         <Trash2
                           className="size-3.5 shrink-0"
@@ -586,7 +596,7 @@ export function TemplateEditorSidebar({
                     icon={<ZoomIn className="size-4 shrink-0" strokeWidth={2} />}
                   >
                     <div className="mb-2 flex justify-end">
-                      <span className="rounded-lg bg-zinc-200/90 px-2.5 py-1 text-xs font-semibold tabular-nums text-zinc-900">
+                      <span className="rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-semibold tabular-nums text-zinc-900 ring-1 ring-inset ring-zinc-950/[0.04]">
                         {Math.round(normalizeImageScale(page.imageScale) * 100)}%
                       </span>
                     </div>
@@ -604,7 +614,7 @@ export function TemplateEditorSidebar({
                       }
                       aria-label="Image zoom level"
                     />
-                    <p className="mt-2 text-[0.65rem] leading-relaxed text-zinc-600">
+                    <p className="mt-2 text-[0.65rem] leading-relaxed text-zinc-500">
                       Lower zoom shows more of the photo; higher zoom crops to
                       the center.
                     </p>
@@ -632,7 +642,7 @@ export function TemplateEditorSidebar({
                     type="text"
                     value={payment.heading}
                     onChange={(e) => onChange({ heading: e.target.value })}
-                    className={contentInputClass}
+                    className={editorContentInputClass}
                   />
                 </Field>
                 <Field
@@ -643,7 +653,7 @@ export function TemplateEditorSidebar({
                     value={payment.subheading}
                     onChange={(e) => onChange({ subheading: e.target.value })}
                     rows={3}
-                    className={`${contentInputClass} resize-y`}
+                    className={`${editorContentInputClass} resize-y`}
                   />
                 </Field>
                 <Field
@@ -659,7 +669,7 @@ export function TemplateEditorSidebar({
                     type="text"
                     value={payment.buttonText}
                     onChange={(e) => onChange({ buttonText: e.target.value })}
-                    className={contentInputClass}
+                    className={editorContentInputClass}
                   />
                 </Field>
               </div>
@@ -671,7 +681,7 @@ export function TemplateEditorSidebar({
               open={isOpen("checkout-templates")}
               onToggle={toggle}
             >
-              <p className="mb-2 text-xs font-medium text-zinc-600">
+              <p className="mb-2 text-xs font-medium text-zinc-500">
                 Choose a checkout layout
               </p>
               <div className={editorSidebarPickerPanelClass}>
@@ -697,8 +707,8 @@ export function TemplateEditorSidebar({
                   </div>
                 </div>
               </div>
-              <div className="mt-4 space-y-3 border-t border-zinc-200/80 pt-4">
-                <p className="text-xs font-medium text-zinc-600">Display options</p>
+              <div className={`mt-4 space-y-3 ${editorSidebarSectionDividerClass} pt-4`}>
+                <p className={editorSidebarCaptionClass}>Display options</p>
                 {(
                   [
                     ["showCoupon", "Coupon field"],
@@ -709,7 +719,7 @@ export function TemplateEditorSidebar({
                 ).map(([key, label]) => (
                   <label
                     key={key}
-                    className="flex cursor-pointer items-center gap-2 text-xs text-zinc-700"
+                    className={editorSidebarCheckboxLabelClass}
                   >
                     <input
                       type="checkbox"
@@ -737,7 +747,7 @@ export function TemplateEditorSidebar({
                         },
                       })
                     }
-                    className="h-9 w-full cursor-pointer rounded-lg border border-zinc-200"
+                    className="h-9 w-full cursor-pointer rounded-lg border border-zinc-200 bg-white transition-[border-color,box-shadow] duration-200 hover:border-zinc-300"
                   />
                 </Field>
                 <Field
@@ -756,7 +766,7 @@ export function TemplateEditorSidebar({
                         backgroundColor: e.target.value,
                       })
                     }
-                    className="h-9 w-full cursor-pointer rounded-lg border border-zinc-200"
+                    className="h-9 w-full cursor-pointer rounded-lg border border-zinc-200 bg-white transition-[border-color,box-shadow] duration-200 hover:border-zinc-300"
                   />
                 </Field>
               </div>
@@ -768,9 +778,7 @@ export function TemplateEditorSidebar({
               open={isOpen("form")}
               onToggle={toggle}
             >
-              <p className="mb-2 text-xs font-medium text-zinc-600">
-                Design preset
-              </p>
+              <p className={editorSidebarCaptionClass}>Design preset</p>
               <div className="max-h-72 overflow-y-auto overscroll-y-contain pr-0.5 sm:max-h-96">
                 <div className="grid grid-cols-1 gap-2.5">
                   {FORM_DESIGN_OPTIONS.filter(
@@ -784,10 +792,10 @@ export function TemplateEditorSidebar({
                         onClick={() =>
                           onChange({ formDesign: opt.value as FormDesign })
                         }
-                        className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition ${
+                        className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition duration-200 ${
                           on
-                            ? "border-zinc-900 bg-zinc-900 text-white shadow-md ring-1 ring-black/20"
-                            : "border-zinc-200/90 bg-white text-zinc-900 shadow-sm hover:border-zinc-300 hover:bg-zinc-50/90"
+                            ? editorSidebarPickerRowSelectedClass
+                            : editorSidebarPickerRowClass
                         }`}
                       >
                         <FormDesignSwatch design={opt.value} selected={on} />
@@ -828,7 +836,7 @@ export function TemplateEditorSidebar({
                   type="text"
                   value={page.heading}
                   onChange={(e) => onChange({ heading: e.target.value })}
-                  className={contentInputClass}
+                  className={editorContentInputClass}
                 />
               </Field>
               <Field
@@ -839,7 +847,7 @@ export function TemplateEditorSidebar({
                   value={page.subheading}
                   onChange={(e) => onChange({ subheading: e.target.value })}
                   rows={3}
-                  className={`${contentInputClass} resize-y`}
+                  className={`${editorContentInputClass} resize-y`}
                 />
               </Field>
               <Field
@@ -850,7 +858,7 @@ export function TemplateEditorSidebar({
                   value={page.body}
                   onChange={(e) => onChange({ body: e.target.value })}
                   rows={8}
-                  className={`${contentInputClass} resize-y`}
+                  className={`${editorContentInputClass} resize-y`}
                 />
               </Field>
               <Field
@@ -866,7 +874,7 @@ export function TemplateEditorSidebar({
                   type="text"
                   value={page.buttonText}
                   onChange={(e) => onChange({ buttonText: e.target.value })}
-                  className={contentInputClass}
+                  className={editorContentInputClass}
                 />
               </Field>
             </div>
@@ -889,7 +897,7 @@ export function TemplateEditorSidebar({
                   value={page.body}
                   onChange={(e) => onChange({ body: e.target.value })}
                   rows={6}
-                  className={`${contentInputClass} resize-y`}
+                  className={`${editorContentInputClass} resize-y`}
                   placeholder="Shown above the form on the sign up page"
                 />
               </Field>
@@ -902,9 +910,7 @@ export function TemplateEditorSidebar({
               onToggle={toggle}
             >
             <div>
-              <p className="mb-2 text-xs font-medium text-zinc-600">
-                Form fields
-              </p>
+              <p className={editorSidebarCaptionClass}>Form fields</p>
               <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                 {FORM_FIELD_OPTIONS.map((f) => {
                   const on = signup.formFieldIds.includes(f.id);
@@ -920,13 +926,13 @@ export function TemplateEditorSidebar({
                           ? `Included — click to remove (${f.label})`
                           : `Not included — click to add (${f.label})`
                       }
-                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg py-1 text-left text-zinc-800 transition hover:bg-zinc-50"
+                      className={editorSidebarFormFieldRowClass}
                     >
                       <span
-                        className={`flex size-8 shrink-0 items-center justify-center rounded-lg border shadow-sm ring-1 ring-black/5 ${
+                        className={`flex size-8 shrink-0 items-center justify-center rounded-lg border shadow-sm ring-1 ring-black/5 transition-[border-color,background-color,color] duration-200 ${
                           on
-                            ? "border-zinc-900 bg-black text-white"
-                            : "border-zinc-200/90 bg-white text-zinc-400"
+                            ? editorSidebarFormFieldIconOnClass
+                            : editorSidebarFormFieldIconOffClass
                         }`}
                         aria-hidden
                       >
@@ -943,9 +949,7 @@ export function TemplateEditorSidebar({
               </div>
             </div>
             <div className="pt-2">
-              <p className="mb-2 text-xs font-medium text-zinc-600">
-                Design preset
-              </p>
+              <p className={editorSidebarCaptionClass}>Design preset</p>
               <div className="max-h-72 overflow-y-auto overscroll-y-contain pr-0.5 sm:max-h-96">
                 <div className="grid grid-cols-1 gap-2.5">
                 {FORM_DESIGN_OPTIONS.filter(
@@ -959,10 +963,10 @@ export function TemplateEditorSidebar({
                       onClick={() =>
                         onChange({ formDesign: opt.value as FormDesign })
                       }
-                      className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition ${
+                      className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition duration-200 ${
                         on
-                          ? "border-zinc-900 bg-zinc-900 text-white shadow-md ring-1 ring-black/20"
-                          : "border-zinc-200/90 bg-white text-zinc-900 shadow-sm hover:border-zinc-300 hover:bg-zinc-50/90"
+                          ? editorSidebarPickerRowSelectedClass
+                          : editorSidebarPickerRowClass
                       }`}
                     >
                       <FormDesignSwatch design={opt.value} selected={on} />
@@ -984,7 +988,7 @@ export function TemplateEditorSidebar({
                 </div>
               </div>
             </div>
-            <div className="space-y-3 border-t border-zinc-200 pt-4">
+            <div className={`space-y-3 ${editorSidebarSectionDividerClass} pt-4`}>
               <Field
                 layout="inline"
                 label="Back button text"
@@ -998,7 +1002,7 @@ export function TemplateEditorSidebar({
                   onChange={(e) =>
                     onChange({ navBackLabel: e.target.value })
                   }
-                  className={inlineInputClass}
+                  className={editorInlineInputClass}
                 />
               </Field>
               <Field
@@ -1014,7 +1018,7 @@ export function TemplateEditorSidebar({
                   onChange={(e) =>
                     onChange({ navNextLabel: e.target.value })
                   }
-                  className={inlineInputClass}
+                  className={editorInlineInputClass}
                 />
               </Field>
             </div>

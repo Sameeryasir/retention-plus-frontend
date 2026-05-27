@@ -33,10 +33,14 @@ export function triggerToUi(trigger: string): string {
   return API_TRIGGER_TO_UI[trigger] ?? trigger;
 }
 
-function listStatusFromApi(automation: Automation): AutomationStatus {
+export function automationStatusFromApi(automation: Automation): AutomationStatus {
   if (automation.isActive) return "active";
   if (automation.published) return "published";
   return "draft";
+}
+
+function listStatusFromApi(automation: Automation): AutomationStatus {
+  return automationStatusFromApi(automation);
 }
 
 function formatLastUpdated(iso?: string): string {

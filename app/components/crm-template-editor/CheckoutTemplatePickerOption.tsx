@@ -77,7 +77,7 @@ export function CheckoutTemplatePickerOption({
       className={[
         "relative w-full overflow-hidden rounded-lg border text-left transition",
         selected
-          ? "border-zinc-900 bg-white ring-1 ring-zinc-900/10"
+          ? "border-zinc-900 bg-white ring-1 ring-zinc-900/10 shadow-sm"
           : "border-zinc-200/90 bg-zinc-50/40 hover:border-zinc-300 hover:bg-white",
       ].join(" ")}
     >

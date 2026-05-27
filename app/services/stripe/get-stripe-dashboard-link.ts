@@ -1,4 +1,5 @@
 import { getApiBaseUrl, parseApiErrorMessage } from "@/app/lib/api";
+import { authenticatedFetch } from "@/app/lib/authenticated-fetch";
 
 export type StripeDashboardLinkResponse = {
   url: string;
@@ -31,13 +32,10 @@ export async function getStripeDashboardLink(
     throw new Error("Restaurant is required.");
   }
 
-  const res = await fetch(
+  const res = await authenticatedFetch(
     `${getApiBaseUrl()}/stripe/dashboard-link/${encodeURIComponent(String(restaurantId))}`,
     {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
     },
   );
 

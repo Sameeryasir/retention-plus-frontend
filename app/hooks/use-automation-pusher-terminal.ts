@@ -7,10 +7,6 @@ import {
 } from "@/app/lib/pusher-execution";
 import { subscribeAutomationTerminal } from "@/app/lib/pusher-client";
 
-/**
- * Listens on automation-{automationId} so cron-triggered runs update the Runs tab
- * when they finish (cron never goes through the Run button / execution-id subscribe path).
- */
 export function useAutomationPusherTerminal(
   automationId: number,
   onTerminal: (payload: ExecutionTerminalPusherPayload) => void,

@@ -1,5 +1,6 @@
 import axios from "axios";
-import { getApiBaseUrl, parseApiMessage } from "@/app/lib/api";
+import { parseApiMessage } from "@/app/lib/api";
+import { authAxios } from "@/app/lib/auth-axios";
 
 export type AdminRestaurant = {
   id?: number;
@@ -195,11 +196,7 @@ export async function fetchMyRestaurants(
   }
 
   try {
-    const response = await axios.get<unknown>(`${getApiBaseUrl()}/restaurant/all`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    const response = await authAxios.get<unknown>("/restaurant/all");
     const data = response.data;
     if (Array.isArray(data)) {
       return data
@@ -239,13 +236,8 @@ export async function fetchRestaurantById(
   }
 
   try {
-    const response = await axios.get<unknown>(
-      `${getApiBaseUrl()}/restaurant/${restaurantId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
+    const response = await authAxios.get<unknown>(
+      `/restaurant/${restaurantId}`,
     );
     const one = coerceRestaurantDetail(response.data);
     if (!one) {

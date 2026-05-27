@@ -1,5 +1,6 @@
 import axios from "axios";
-import { getApiBaseUrl, parseApiMessage } from "@/app/lib/api";
+import { parseApiMessage } from "@/app/lib/api";
+import { authAxios } from "@/app/lib/auth-axios";
 
 export type CreateMenuPayload = {
   restaurantId: number;
@@ -41,14 +42,9 @@ export async function uploadRestaurantMenu(
   formData.append("file", payload.file);
 
   try {
-    const response = await axios.post<UploadMenuResponse>(
-      `${getApiBaseUrl()}/menu/create`,
+    const response = await authAxios.post<UploadMenuResponse>(
+      "/menu/create",
       formData,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
     );
     return response.data;
   } catch (error) {
