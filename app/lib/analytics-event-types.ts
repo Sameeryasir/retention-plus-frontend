@@ -5,9 +5,8 @@ export const ANALYTICS_EVENT_TYPES = {
   FORM_START: "form_start",
   CHECKOUT_OPEN: "checkout_open",
   VIDEO_PLAY: "video_play",
+  EXIT_INTENT: "exit_intent",
 } as const;
 
 export type AnalyticsEventType =
   (typeof ANALYTICS_EVENT_TYPES)[keyof typeof ANALYTICS_EVENT_TYPES];
-
-export type AnalyticsPageName = "landing" | "signup" | "payment";

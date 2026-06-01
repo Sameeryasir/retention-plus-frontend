@@ -9,4 +9,14 @@ export const funnelQueryKeys = {
   eventStats: () => [...funnelQueryKeys.all, "event-stats"] as const,
   eventStatsByFunnel: (funnelId: number) =>
     [...funnelQueryKeys.eventStats(), funnelId] as const,
+  analyticsOverview: () =>
+    [...funnelQueryKeys.all, "analytics-overview"] as const,
+  analyticsOverviewByFunnel: (funnelId: number) =>
+    [...funnelQueryKeys.analyticsOverview(), funnelId] as const,
+  dropoff: () => [...funnelQueryKeys.all, "dropoff"] as const,
+  dropoffByFunnel: (funnelId: number) =>
+    [...funnelQueryKeys.dropoff(), funnelId] as const,
+  trafficSources: () => [...funnelQueryKeys.all, "traffic-sources"] as const,
+  trafficSourcesByFunnel: (funnelId: number) =>
+    [...funnelQueryKeys.trafficSources(), funnelId] as const,
 };

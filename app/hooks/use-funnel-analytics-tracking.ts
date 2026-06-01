@@ -2,9 +2,24 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { ANALYTICS_EVENT_TYPES } from "@/app/lib/analytics-event-types";
+import {
+  resolveFunnelStepContext,
+  resolvePagePath,
+} from "@/app/lib/funnel-analytics-steps";
 import { getFunnelCheckoutCustomerId } from "@/app/lib/funnel-checkout-storage";
+import { getOrCreateFunnelSessionId } from "@/app/lib/funnel-session-id";
 import { getOrCreateVisitorId } from "@/app/lib/funnel-visitor-id";
 import { trackAnalyticsEvent } from "@/app/services/funnel/track-analytics-event";
+
+function buildAnalyticsContext(pageKey: string) {
+  const step = resolveFunnelStepContext(pageKey);
+  return {
+    ...step,
+    pagePath: resolvePagePath(step.pagePath),
+    visitorId: getOrCreateVisitorId(),
+    sessionId: getOrCreateFunnelSessionId(),
+  };
+}
 
 export function useFunnelAnalyticsTracking(
   funnelId: number | null | undefined,
@@ -20,12 +35,16 @@ export function useFunnelAnalyticsTracking(
     lastPageViewKey.current = viewKey;
 
     const customerId = getFunnelCheckoutCustomerId();
+    const ctx = buildAnalyticsContext(pageName);
 
     void trackAnalyticsEvent({
       funnelId,
-      visitorId: getOrCreateVisitorId(),
       eventType: ANALYTICS_EVENT_TYPES.PAGE_VIEW,
-      pageName,
+      visitorId: ctx.visitorId,
+      sessionId: ctx.sessionId,
+      pagePath: ctx.pagePath,
+      stepName: ctx.stepName,
+      stepOrder: ctx.stepOrder,
       ...(customerId != null ? { customerId } : {}),
     }).catch((err) => {
       console.warn("[Analytics] page_view track failed", err);
@@ -33,17 +52,24 @@ export function useFunnelAnalyticsTracking(
   }, [funnelId, pageName]);
 
   const trackButtonClick = useCallback(
-    (elementName: string) => {
+    (elementName: string, section = "CTA") => {
       if (funnelId == null || funnelId < 1) return;
 
       const customerId = getFunnelCheckoutCustomerId();
+      const ctx = buildAnalyticsContext(pageName);
 
       void trackAnalyticsEvent({
         funnelId,
-        visitorId: getOrCreateVisitorId(),
         eventType: ANALYTICS_EVENT_TYPES.BUTTON_CLICK,
-        pageName,
-        elementName,
+        visitorId: ctx.visitorId,
+        sessionId: ctx.sessionId,
+        pagePath: ctx.pagePath,
+        stepName: ctx.stepName,
+        stepOrder: ctx.stepOrder,
+        metadata: {
+          buttonText: elementName,
+          section,
+        },
         ...(customerId != null ? { customerId } : {}),
       }).catch((err) => {
         console.warn("[Analytics] button_click track failed", err);

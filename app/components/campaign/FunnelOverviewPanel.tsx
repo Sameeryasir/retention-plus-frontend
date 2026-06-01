@@ -1,10 +1,19 @@
 "use client";
 
-import { DollarSign, TrendingUp, UserPlus, Users } from "lucide-react";
+import {
+  Activity,
+  DollarSign,
+  Eye,
+  MousePointerClick,
+  TrendingUp,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useMemo, type ReactNode } from "react";
 import { MetricStatCardAccent } from "@/app/components/shared/MetricStatCard";
 import { Skeleton } from "@/app/components/skeleton";
+import { useAnalyticsOverview } from "@/app/hooks/use-analytics-overview";
 import { useFunnelEventStats } from "@/app/hooks/use-funnel-event-stats";
 import { formatCents } from "@/app/lib/money";
 import { funnelPanelItem, funnelPanelStagger, standardEase } from "@/app/lib/motion";
@@ -230,6 +239,11 @@ export function FunnelOverviewPanel({
 }) {
   const { stats, isLoading: isStatsLoading, error } =
     useFunnelEventStats(funnelId);
+  const {
+    overview: analyticsOverview,
+    isLoading: isAnalyticsLoading,
+    error: analyticsError,
+  } = useAnalyticsOverview(funnelId);
 
   const isWaitingForStats =
     funnelId != null && stats == null && error == null;
@@ -292,7 +306,7 @@ export function FunnelOverviewPanel({
               {displayName}
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">
-              Signups, payments, and revenue for this funnel.
+              Conversion metrics and live funnel behavior analytics.
             </p>
           </div>
         </motion.header>
@@ -316,6 +330,12 @@ export function FunnelOverviewPanel({
         {error && !showSkeleton ? (
           <p className="rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3.5 text-sm text-red-900 shadow-sm">
             {error}
+          </p>
+        ) : null}
+
+        {analyticsError && !showSkeleton ? (
+          <p className="rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3.5 text-sm text-amber-950 shadow-sm">
+            {analyticsError}
           </p>
         ) : null}
 
@@ -400,6 +420,71 @@ export function FunnelOverviewPanel({
                 </div>
               </OverviewPanelCard>
             </motion.div>
+
+            {isAnalyticsLoading ? (
+              <motion.div variants={funnelPanelItem}>
+                <OverviewPanelCard
+                  title="Behavior analytics"
+                  subtitle="Loading page views and engagement…"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Skeleton key={i} funnel className="h-16 w-full rounded-xl" />
+                    ))}
+                  </div>
+                </OverviewPanelCard>
+              </motion.div>
+            ) : null}
+
+            {analyticsOverview && !isAnalyticsLoading ? (
+              <>
+                <motion.div variants={funnelPanelItem}>
+                  <h3 className="text-sm font-semibold text-zinc-900">
+                    Behavior analytics
+                  </h3>
+                  <p className="mt-0.5 text-xs text-zinc-500">
+                    Page views, clicks, sessions, and customers on the live funnel
+                  </p>
+                </motion.div>
+                <motion.div
+                  className="grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-4"
+                  variants={funnelPanelStagger}
+                >
+                  <motion.div className="h-full" variants={funnelPanelItem}>
+                    <MetricStatCardAccent
+                      label="Page views"
+                      value={analyticsOverview.pageViews}
+                      icon={Eye}
+                      tone="blue"
+                    />
+                  </motion.div>
+                  <motion.div className="h-full" variants={funnelPanelItem}>
+                    <MetricStatCardAccent
+                      label="Button clicks"
+                      value={analyticsOverview.buttonClicks}
+                      icon={MousePointerClick}
+                      tone="violet"
+                    />
+                  </motion.div>
+                  <motion.div className="h-full" variants={funnelPanelItem}>
+                    <MetricStatCardAccent
+                      label="Unique customers"
+                      value={analyticsOverview.uniqueVisitors}
+                      icon={Users}
+                      tone="emerald"
+                    />
+                  </motion.div>
+                  <motion.div className="h-full" variants={funnelPanelItem}>
+                    <MetricStatCardAccent
+                      label="Sessions"
+                      value={analyticsOverview.sessions}
+                      icon={Activity}
+                      tone="zinc"
+                    />
+                  </motion.div>
+                </motion.div>
+              </>
+            ) : null}
           </motion.div>
         ) : null}
       </div>
