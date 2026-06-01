@@ -7,20 +7,24 @@ export function TableColumnHeader({
   label,
   variant = "inline",
   iconClassName = "text-zinc-400",
+  iconBoxClassName = "border-zinc-200/80 bg-white",
 }: {
   icon?: LucideIcon;
   label: string;
   variant?: "inline" | "boxed";
   iconClassName?: string;
+  iconBoxClassName?: string;
 }) {
   if (!label) return <span aria-hidden />;
 
   if (variant === "boxed" && Icon) {
     return (
       <span className="inline-flex items-center gap-2.5">
-        <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-zinc-200/80 bg-white shadow-sm ring-1 ring-zinc-950/[0.04]">
+        <span
+          className={`inline-flex size-7 shrink-0 items-center justify-center rounded-lg border shadow-sm ring-1 ring-zinc-950/[0.04] ${iconBoxClassName}`}
+        >
           <Icon
-            className="size-3.5 text-black"
+            className={`size-3.5 ${iconClassName}`}
             strokeWidth={ICON_STROKE}
             aria-hidden
           />

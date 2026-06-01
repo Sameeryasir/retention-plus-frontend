@@ -142,22 +142,58 @@ export function FunnelOrdersPanel({
                       <TableColumnHeader variant="boxed" icon={Hash} label="" />
                     </th>
                     <th className={`${thClass} w-16`}>
-                      <TableColumnHeader variant="boxed" icon={Layers} label="Platform" />
+                      <TableColumnHeader
+                        variant="boxed"
+                        icon={Layers}
+                        label="Platform"
+                        iconClassName="text-[#635bff]"
+                        iconBoxClassName="border-[#635bff]/25 bg-[#635bff]/10"
+                      />
                     </th>
                     <th className={thClass}>
-                      <TableColumnHeader variant="boxed" icon={Mail} label="Customer email" />
+                      <TableColumnHeader
+                        variant="boxed"
+                        icon={Mail}
+                        label="Customer email"
+                        iconClassName="text-blue-600"
+                        iconBoxClassName="border-blue-200/80 bg-blue-50"
+                      />
                     </th>
                     <th className={`${thClass} whitespace-nowrap`}>
-                      <TableColumnHeader variant="boxed" icon={CircleDollarSign} label="Amount" />
+                      <TableColumnHeader
+                        variant="boxed"
+                        icon={CircleDollarSign}
+                        label="Amount"
+                        iconClassName="text-emerald-600"
+                        iconBoxClassName="border-emerald-200/80 bg-emerald-50"
+                      />
                     </th>
                     <th className={`${thClass} whitespace-nowrap`}>
-                      <TableColumnHeader variant="boxed" icon={CircleCheck} label="Status" />
+                      <TableColumnHeader
+                        variant="boxed"
+                        icon={CircleCheck}
+                        label="Status"
+                        iconClassName="text-teal-600"
+                        iconBoxClassName="border-teal-200/80 bg-teal-50"
+                      />
                     </th>
                     <th className={`${thClass} whitespace-nowrap`}>
-                      <TableColumnHeader variant="boxed" icon={Calendar} label="Paid at" />
+                      <TableColumnHeader
+                        variant="boxed"
+                        icon={Calendar}
+                        label="Paid at"
+                        iconClassName="text-orange-600"
+                        iconBoxClassName="border-orange-200/80 bg-orange-50"
+                      />
                     </th>
                     <th className={`${thClass} whitespace-nowrap`}>
-                      <TableColumnHeader variant="boxed" icon={Receipt} label="Receipt" />
+                      <TableColumnHeader
+                        variant="boxed"
+                        icon={Receipt}
+                        label="Receipt"
+                        iconClassName="text-violet-600"
+                        iconBoxClassName="border-violet-200/80 bg-violet-50"
+                      />
                     </th>
                   </motion.tr>
                 </thead>
