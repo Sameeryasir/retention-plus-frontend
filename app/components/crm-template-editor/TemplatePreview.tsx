@@ -11,6 +11,7 @@ import { LandingPagePreview } from "@/app/components/crm-template-editor/Landing
 import { SignupPagePreview } from "@/app/components/crm-template-editor/SignupPagePreview";
 import { normalizeHeroDesign } from "@/app/components/crm-template-editor/hero-designs/registry";
 import { normalizeLandingDesign } from "@/app/components/crm-template-editor/landing-designs/registry";
+import { ConfirmationPagePreview } from "@/app/components/crm-template-editor/ConfirmationPagePreview";
 import { PaymentPagePreview } from "@/app/components/crm-template-editor/PaymentPagePreview";
 import {
   imageScaleStyle,
@@ -263,6 +264,18 @@ export function TemplatePreview({
             stripeCheckout={paymentStripeCheckout}
             campaignPricing={campaignPricing}
           />
+        </div>
+      </div>
+    );
+  }
+
+  if (page.id === "confirmation" && isLandingTemplatePage(landingPage)) {
+    return (
+      <div className={`${shell} w-full min-w-0`}>
+        <div
+          className={`w-full min-w-0 overflow-hidden ${previewFrameClass}`}
+        >
+          <ConfirmationPagePreview page={page} landingPage={landingPage} />
         </div>
       </div>
     );

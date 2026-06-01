@@ -37,6 +37,28 @@ export function buildFunnelPublicPath({
   return qs ? `${path}?${qs}` : path;
 }
 
+export function buildFunnelPaymentConfirmationPath(
+  funnelId: number | string,
+  query?: FunnelPublicPathQuery,
+  options?: { redirectStatus?: string; paymentConfirmed?: boolean },
+): string {
+  let path = buildFunnelPublicPath({
+    funnelId,
+    step: "confirmation",
+    query,
+  });
+  const extra = new URLSearchParams();
+  if (options?.redirectStatus?.trim()) {
+    extra.set("redirect_status", options.redirectStatus.trim());
+  }
+  if (options?.paymentConfirmed) {
+    extra.set("payment_confirmed", "1");
+  }
+  const extraQs = extra.toString();
+  if (!extraQs) return path;
+  return path.includes("?") ? `${path}&${extraQs}` : `${path}?${extraQs}`;
+}
+
 export function resolveFunnelRouteId(
   funnelId: number | null | undefined,
   campaignId: number | null | undefined,

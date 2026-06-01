@@ -1,4 +1,9 @@
 import {
+  CONFIRMATION_DEFAULT_BODY,
+  CONFIRMATION_DEFAULT_HEADING,
+  CONFIRMATION_DEFAULT_SUBHEADING,
+} from "@/app/components/crm-template-editor/confirmation-defaults";
+import {
   CheckoutTemplateType,
   DEFAULT_CHECKOUT_THEME,
 } from "@/app/components/crm-template-editor/checkout-template-types";
@@ -101,9 +106,9 @@ export const INITIAL_TEMPLATE_PAGES: TemplatePagesState = {
   confirmation: {
     id: "confirmation",
     label: "Confirmation Page",
-    heading: LOREM_HEADING,
-    subheading: LOREM_SUB,
-    body: LOREM_BODY,
+    heading: CONFIRMATION_DEFAULT_HEADING,
+    subheading: CONFIRMATION_DEFAULT_SUBHEADING,
+    body: CONFIRMATION_DEFAULT_BODY,
     buttonText: "View details",
     imageUrl: "",
     imageScale: 1,

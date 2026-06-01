@@ -20,6 +20,7 @@ import {
   getFunnelPaymentId,
 } from "@/app/lib/funnel-checkout-storage";
 import { getOrCreateVisitorId } from "@/app/lib/funnel-visitor-id";
+import { buildFunnelPaymentConfirmationPath } from "@/app/lib/funnel-public-path";
 import { trackFunnelEvent } from "@/app/services/funnel/track-funnel-event";
 import { checkoutFormRootClass } from "@/app/components/payment-templates/shared/checkout-form-classes";
 import type { CheckoutFormStyles } from "@/app/components/payment-templates/shared/checkout-form-styles";
@@ -28,6 +29,8 @@ import { checkoutStripeFieldShell } from "@/app/components/payment-templates/sha
 export type CustomCardCheckoutFormProps = {
   clientSecret: string;
   funnelId: number;
+  campaignId?: number | null;
+  restaurantId?: number | null;
   customerEmail: string;
   page: PaymentTemplatePage;
   formStyles: CheckoutFormStyles;
@@ -51,6 +54,8 @@ async function trackPaymentSuccess(funnelId: number): Promise<void> {
 export function CustomCardCheckoutForm({
   clientSecret,
   funnelId,
+  campaignId,
+  restaurantId,
   customerEmail,
   page,
   formStyles,
@@ -89,8 +94,12 @@ export function CustomCardCheckoutForm({
 
     setBusy(true);
     try {
-      const returnUrl = new URL("/payment/success", window.location.origin);
-      returnUrl.searchParams.set("funnelId", String(funnelId));
+      const confirmationPath = buildFunnelPaymentConfirmationPath(
+        funnelId,
+        { campaignId, restaurantId },
+        { redirectStatus: "succeeded", paymentConfirmed: true },
+      );
+      const returnUrl = new URL(confirmationPath, window.location.origin);
 
       const { error, paymentIntent } = await stripe.confirmCardPayment(
         clientSecret,
@@ -129,7 +138,7 @@ export function CustomCardCheckoutForm({
         } catch (trackErr) {
           console.warn("[Funnel] payment track failed", trackErr);
         }
-        window.location.href = `${returnUrl.toString()}&redirect_status=succeeded`;
+        window.location.href = returnUrl.toString();
       }
     } finally {
       setBusy(false);

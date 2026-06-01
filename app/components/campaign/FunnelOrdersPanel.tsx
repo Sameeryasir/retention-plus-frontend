@@ -206,7 +206,9 @@ export function FunnelOrdersPanel({
                     <motion.tr
                       key={payment.id}
                       variants={tableRowReveal}
-                      className="group border-b border-zinc-100/90 bg-white transition-[background-color,box-shadow] duration-200 last:border-0 hover:bg-zinc-50/90 hover:shadow-[inset_3px_0_0_0_rgb(24_24_27)]"
+                      className={`group border-b border-zinc-100/90 bg-white transition-[background-color,box-shadow] duration-200 last:border-0 hover:bg-zinc-50/90 hover:shadow-[inset_3px_0_0_0_rgb(24_24_27)] ${
+                        payment.receiptUrl ? "hover:cursor-pointer" : ""
+                      }`}
                     >
                       <td className={`${tdClass} w-12`}>
                         <span className="inline-flex size-7 items-center justify-center rounded-lg bg-zinc-100/90 text-xs font-semibold tabular-nums text-zinc-600 ring-1 ring-zinc-200/80">
@@ -262,7 +264,7 @@ export function FunnelOrdersPanel({
                             href={payment.receiptUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950"
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-zinc-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950"
                           >
                             View receipt
                             <ExternalLink

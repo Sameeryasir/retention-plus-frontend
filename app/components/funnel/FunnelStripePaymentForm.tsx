@@ -18,6 +18,7 @@ export type FunnelStripePaymentContext = {
   applicationFeeAmount: number;
   currency: string;
   customerEmail: string;
+  campaignId?: number | null;
 };
 
 export function FunnelStripePaymentForm({
@@ -169,6 +170,8 @@ export function FunnelStripePaymentForm({
       <CustomCardCheckoutForm
         clientSecret={clientSecret}
         funnelId={context.funnelId}
+        campaignId={context.campaignId}
+        restaurantId={context.restaurantId}
         customerEmail={context.customerEmail}
         page={page}
         formStyles={formStyles}

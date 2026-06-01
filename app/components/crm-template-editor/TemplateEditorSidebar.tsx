@@ -861,22 +861,6 @@ export function TemplateEditorSidebar({
                   className={`${editorContentInputClass} resize-y`}
                 />
               </Field>
-              <Field
-                label="Button text"
-                icon={
-                  <MousePointerClick
-                    className="size-4 shrink-0"
-                    strokeWidth={2}
-                  />
-                }
-              >
-                <input
-                  type="text"
-                  value={page.buttonText}
-                  onChange={(e) => onChange({ buttonText: e.target.value })}
-                  className={editorContentInputClass}
-                />
-              </Field>
             </div>
           </AccordionSection>
         ) : null}

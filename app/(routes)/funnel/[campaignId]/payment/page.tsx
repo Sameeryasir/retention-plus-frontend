@@ -43,8 +43,9 @@ function FunnelCampaignPaymentPageInner() {
       applicationFeeAmount,
       currency,
       customerEmail: email,
+      campaignId,
     };
-  }, [funnelId, restaurantId, checkoutEmail, searchParams]);
+  }, [funnelId, restaurantId, campaignId, checkoutEmail, searchParams]);
 
   const showSetupHint =
     Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim()) &&
