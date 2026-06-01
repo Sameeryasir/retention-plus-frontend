@@ -10,7 +10,8 @@ import {
   Users,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { OverviewAlertDialog } from "@/app/components/campaign/OverviewAlertDialog";
 import { MetricStatCardAccent } from "@/app/components/shared/MetricStatCard";
 import { Skeleton } from "@/app/components/skeleton";
 import { useAnalyticsOverview } from "@/app/hooks/use-analytics-overview";
@@ -149,6 +150,29 @@ function OverviewSkeleton() {
           ))}
         </div>
       </div>
+
+      <div>
+        <Skeleton funnel className="h-4 w-36" />
+        <Skeleton funnel className="mt-2 h-3 w-56" />
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} funnel className="h-16 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NoRecordsFoundCard() {
+  return (
+    <div
+      className={`${panelCardClass} ${panelCardPaddingClass} py-14 text-center`}
+    >
+      <p className="text-sm font-semibold text-zinc-900">No records found</p>
+      <p className="mt-1.5 text-sm text-zinc-500">
+        No signups or payments yet for this campaign.
+      </p>
     </div>
   );
 }
@@ -245,11 +269,38 @@ export function FunnelOverviewPanel({
     error: analyticsError,
   } = useAnalyticsOverview(funnelId);
 
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [alertDismissed, setAlertDismissed] = useState(false);
+
   const isWaitingForStats =
     funnelId != null && stats == null && error == null;
   const showSkeleton =
-    isFunnelIdLoading || isStatsLoading || isWaitingForStats;
+    isFunnelIdLoading ||
+    isStatsLoading ||
+    isWaitingForStats ||
+    isAnalyticsLoading;
   const showNoFunnelMessage = !showSkeleton && funnelId == null;
+  const showNoRecords =
+    !showSkeleton &&
+    !error &&
+    !analyticsError &&
+    funnelId != null &&
+    (stats == null ||
+      (stats.signups === 0 && stats.payments === 0 && stats.revenue === 0));
+
+  useEffect(() => {
+    if (showSkeleton) return;
+
+    const message = error ?? analyticsError;
+    if (message && !alertDismissed) {
+      setAlertMessage(message);
+    }
+  }, [error, analyticsError, showSkeleton, alertDismissed]);
+
+  useEffect(() => {
+    setAlertDismissed(false);
+    setAlertMessage(null);
+  }, [funnelId]);
 
   const conversionRate = useMemo(() => {
     if (!stats || stats.signups <= 0) return 0;
@@ -291,6 +342,15 @@ export function FunnelOverviewPanel({
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-zinc-50 via-white to-zinc-100/70">
+      <OverviewAlertDialog
+        open={alertMessage != null}
+        message={alertMessage ?? ""}
+        onClose={() => {
+          setAlertMessage(null);
+          setAlertDismissed(true);
+        }}
+      />
+
       <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:py-10">
         <motion.header
           className="mb-8 rounded-2xl border border-zinc-200/80 bg-white/90 px-5 py-5 shadow-sm ring-1 ring-zinc-950/[0.03] backdrop-blur-sm sm:px-6"
@@ -327,19 +387,9 @@ export function FunnelOverviewPanel({
           </motion.div>
         ) : null}
 
-        {error && !showSkeleton ? (
-          <p className="rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3.5 text-sm text-red-900 shadow-sm">
-            {error}
-          </p>
-        ) : null}
+        {showNoRecords ? <NoRecordsFoundCard /> : null}
 
-        {analyticsError && !showSkeleton ? (
-          <p className="rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3.5 text-sm text-amber-950 shadow-sm">
-            {analyticsError}
-          </p>
-        ) : null}
-
-        {stats && !showSkeleton ? (
+        {stats && !showSkeleton && !showNoRecords ? (
           <motion.div
             key="overview-content"
             className="space-y-8"
@@ -421,22 +471,7 @@ export function FunnelOverviewPanel({
               </OverviewPanelCard>
             </motion.div>
 
-            {isAnalyticsLoading ? (
-              <motion.div variants={funnelPanelItem}>
-                <OverviewPanelCard
-                  title="Behavior analytics"
-                  subtitle="Loading page views and engagement…"
-                >
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <Skeleton key={i} funnel className="h-16 w-full rounded-xl" />
-                    ))}
-                  </div>
-                </OverviewPanelCard>
-              </motion.div>
-            ) : null}
-
-            {analyticsOverview && !isAnalyticsLoading ? (
+            {analyticsOverview ? (
               <>
                 <motion.div variants={funnelPanelItem}>
                   <h3 className="text-sm font-semibold text-zinc-900">

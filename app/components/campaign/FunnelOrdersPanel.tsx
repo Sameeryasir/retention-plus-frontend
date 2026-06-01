@@ -11,6 +11,8 @@ import {
   Receipt,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { OverviewAlertDialog } from "@/app/components/campaign/OverviewAlertDialog";
 import { StripeIcon } from "@/app/components/StripeLogo";
 import { Skeleton } from "@/app/components/skeleton";
 import { TableColumnHeader } from "@/app/components/TableColumnHeader";
@@ -80,12 +82,36 @@ export function FunnelOrdersPanel({
   const { payments, isLoading: isPaymentsLoading, error } =
     useFunnelPayments(funnelId);
 
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [alertDismissed, setAlertDismissed] = useState(false);
+
   const showSkeleton = isFunnelIdLoading || isPaymentsLoading;
   const showNoFunnelMessage =
     !isFunnelIdLoading && !isPaymentsLoading && funnelId == null;
+  const showNoRecords =
+    !showSkeleton && !error && funnelId != null && payments.length === 0;
+
+  useEffect(() => {
+    if (showSkeleton || !error || alertDismissed) return;
+    setAlertMessage(error);
+  }, [error, showSkeleton, alertDismissed]);
+
+  useEffect(() => {
+    setAlertDismissed(false);
+    setAlertMessage(null);
+  }, [funnelId]);
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-50">
+      <OverviewAlertDialog
+        open={alertMessage != null}
+        message={alertMessage ?? ""}
+        onClose={() => {
+          setAlertMessage(null);
+          setAlertDismissed(true);
+        }}
+      />
+
       <div className="mx-auto w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         {showSkeleton ? (
           <motion.div
@@ -104,19 +130,10 @@ export function FunnelOrdersPanel({
           </p>
         ) : null}
 
-        {error && !showSkeleton ? (
-          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            {error}
-          </p>
-        ) : null}
-
-        {!showSkeleton &&
-        !error &&
-        funnelId != null &&
-        payments.length === 0 ? (
+        {showNoRecords ? (
           <div className="overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-sm">
-            <p className="px-4 py-12 text-center text-sm text-zinc-500 sm:px-5">
-              No payments yet for this funnel.
+            <p className="px-4 py-14 text-center text-sm font-semibold text-zinc-900 sm:px-5">
+              No records found
             </p>
           </div>
         ) : null}

@@ -2,8 +2,6 @@
 
 import { CheckoutTemplateType } from "@/app/components/crm-template-editor/checkout-template-types";
 import {
-  AddressFieldsBlock,
-  ContactFieldsBlock,
   CouponFieldBlock,
   OrderSummaryBlock,
   PreviewCardFields,
@@ -112,7 +110,6 @@ export function BaseCheckoutLayout({
 }: CheckoutTemplateProps & { variant: LayoutVariant }) {
   const styles = shellForVariant(variant, page, landingBlend);
   const dark = landingBlend ? formStyles.isDark : styles.dark || formStyles.isDark;
-  const email = stripeCheckout?.customerEmail;
   const intro = page.subheading?.trim();
   const stripeMode = Boolean(interactive && stripeCheckout);
   const twoColumn =
@@ -140,19 +137,6 @@ export function BaseCheckoutLayout({
       </div>
 
       <CouponFieldBlock
-        page={page}
-        interactive={interactive}
-        formStyles={formStyles}
-      />
-
-      <ContactFieldsBlock
-        page={page}
-        interactive={interactive}
-        customerEmail={email}
-        formStyles={formStyles}
-      />
-
-      <AddressFieldsBlock
         page={page}
         interactive={interactive}
         formStyles={formStyles}
