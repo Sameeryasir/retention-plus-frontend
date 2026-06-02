@@ -352,6 +352,30 @@ export function AutomationBuilderPage({
     syncDirtyNodesToServer,
   ]);
 
+  const handleDeactivate = useCallback(async () => {
+    if (!isPositiveInt(automationNumericId)) {
+      toast.error("Open a saved automation before deactivating.");
+      return;
+    }
+
+    setActivating(true);
+    try {
+      const updated = await updateAutomation(automationNumericId, {
+        isActive: false,
+        published: false,
+      });
+      syncAutomationQueryCache(queryClient, updated);
+      setAutomation(mapAutomationToListItem(updated));
+      setStatus("draft");
+      setAutomationPublished(false);
+      toast.success("Automation deactivated.");
+    } catch (err) {
+      toastApiError(err, "Could not deactivate automation.");
+    } finally {
+      setActivating(false);
+    }
+  }, [automationNumericId, queryClient]);
+
   const handleDialogActivate = useCallback(async () => {
     const ok = await handleActivate();
     if (ok) {
@@ -549,16 +573,34 @@ export function AutomationBuilderPage({
         {tab === "builder" ? (
             <button
               type="button"
-              onClick={() => void handleActivate()}
+              onClick={() =>
+                void (automationActive ? handleDeactivate() : handleActivate())
+              }
               disabled={activating}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-zinc-950 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-black active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm"
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm ${
+                automationActive
+                  ? "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50"
+                  : "bg-zinc-950 text-white hover:bg-black"
+              }`}
             >
               {activating ? (
-                <Loader2 className="size-3.5 animate-spin text-white sm:size-4" aria-hidden />
+                <Loader2
+                  className={`size-3.5 animate-spin sm:size-4 ${automationActive ? "text-zinc-900" : "text-white"}`}
+                  aria-hidden
+                />
               ) : (
-                <Zap className="size-3.5 text-white sm:size-4" aria-hidden />
+                <Zap
+                  className={`size-3.5 sm:size-4 ${automationActive ? "text-zinc-900" : "text-white"}`}
+                  aria-hidden
+                />
               )}
-              {activating ? "Activating…" : "Activate"}
+              {activating
+                ? automationActive
+                  ? "Deactivating…"
+                  : "Activating…"
+                : automationActive
+                  ? "Deactivate"
+                  : "Activate"}
             </button>
         ) : null}
       </div>

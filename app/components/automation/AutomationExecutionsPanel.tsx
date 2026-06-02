@@ -31,7 +31,7 @@ import { OffsetPagination } from "@/app/components/shared/OffsetPagination";
 import { PanelEmptyState } from "@/app/components/shared/PanelEmptyState";
 import { ReportTable } from "@/app/components/shared/ReportTable";
 import { PauseAutomationButton } from "@/app/components/shared/PauseAutomationButton";
-import { RunAutomationButton } from "@/app/components/shared/RunAutomationButton";
+import { ActivateAutomationFirstHint, RunAutomationButton } from "@/app/components/shared/RunAutomationButton";
 import { useToggleAutomationActive } from "@/app/hooks/use-toggle-automation-active";
 import { executionStatusBadgeClass } from "@/app/lib/badge-variants";
 import { formatDateTimeShort } from "@/app/lib/datetime";
@@ -506,6 +506,9 @@ export function AutomationExecutionsPanel({
             </div>
           </div>
         </div>
+        {showRunButton && automationActive === false ? (
+          <ActivateAutomationFirstHint className="mt-3" />
+        ) : null}
       </div>
 
       <div className="relative px-4 py-4 sm:px-6">

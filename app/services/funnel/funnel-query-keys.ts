@@ -13,6 +13,13 @@ export const funnelQueryKeys = {
     [...funnelQueryKeys.all, "analytics-overview"] as const,
   analyticsOverviewByFunnel: (funnelId: number) =>
     [...funnelQueryKeys.analyticsOverview(), funnelId] as const,
+  statsMonthly: () => [...funnelQueryKeys.all, "stats-monthly"] as const,
+  statsMonthlyByFunnel: (funnelId: number, months: number) =>
+    [...funnelQueryKeys.statsMonthly(), funnelId, months] as const,
+  analyticsMonthly: () =>
+    [...funnelQueryKeys.all, "analytics-monthly"] as const,
+  analyticsMonthlyByFunnel: (funnelId: number, months: number) =>
+    [...funnelQueryKeys.analyticsMonthly(), funnelId, months] as const,
   dropoff: () => [...funnelQueryKeys.all, "dropoff"] as const,
   dropoffByFunnel: (funnelId: number) =>
     [...funnelQueryKeys.dropoff(), funnelId] as const,

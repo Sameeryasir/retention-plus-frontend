@@ -1,0 +1,101 @@
+import type { FunnelAnalyticsMonthlyPoint } from "@/app/services/funnel/get-analytics-overview-monthly";
+import type { FunnelEventStats } from "@/app/services/funnel/get-funnel-event-stats";
+import type { FunnelStatsMonthlyPoint } from "@/app/services/funnel/get-funnel-stats-monthly";
+
+export const OVERVIEW_MONTH_COUNT = 6;
+
+export type ChartNameValue = {
+  name: string;
+  value: number;
+};
+
+export type MonthlySignupsPaymentsPoint = {
+  month: string;
+  label: string;
+  signups: number;
+  payments: number;
+};
+
+export type MonthlyMetricPoint = {
+  month: string;
+  label: string;
+  value: number;
+};
+
+export const OVERVIEW_CHART_COLORS = {
+  emerald: "#10b981",
+  blue: "#3b82f6",
+  amber: "#f59e0b",
+  violet: "#8b5cf6",
+  zinc: "#52525b",
+} as const;
+
+export const OVERVIEW_CHART_MARGIN = { top: 8, right: 12, left: 0, bottom: 0 };
+
+export function formatMonthLabel(monthKey: string): string {
+  const [yearRaw, monthRaw] = monthKey.split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+    return monthKey;
+  }
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
+export function computeConversionRate(stats: FunnelEventStats): number {
+  if (stats.signups <= 0) return 0;
+  return (stats.payments / stats.signups) * 100;
+}
+
+export function buildSignupsPaymentsMonthlyData(
+  points: FunnelStatsMonthlyPoint[],
+): MonthlySignupsPaymentsPoint[] {
+  return points.map((row) => ({
+    month: row.month,
+    label: formatMonthLabel(row.month),
+    signups: row.signups,
+    payments: row.payments,
+  }));
+}
+
+export function sumSignupBreakdownFromMonthly(points: FunnelStatsMonthlyPoint[]): {
+  signupOnly: number;
+  paidAfterSignup: number;
+} {
+  return points.reduce(
+    (acc, row) => ({
+      signupOnly: acc.signupOnly + row.signupOnly,
+      paidAfterSignup: acc.paidAfterSignup + row.paidAfterSignup,
+    }),
+    { signupOnly: 0, paidAfterSignup: 0 },
+  );
+}
+
+export function buildSignupBreakdownFromMonthly(
+  points: FunnelStatsMonthlyPoint[],
+): ChartNameValue[] {
+  const totals = sumSignupBreakdownFromMonthly(points);
+  return [
+    { name: "Signup Only", value: totals.signupOnly },
+    { name: "Paid After Signup", value: totals.paidAfterSignup },
+  ];
+}
+
+export function buildAnalyticsMonthlySeries(
+  points: FunnelAnalyticsMonthlyPoint[],
+  key: "pageViews" | "buttonClicks" | "uniqueVisitors" | "sessions",
+): MonthlyMetricPoint[] {
+  return points.map((row) => ({
+    month: row.month,
+    label: formatMonthLabel(row.month),
+    value: row[key],
+  }));
+}
+
+export function hasSignupBreakdownData(data: ChartNameValue[]): boolean {
+  return data.some((row) => row.value > 0);
+}

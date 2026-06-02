@@ -3,7 +3,7 @@
 import { Workflow } from "lucide-react";
 import { RunProgressBanner } from "@/app/components/automation/RunProgressBanner";
 import { PauseAutomationButton } from "@/app/components/shared/PauseAutomationButton";
-import { RunAutomationButton } from "@/app/components/shared/RunAutomationButton";
+import { ActivateAutomationFirstHint, RunAutomationButton } from "@/app/components/shared/RunAutomationButton";
 import { useToggleAutomationActive } from "@/app/hooks/use-toggle-automation-active";
 import { panelCardClass } from "@/app/lib/panel-styles";
 import { useStartAutomationRun } from "@/app/hooks/use-start-automation-run";
@@ -63,6 +63,9 @@ export function AutomationActivityPanel({
             />
           ) : null}
         </div>
+        {showRunButton && automationActive === false ? (
+          <ActivateAutomationFirstHint className="mt-3" />
+        ) : null}
       </div>
 
       <div className="px-4 py-4 sm:px-6">
