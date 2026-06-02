@@ -66,8 +66,12 @@ import type {
 
 const ICON_STROKE = 2.25;
 
+/** Column widths tuned so headers line up with row content (no oversized gaps). */
 const RUNS_TABLE_GRID =
-  "grid grid-cols-[2.25rem_minmax(0,1fr)_minmax(0,1.15fr)_0.55fr_0.72fr_0.48fr_0.7fr_2.5rem] items-center gap-x-4";
+  "grid grid-cols-[minmax(12rem,1.35fr)_minmax(11rem,1.15fr)_7.25rem_8.5rem_5.5rem_minmax(9.5rem,1fr)] items-center gap-x-3";
+const RUNS_CELL = "min-w-0 justify-self-start";
+const RUNS_STATUS_ACTIONS_CELL =
+  "flex min-w-0 items-center justify-between gap-2 justify-self-stretch";
 
 const STATUS_FILTERS: { id: "all" | AutomationExecutionStatus; label: string }[] =
   [
@@ -149,8 +153,12 @@ function AutomationRunsSkeleton() {
           <div
             className={`${RUNS_TABLE_GRID} border-b border-zinc-200 px-5 py-3`}
           >
-            {Array.from({ length: 7 }).map((_, i) => (
-              <Skeleton key={i} funnel className="h-3 w-14" />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton
+                key={i}
+                funnel
+                className={`h-3 ${i === 5 ? "ml-auto h-8 w-8 rounded-lg" : "w-14"}`}
+              />
             ))}
           </div>
           {Array.from({ length: 4 }, (_, i) => (
@@ -158,13 +166,15 @@ function AutomationRunsSkeleton() {
               key={i}
               className={`${RUNS_TABLE_GRID} px-5 py-3.5 ${i % 2 === 1 ? "bg-zinc-50/35" : ""}`}
             >
-              <Skeleton funnel className="size-9 rounded-xl" />
               <Skeleton funnel className="h-4 w-full" />
               <Skeleton funnel className="h-4 w-full" />
               <Skeleton funnel className="h-6 w-16 rounded-lg" />
               <Skeleton funnel className="h-4 w-20" />
               <Skeleton funnel className="h-3.5 w-10" />
-              <Skeleton funnel className="h-6 w-16 rounded-full" />
+              <div className={RUNS_STATUS_ACTIONS_CELL}>
+                <Skeleton funnel className="h-6 w-20 rounded-full" />
+                <Skeleton funnel className="size-8 shrink-0 rounded-lg" />
+              </div>
             </div>
           ))}
         </div>
@@ -214,22 +224,7 @@ function RunRow({
         inProgress ? "bg-sky-50/40" : ""
       }`}
     >
-      <span
-        className={`flex size-9 shrink-0 items-center justify-center rounded-xl shadow-sm ring-1 ring-inset ring-black/[0.04] ${executionStatusBadgeClass(row.status)}`}
-      >
-        <StatusIcon
-          className={`size-4 ${row.status === "queued" || row.status === "running" ? "animate-spin" : ""}`}
-          aria-hidden
-          strokeWidth={ICON_STROKE}
-        />
-      </span>
-
-      <div className="flex min-w-0 items-center gap-2">
-        <ListChecks
-          className="size-4 shrink-0 text-zinc-400 opacity-0 transition group-hover:opacity-100"
-          aria-hidden
-          strokeWidth={ICON_STROKE}
-        />
+      <div className={`${RUNS_CELL} flex items-center gap-2`}>
         <p
           className="min-w-0 truncate font-semibold text-zinc-900"
           title={runSummary}
@@ -245,7 +240,7 @@ function RunRow({
       </div>
 
       <div
-        className="flex min-w-0 items-center gap-2 text-zinc-600"
+        className={`${RUNS_CELL} flex items-center gap-2 text-zinc-600`}
         title={customersText}
       >
         <Users
@@ -257,59 +252,71 @@ function RunRow({
       </div>
 
       <span
-        className="inline-flex w-fit max-w-full items-center gap-1.5 truncate rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200/80"
+        className={`${RUNS_CELL} inline-flex max-w-full items-center gap-1.5 truncate rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200/80`}
         title={stepType ?? undefined}
       >
         <StepIcon className="size-3.5 shrink-0 text-zinc-500" aria-hidden />
         {stepLabel}
       </span>
 
-      <div className="flex min-w-0 items-center gap-1.5 tabular-nums text-zinc-600">
+      <div
+        className={`${RUNS_CELL} flex items-center gap-1.5 tabular-nums text-zinc-600`}
+      >
         <CalendarClock
           className="size-4 shrink-0 text-zinc-400"
           aria-hidden
           strokeWidth={ICON_STROKE}
         />
-        <span className="truncate">{formatDateTimeShort(row.createdAt)}</span>
+        <span className="truncate whitespace-nowrap">
+          {formatDateTimeShort(row.createdAt)}
+        </span>
       </div>
 
-      <span className="inline-flex w-fit items-center gap-1 rounded-lg bg-zinc-100 px-2 py-1 font-mono text-xs font-semibold tabular-nums text-zinc-700 ring-1 ring-zinc-200/80">
+      <span
+        className={`${RUNS_CELL} inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-zinc-100 px-2 py-1 font-mono text-xs font-semibold tabular-nums text-zinc-700 ring-1 ring-zinc-200/80`}
+      >
         <Hash className="size-3 shrink-0 text-zinc-400" aria-hidden />
         {row.status === "waiting"
           ? countdown ?? formatDateTimeShort(row.scheduledAt)
           : row.id}
       </span>
 
-      <StatusPill
-        size="xs"
-        className={`inline-flex w-fit items-center gap-1.5 ${executionStatusBadgeClass(row.status)}`}
-      >
-        <StatusIcon className="size-3 shrink-0" aria-hidden strokeWidth={ICON_STROKE} />
-        {row.status}
-      </StatusPill>
+      <div className={RUNS_STATUS_ACTIONS_CELL}>
+        <StatusPill
+          size="xs"
+          className={`inline-flex shrink-0 items-center gap-1.5 ${executionStatusBadgeClass(row.status)}`}
+        >
+          <StatusIcon
+            className="size-3 shrink-0"
+            aria-hidden
+            strokeWidth={ICON_STROKE}
+          />
+          {row.status}
+        </StatusPill>
 
-      <button
-        type="button"
-        title={
-          deleteLocked
-            ? "Wait for the current delete to finish"
-            : inProgress
-              ? "Cannot delete while run is in progress"
-              : "Delete run"
-        }
-        disabled={inProgress || deleting || deleteLocked}
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(row.id);
-        }}
-        className="relative z-10 flex size-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {deleting ? (
-          <Loader2 className="size-4 animate-spin" aria-hidden />
-        ) : (
-          <Trash2 className="size-4" aria-hidden strokeWidth={ICON_STROKE} />
-        )}
-      </button>
+        <button
+          type="button"
+          title={
+            deleteLocked
+              ? "Wait for the current delete to finish"
+              : inProgress
+                ? "Cannot delete while run is in progress"
+                : "Delete run"
+          }
+          disabled={inProgress || deleting || deleteLocked}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(row.id);
+          }}
+          className="relative z-10 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {deleting ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <Trash2 className="size-4" aria-hidden strokeWidth={ICON_STROKE} />
+          )}
+        </button>
+      </div>
     </div>
   );
 }
@@ -657,14 +664,25 @@ export function AutomationExecutionsPanel({
             <div
               className={`${RUNS_TABLE_GRID} border-b border-zinc-200 bg-zinc-50/95 px-5 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500`}
             >
-              <TableColumnHeader label="" />
-              <TableColumnHeader icon={ListChecks} label="Run" />
-              <TableColumnHeader icon={Users} label="Customers" />
-              <TableColumnHeader icon={Mail} label="Step" />
-              <TableColumnHeader icon={CalendarClock} label="Started" />
-              <TableColumnHeader icon={Hash} label="Run ID" />
-              <TableColumnHeader icon={CheckCircle2} label="Status" />
-              <span aria-hidden />
+              <span className={RUNS_CELL}>
+                <TableColumnHeader icon={ListChecks} label="Run" />
+              </span>
+              <span className={RUNS_CELL}>
+                <TableColumnHeader icon={Users} label="Customers" />
+              </span>
+              <span className={RUNS_CELL}>
+                <TableColumnHeader icon={Mail} label="Step" />
+              </span>
+              <span className={RUNS_CELL}>
+                <TableColumnHeader icon={CalendarClock} label="Started" />
+              </span>
+              <span className={RUNS_CELL}>
+                <TableColumnHeader icon={Hash} label="Run ID" />
+              </span>
+              <div className={RUNS_STATUS_ACTIONS_CELL}>
+                <TableColumnHeader icon={CheckCircle2} label="Status" />
+                <span className="size-8 shrink-0" aria-hidden />
+              </div>
             </div>
             <motion.div
               className="divide-y divide-zinc-100/90"
