@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { TemplatePreview } from "@/app/components/crm-template-editor/TemplatePreview";
+import { FunnelPreviewSkeleton } from "@/app/components/crm-template-editor/FunnelPreviewSkeleton";
 import { useFunnelTemplatePagesFromStorage } from "@/app/components/crm-template-editor/funnel-template-storage";
 import { PaymentConfirmedSprinkles } from "@/app/components/funnel/PaymentConfirmedSprinkles";
 import {
@@ -28,7 +29,7 @@ export function FunnelConfirmationView({
     return false;
   }, [searchParams]);
 
-  const pages = useFunnelTemplatePagesFromStorage(templateStorageKey);
+  const { pages, isLoading } = useFunnelTemplatePagesFromStorage(templateStorageKey);
 
   useEffect(() => {
     getOrCreateVisitorId();
@@ -58,11 +59,15 @@ export function FunnelConfirmationView({
       <main className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto">
         <div className="flex flex-1 flex-col justify-center px-3 py-8 sm:px-4">
           <div className="mx-auto w-full max-w-[390px] shrink-0">
-            <TemplatePreview
-              page={pages.confirmation}
-              landingPage={pages.landing}
-              trackingFunnelId={funnelId}
-            />
+            {isLoading ? (
+              <FunnelPreviewSkeleton />
+            ) : (
+              <TemplatePreview
+                page={pages.confirmation}
+                landingPage={pages.landing}
+                trackingFunnelId={funnelId}
+              />
+            )}
           </div>
         </div>
       </main>

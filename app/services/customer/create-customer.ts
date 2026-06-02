@@ -3,6 +3,7 @@ import { getApiBaseUrl, parseApiErrorMessage } from "@/app/lib/api";
 export type CreateCustomerPayload = {
   name: string;
   email: string;
+  phone: string;
 };
 
 export type CreateCustomerResponse = {
@@ -37,6 +38,9 @@ export async function createCustomer(
   if (!payload.email?.trim()) {
     throw new Error("Email is required.");
   }
+  if (!payload.phone?.trim()) {
+    throw new Error("Phone is required.");
+  }
 
   const res = await fetch(`${getApiBaseUrl()}/customer/create`, {
     method: "POST",
@@ -46,6 +50,7 @@ export async function createCustomer(
     body: JSON.stringify({
       name: payload.name.trim(),
       email: payload.email.trim(),
+      phone: payload.phone.trim(),
     }),
   });
 

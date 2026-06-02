@@ -1,6 +1,7 @@
 "use client";
 
 import { FunnelOrdersPanel } from "@/app/components/campaign/FunnelOrdersPanel";
+import { CampaignGuestsPanel } from "@/app/components/campaign/CampaignGuestsPanel";
 import { FunnelOverviewPanel } from "@/app/components/campaign/FunnelOverviewPanel";
 import { CrmTemplateEditor } from "@/app/components/crm-template-editor/CrmTemplateEditor";
 import CampaignHeader from "@/app/components/CampaignHeader";
@@ -101,6 +102,8 @@ export default function CampaignWelcomePage() {
           funnelId={funnelId}
           isFunnelIdLoading={isFunnelIdLoading}
         />
+      ) : activeTabId === "guests" ? (
+        <CampaignGuestsPanel />
       ) : activeTabId === "automations" ? (
         <AutomationListPage onOpenBuilder={openAutomationBuilder} />
       ) : (

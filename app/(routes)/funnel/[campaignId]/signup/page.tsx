@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import { FunnelPreviewSkeleton } from "@/app/components/crm-template-editor/FunnelPreviewSkeleton";
 import { useFunnelTemplatePagesFromStorage } from "@/app/components/crm-template-editor/funnel-template-storage";
 import { TemplatePreview } from "@/app/components/crm-template-editor/TemplatePreview";
 import { useCampaignPricing } from "@/app/hooks/use-campaign-pricing";
@@ -18,7 +19,7 @@ function FunnelCampaignSignupInner() {
     price: campaignPricing.subtotal ?? undefined,
   };
 
-  const pages = useFunnelTemplatePagesFromStorage(funnelIdSegment);
+  const { pages, isLoading } = useFunnelTemplatePagesFromStorage(funnelIdSegment);
   const signup = pages.signup;
   const landing = pages.landing;
 
@@ -45,15 +46,19 @@ function FunnelCampaignSignupInner() {
       <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <div className="flex flex-1 flex-col justify-center px-3 py-8 sm:px-4">
           <div className="mx-auto w-full max-w-[390px] shrink-0">
-            <TemplatePreview
-              page={signup}
-              landingPage={landing}
-              signupNextHref={signupNextHref}
-              signupBackHref={signupBackHref}
-              interactiveForms
-              submitCustomerOnSignupNext
-              trackingFunnelId={funnelId}
-            />
+            {isLoading ? (
+              <FunnelPreviewSkeleton />
+            ) : (
+              <TemplatePreview
+                page={signup}
+                landingPage={landing}
+                signupNextHref={signupNextHref}
+                signupBackHref={signupBackHref}
+                interactiveForms
+                submitCustomerOnSignupNext
+                trackingFunnelId={funnelId}
+              />
+            )}
           </div>
         </div>
       </main>
@@ -65,8 +70,10 @@ export default function FunnelCampaignSignupPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-dvh items-center justify-center bg-zinc-100 text-sm text-zinc-500">
-          Loading…
+        <div className="flex min-h-dvh flex-col bg-zinc-100 px-3 py-8 sm:px-4">
+          <div className="mx-auto w-full max-w-[390px] shrink-0">
+            <FunnelPreviewSkeleton />
+          </div>
         </div>
       }
     >

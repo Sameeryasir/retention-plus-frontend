@@ -147,23 +147,35 @@ export function useFunnelTemplatePagesFromStorage(campaignId: string) {
   const [pages, setPages] = useState<TemplatePagesState>(
     INITIAL_TEMPLATE_PAGES,
   );
+  const [isLoading, setIsLoading] = useState(() => Boolean(campaignId));
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (withLoading = false) => {
     if (!campaignId) {
       setPages(INITIAL_TEMPLATE_PAGES);
+      setIsLoading(false);
       return;
     }
-    const loaded = await loadFunnelTemplatePagesAsync(campaignId);
-    if (loaded) setPages(loaded);
-    else setPages(INITIAL_TEMPLATE_PAGES);
+    if (withLoading) {
+      setIsLoading(true);
+    }
+    try {
+      const loaded = await loadFunnelTemplatePagesAsync(campaignId);
+      if (loaded) setPages(loaded);
+      else setPages(INITIAL_TEMPLATE_PAGES);
+    } finally {
+      if (withLoading) {
+        setIsLoading(false);
+      }
+    }
   }, [campaignId]);
 
   useEffect(() => {
     if (!campaignId) {
       setPages(INITIAL_TEMPLATE_PAGES);
+      setIsLoading(false);
       return;
     }
-    void reload();
+    void reload(true);
     const onStorage = (e: StorageEvent) => {
       if (e.key === funnelTemplateStorageKey(campaignId)) void reload();
     };
@@ -189,5 +201,5 @@ export function useFunnelTemplatePagesFromStorage(campaignId: string) {
     };
   }, [campaignId, reload]);
 
-  return pages;
+  return { pages, isLoading };
 }

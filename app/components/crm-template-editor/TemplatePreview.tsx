@@ -199,18 +199,27 @@ export function TemplatePreview({
       const first = String(fd.get("firstName") ?? "").trim();
       const last = String(fd.get("lastName") ?? "").trim();
       const email = String(fd.get("email") ?? "").trim();
+      const phone = String(fd.get("phone") ?? "").trim();
       const name = [first, last].filter(Boolean).join(" ").trim();
+      if (!first) {
+        toast.error("Please enter your first name.");
+        return;
+      }
+      if (!last) {
+        toast.error("Please enter your last name.");
+        return;
+      }
       if (!email) {
         toast.error("Please enter your email.");
         return;
       }
-      if (!name) {
-        toast.error("Please enter your name.");
+      if (!phone) {
+        toast.error("Please enter your phone number.");
         return;
       }
       setSignupSubmitting(true);
       try {
-        const customer = await createCustomer({ name, email });
+        const customer = await createCustomer({ name, email, phone });
         setFunnelCheckoutEmail(email);
         setFunnelCheckoutCustomerId(customer.id);
 

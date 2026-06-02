@@ -49,6 +49,7 @@ export function SignupFormFields({
       fieldClassName={style.fieldClass}
       rowClassName={style.rowClass}
       interactive={interactive}
+      required={interactive}
       inputTextClassName={blendedInputText}
       fieldId={id}
       inputName={id}

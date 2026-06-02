@@ -17,6 +17,7 @@ export function FormFieldRow({
   fieldClassName,
   rowClassName,
   interactive = false,
+  required = false,
   inputName,
   inputType = "text",
   autoComplete,
@@ -28,6 +29,7 @@ export function FormFieldRow({
   fieldClassName: string;
   rowClassName: string;
   interactive?: boolean;
+  required?: boolean;
   inputName?: string;
   inputType?: string;
   autoComplete?: string;
@@ -52,7 +54,14 @@ export function FormFieldRow({
               <Icon className="size-3.5" strokeWidth={2} />
             </span>
           ) : null}
-          <span>{label}</span>
+          <span>
+            {label}
+            {required ? (
+              <span className="ml-0.5 text-red-500" aria-hidden>
+                *
+              </span>
+            ) : null}
+          </span>
         </span>
       </label>
       {interactive ? (
@@ -61,6 +70,7 @@ export function FormFieldRow({
           name={inputName}
           type={inputType}
           autoComplete={autoComplete}
+          required={required}
           className={inputClassName}
         />
       ) : (

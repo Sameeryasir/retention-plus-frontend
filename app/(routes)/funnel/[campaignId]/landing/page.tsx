@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { FunnelPreviewSkeleton } from "@/app/components/crm-template-editor/FunnelPreviewSkeleton";
 import { LandingFunnelPreview } from "@/app/components/LandingFunnelPreview";
 
 export default function FunnelCampaignLandingPage() {
@@ -9,8 +10,8 @@ export default function FunnelCampaignLandingPage() {
           <div className="mx-auto w-full max-w-[390px] shrink-0">
             <Suspense
               fallback={
-                <div className="py-16 text-center text-sm text-zinc-500">
-                  Loading…
+                <div className="w-full min-w-0">
+                  <FunnelPreviewSkeleton />
                 </div>
               }
             >

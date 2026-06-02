@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import { FunnelPreviewSkeleton } from "@/app/components/crm-template-editor/FunnelPreviewSkeleton";
 import { FunnelConfirmationView } from "@/app/components/funnel/FunnelConfirmationView";
 import { useFunnelGuestRoute } from "@/app/hooks/use-funnel-guest-route";
 
@@ -19,8 +20,10 @@ export default function FunnelCampaignConfirmationPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-dvh items-center justify-center bg-zinc-100 text-sm text-zinc-500">
-          Loading…
+        <div className="flex min-h-dvh flex-col bg-zinc-100 px-3 py-8 sm:px-4">
+          <div className="mx-auto w-full max-w-[390px] shrink-0">
+            <FunnelPreviewSkeleton />
+          </div>
         </div>
       }
     >

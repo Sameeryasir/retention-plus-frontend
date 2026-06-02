@@ -2,6 +2,7 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { FunnelPreviewSkeleton } from "@/app/components/crm-template-editor/FunnelPreviewSkeleton";
 import { useFunnelTemplatePagesFromStorage } from "@/app/components/crm-template-editor/funnel-template-storage";
 import { TemplatePreview } from "@/app/components/crm-template-editor/TemplatePreview";
 import type { FunnelStripePaymentContext } from "@/app/components/funnel/FunnelStripePaymentForm";
@@ -18,7 +19,7 @@ function FunnelCampaignPaymentPageInner() {
 
   const campaignPricing = useCampaignPricing(campaignId, restaurantId);
 
-  const pages = useFunnelTemplatePagesFromStorage(funnelIdSegment);
+  const { pages, isLoading } = useFunnelTemplatePagesFromStorage(funnelIdSegment);
   const payment = pages.payment;
   const landing = pages.landing;
 
@@ -63,14 +64,18 @@ function FunnelCampaignPaymentPageInner() {
                 : "Add ?restaurantId=… to the URL or set NEXT_PUBLIC_FUNNEL_PAYMENT_RESTAURANT_ID."}
             </div>
           ) : null}
-          <TemplatePreview
-            page={payment}
-            landingPage={landing}
-            interactiveForms
-            paymentStripeCheckout={paymentStripeCheckout}
-            campaignPricing={campaignPricing}
-            trackingFunnelId={funnelId}
-          />
+          {isLoading ? (
+            <FunnelPreviewSkeleton />
+          ) : (
+            <TemplatePreview
+              page={payment}
+              landingPage={landing}
+              interactiveForms
+              paymentStripeCheckout={paymentStripeCheckout}
+              campaignPricing={campaignPricing}
+              trackingFunnelId={funnelId}
+            />
+          )}
         </div>
       </main>
     </div>
@@ -81,8 +86,10 @@ export default function FunnelCampaignPaymentPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-dvh items-center justify-center bg-zinc-100 text-sm text-zinc-500">
-          Loading…
+        <div className="flex min-h-dvh flex-col bg-zinc-100 px-3 py-6 sm:px-4">
+          <div className="mx-auto w-full max-w-[390px] flex-none">
+            <FunnelPreviewSkeleton />
+          </div>
         </div>
       }
     >
