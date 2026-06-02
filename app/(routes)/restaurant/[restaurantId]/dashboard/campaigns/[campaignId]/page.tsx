@@ -10,11 +10,14 @@ import { useCampaignFunnelId } from "@/app/hooks/use-campaign-funnel-id";
 import { AutomationListPage } from "@/app/components/automation/AutomationListPage";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { InvalidRouteMessage } from "@/app/components/InvalidRouteMessage";
 import { parseRoutePositiveInt } from "@/app/lib/numbers";
+import { funnelQueryKeys } from "@/app/services/funnel/funnel-query-keys";
 
 export default function CampaignWelcomePage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useParams();
   const restaurantId = useMemo(
     () => parseRoutePositiveInt(params.restaurantId),
@@ -50,6 +53,13 @@ export default function CampaignWelcomePage() {
     [router, restaurantId, funnelId],
   );
 
+  const handleCampaignUpdated = useCallback(async () => {
+    if (restaurantId == null) return;
+    await queryClient.invalidateQueries({
+      queryKey: funnelQueryKeys.campaignsByRestaurant(restaurantId),
+    });
+  }, [queryClient, restaurantId]);
+
   if (restaurantId == null || campaignId == null) {
     return <InvalidRouteMessage />;
   }
@@ -63,8 +73,10 @@ export default function CampaignWelcomePage() {
           funnelId={funnelId}
           offer={campaign?.offer}
           price={campaign?.price}
+          campaign={campaign}
           activeTabId={activeTabId}
           onTabChange={setActiveTabId}
+          onCampaignUpdated={handleCampaignUpdated}
         />
       </div>
       {activeTabId === "funnel" ? (

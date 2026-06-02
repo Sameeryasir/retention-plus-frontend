@@ -1,8 +1,10 @@
 "use client";
 
-import { ArrowLeft, Check, Circle, Copy, Link2, X } from "lucide-react";
+import { ArrowLeft, Check, Circle, Copy, Link2, Pencil, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { EditCampaignModal } from "@/app/components/campaign/EditCampaignModal";
+import type { Funnel } from "@/app/services/funnel/get-campaigns-by-restaurant";
 import {
   buildFunnelPublicPath,
   resolveFunnelRouteId,
@@ -27,10 +29,12 @@ export type CampaignHeaderProps = {
   funnelId?: number | null;
   offer?: string;
   price?: number | string;
+  campaign?: Funnel | null;
   defaultTabId?: string;
   activeTabId?: string;
   onTabChange?: (tabId: string) => void;
   onGenerateTrackingLink?: () => void;
+  onCampaignUpdated?: () => void | Promise<void>;
 };
 
 const TABS: { id: string; label: string; icon?: typeof Circle }[] = [
@@ -51,10 +55,12 @@ export default function CampaignHeader({
   funnelId,
   offer,
   price,
+  campaign,
   defaultTabId = "overview",
   activeTabId: activeTabIdProp,
   onTabChange,
   onGenerateTrackingLink,
+  onCampaignUpdated,
 }: CampaignHeaderProps) {
   const campaignsHref = `/restaurant/${restaurantId}/dashboard/campaigns`;
   const offerLine = offer?.trim() ?? "";
@@ -83,6 +89,7 @@ export default function CampaignHeader({
   );
 
   const [trackingDialogOpen, setTrackingDialogOpen] = useState(false);
+  const [editCampaignOpen, setEditCampaignOpen] = useState(false);
   const [trackingOrigin, setTrackingOrigin] = useState("");
   const [copyDone, setCopyDone] = useState(false);
 
@@ -177,6 +184,20 @@ export default function CampaignHeader({
           >
             <Link2 className="size-4 shrink-0" aria-hidden strokeWidth={2} />
             <span className="truncate">Generate Tracking Link</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditCampaignOpen(true)}
+            disabled={campaignId == null || campaign == null}
+            title={
+              campaignId == null || campaign == null
+                ? "Campaign details not loaded yet"
+                : "Edit campaign"
+            }
+            aria-label="Edit campaign"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-black text-white shadow-sm transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 enabled:cursor-pointer disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-100"
+          >
+            <Pencil className="size-3.5" aria-hidden strokeWidth={2} />
           </button>
         </div>
       </div>
@@ -333,6 +354,13 @@ export default function CampaignHeader({
         </div>
       </div>
     ) : null}
+
+    <EditCampaignModal
+      open={editCampaignOpen}
+      campaign={campaign}
+      onOpenChange={setEditCampaignOpen}
+      onSaved={onCampaignUpdated}
+    />
     </>
   );
 }
