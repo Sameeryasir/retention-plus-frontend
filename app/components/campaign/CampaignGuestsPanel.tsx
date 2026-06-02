@@ -15,8 +15,8 @@ import { CUSTOMERS_PAGE_SIZE } from "@/app/services/customer/get-customers";
 import { useEffect, useMemo, useState } from "react";
 
 const thClass =
-  "whitespace-nowrap px-4 py-3.5 text-left align-middle sm:px-5";
-const tdClass = "px-4 py-3.5 text-left align-middle text-sm sm:px-5";
+  "whitespace-nowrap px-4 py-4 text-left align-middle sm:px-5";
+const tdClass = "px-4 py-4 text-left align-middle text-sm sm:px-5";
 
 const tableHeaderReveal = {
   hidden: { opacity: 0, y: -14 },
@@ -165,31 +165,38 @@ export function CampaignGuestsPanel() {
             transition={{ duration: 0.35, ease: standardEase }}
           >
             <ReportTable
-              className="shadow-[0_8px_30px_rgba(15,23,42,0.08)] ring-1 ring-zinc-950/[0.04]"
+              className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_12px_40px_rgba(88,28,135,0.08)] ring-1 ring-violet-100/80"
               header={
                 <motion.div
                   initial={{ opacity: 0, y: -16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, ease: standardEase }}
-                  className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/90 bg-gradient-to-r from-violet-50/80 via-white to-white px-5 py-4"
+                  className="relative overflow-hidden border-b border-violet-100/80 bg-gradient-to-br from-violet-600 via-indigo-600 to-violet-700 px-5 py-5 sm:px-6"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25">
-                      <Users className="size-5" aria-hidden />
-                    </span>
-                    <div>
-                      <h3 className="text-base font-bold tracking-tight text-zinc-900">
-                        Guests
-                      </h3>
-                      <p className="mt-0.5 text-xs text-zinc-500">
-                        Everyone who signed up through your funnels.
-                      </p>
+                  <div
+                    className="pointer-events-none absolute -right-8 -top-10 size-40 rounded-full bg-white/10 blur-2xl"
+                    aria-hidden
+                  />
+                  <div
+                    className="pointer-events-none absolute -bottom-12 left-1/3 size-32 rounded-full bg-indigo-400/20 blur-2xl"
+                    aria-hidden
+                  />
+                  <div className="relative flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <span className="flex size-11 items-center justify-center rounded-2xl bg-white/15 text-white shadow-lg shadow-violet-900/20 ring-1 ring-white/20 backdrop-blur-sm">
+                        <Users className="size-5" aria-hidden />
+                      </span>
+                      <div>
+                        <h3 className="text-lg font-bold tracking-tight text-white">
+                          Guests
+                        </h3>
+                      </div>
                     </div>
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-sm font-bold tabular-nums text-violet-700 shadow-lg shadow-violet-900/10 ring-1 ring-white/60">
+                      <Users className="size-4 text-violet-600" aria-hidden />
+                      {meta?.total ?? customers.length} total
+                    </span>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold tabular-nums text-zinc-700 shadow-sm ring-1 ring-zinc-200/90">
-                    <Users className="size-3.5 text-violet-600" aria-hidden />
-                    {meta?.total ?? customers.length} total
-                  </span>
                 </motion.div>
               }
               footer={
@@ -213,16 +220,24 @@ export function CampaignGuestsPanel() {
                       variants={tableHeaderReveal}
                       initial="hidden"
                       animate="show"
-                      className="border-b border-zinc-200/90 bg-gradient-to-b from-zinc-50/95 to-white"
+                      className="border-b border-zinc-200/90 bg-gradient-to-b from-zinc-50 via-white to-white"
                     >
                       <th className={`${thClass} w-16`}>
-                        <TableColumnHeader variant="boxed" icon={Hash} label="#" />
+                        <TableColumnHeader
+                          variant="boxed"
+                          icon={Hash}
+                          label="#"
+                          iconClassName="text-violet-600"
+                          iconBoxClassName="border-violet-200/80 bg-violet-50"
+                        />
                       </th>
                       <th className={thClass}>
                         <TableColumnHeader
                           variant="boxed"
                           icon={UserRound}
                           label="Guest"
+                          iconClassName="text-indigo-600"
+                          iconBoxClassName="border-indigo-200/80 bg-indigo-50"
                         />
                       </th>
                       <th className={thClass}>
@@ -230,6 +245,8 @@ export function CampaignGuestsPanel() {
                           variant="boxed"
                           icon={Mail}
                           label="Email"
+                          iconClassName="text-blue-600"
+                          iconBoxClassName="border-blue-200/80 bg-blue-50"
                         />
                       </th>
                       <th className={thClass}>
@@ -237,6 +254,8 @@ export function CampaignGuestsPanel() {
                           variant="boxed"
                           icon={Phone}
                           label="Phone"
+                          iconClassName="text-emerald-600"
+                          iconBoxClassName="border-emerald-200/80 bg-emerald-50"
                         />
                       </th>
                       <th className={thClass}>
@@ -244,6 +263,8 @@ export function CampaignGuestsPanel() {
                           variant="boxed"
                           icon={Calendar}
                           label="Joined"
+                          iconClassName="text-orange-600"
+                          iconBoxClassName="border-orange-200/80 bg-orange-50"
                         />
                       </th>
                     </motion.tr>
@@ -264,51 +285,55 @@ export function CampaignGuestsPanel() {
                         <motion.tr
                           key={customer.id}
                           variants={tableRowReveal}
-                          className={`border-b border-zinc-100/90 transition-colors last:border-0 hover:bg-violet-50/40 ${
-                            index % 2 === 1 ? "bg-zinc-50/40" : "bg-white"
-                          }`}
+                          className="group border-b border-zinc-100/90 bg-white transition-[background-color,box-shadow] duration-200 last:border-0 hover:bg-violet-50/50 hover:shadow-[inset_4px_0_0_0_rgb(124_58_237)]"
                         >
                           <td className={tdClass}>
-                            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-zinc-100 text-xs font-bold tabular-nums text-zinc-600 ring-1 ring-zinc-200/80">
+                            <span className="inline-flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-100 to-indigo-100 text-xs font-bold tabular-nums text-violet-700 ring-1 ring-violet-200/70 transition group-hover:from-violet-200 group-hover:to-indigo-200">
                               {rowNumber}
                             </span>
                           </td>
                           <td className={tdClass}>
                             <div className="flex items-center gap-3">
                               <span
-                                className={`flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatarColor} text-xs font-bold tracking-wide text-white shadow-md ring-2 ring-white`}
+                                className={`flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatarColor} text-xs font-bold tracking-wide text-white shadow-md shadow-black/10 ring-2 ring-white transition duration-200 group-hover:scale-105 group-hover:shadow-lg`}
                               >
                                 {initials}
                               </span>
-                              <span className="font-semibold text-zinc-900">
-                                {customer.name}
-                              </span>
+                              <div className="min-w-0">
+                                <span className="block truncate font-semibold text-zinc-900">
+                                  {customer.name}
+                                </span>
+                                <span className="mt-0.5 block text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+                                  Guest
+                                </span>
+                              </div>
                             </div>
                           </td>
-                          <td className={tdClass}>
+                          <td className={`${tdClass} max-w-[14rem] sm:max-w-none`}>
                             <a
                               href={`mailto:${customer.email}`}
-                              className="font-medium text-blue-600 transition hover:text-blue-700 hover:underline"
+                              className="block truncate font-medium text-blue-600 underline-offset-2 transition hover:text-blue-700 hover:underline"
+                              title={customer.email}
                             >
                               {customer.email}
                             </a>
                           </td>
-                          <td className={`${tdClass} text-zinc-600`}>
+                          <td className={tdClass}>
                             {customer.phone?.trim() ? (
                               <a
                                 href={`tel:${customer.phone.trim()}`}
-                                className="font-medium text-blue-600 transition hover:text-blue-700 hover:underline"
+                                className="font-medium text-blue-600 underline-offset-2 transition hover:text-blue-700 hover:underline"
                               >
                                 {customer.phone}
                               </a>
                             ) : (
-                              <span className="text-zinc-400">—</span>
+                              <span className="text-zinc-300">—</span>
                             )}
                           </td>
                           <td className={`${tdClass} whitespace-nowrap`}>
-                            <span className="inline-flex items-center gap-1.5 text-zinc-600">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-zinc-100/90 px-3 py-1.5 text-xs font-medium text-zinc-600 ring-1 ring-zinc-200/80 transition group-hover:bg-white group-hover:ring-violet-200/80">
                               <Calendar
-                                className="size-3.5 shrink-0 text-zinc-400"
+                                className="size-3.5 shrink-0 text-orange-500"
                                 aria-hidden
                               />
                               {formatDateTimeShort(customer.createdAt)}

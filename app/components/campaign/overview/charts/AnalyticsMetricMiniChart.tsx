@@ -40,8 +40,8 @@ export function AnalyticsMetricMiniChart({
       <p className="mb-3 text-2xl font-semibold tabular-nums tracking-tight text-zinc-900">
         {total.toLocaleString()}
       </p>
-      <div className="min-h-[140px] flex-1 w-full">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="h-[160px] w-full min-w-0">
+        <ResponsiveContainer width="100%" height={160}>
           <LineChart data={data} margin={{ ...OVERVIEW_CHART_MARGIN, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
             <XAxis

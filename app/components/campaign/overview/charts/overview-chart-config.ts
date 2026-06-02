@@ -51,6 +51,51 @@ export function computeConversionRate(stats: FunnelEventStats): number {
   return (stats.payments / stats.signups) * 100;
 }
 
+export function sumStatsFromMonthly(points: FunnelStatsMonthlyPoint[]): {
+  signups: number;
+  payments: number;
+  revenue: number;
+} {
+  return points.reduce(
+    (acc, row) => ({
+      signups: acc.signups + row.signups,
+      payments: acc.payments + row.payments,
+      revenue: acc.revenue + row.revenue,
+    }),
+    { signups: 0, payments: 0, revenue: 0 },
+  );
+}
+
+export function computeConversionRateFromMonthly(
+  points: FunnelStatsMonthlyPoint[],
+): number {
+  const totals = sumStatsFromMonthly(points);
+  if (totals.signups <= 0) return 0;
+  return (totals.payments / totals.signups) * 100;
+}
+
+export function sumAnalyticsFromMonthly(points: FunnelAnalyticsMonthlyPoint[]): {
+  pageViews: number;
+  buttonClicks: number;
+  uniqueVisitors: number;
+  sessions: number;
+} {
+  return points.reduce(
+    (acc, row) => ({
+      pageViews: acc.pageViews + row.pageViews,
+      buttonClicks: acc.buttonClicks + row.buttonClicks,
+      uniqueVisitors: acc.uniqueVisitors + row.uniqueVisitors,
+      sessions: acc.sessions + row.sessions,
+    }),
+    { pageViews: 0, buttonClicks: 0, uniqueVisitors: 0, sessions: 0 },
+  );
+}
+
+export function hasMonthlyStatsActivity(points: FunnelStatsMonthlyPoint[]): boolean {
+  const totals = sumStatsFromMonthly(points);
+  return totals.signups > 0 || totals.payments > 0 || totals.revenue > 0;
+}
+
 export function buildSignupsPaymentsMonthlyData(
   points: FunnelStatsMonthlyPoint[],
 ): MonthlySignupsPaymentsPoint[] {

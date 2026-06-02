@@ -17,21 +17,29 @@ import {
   buildAnalyticsMonthlySeries,
   buildSignupBreakdownFromMonthly,
   buildSignupsPaymentsMonthlyData,
-  computeConversionRate,
+  computeConversionRateFromMonthly,
   OVERVIEW_MONTH_COUNT,
+  sumAnalyticsFromMonthly,
+  sumStatsFromMonthly,
 } from "@/app/components/campaign/overview/charts/overview-chart-config";
+import type { FunnelAnalyticsMonthlyPoint } from "@/app/services/funnel/get-analytics-overview-monthly";
+import type { FunnelStatsMonthlyPoint } from "@/app/services/funnel/get-funnel-stats-monthly";
 import { SignupBreakdownPieChart } from "@/app/components/campaign/overview/charts/SignupBreakdownPieChart";
 import { SignupsPaymentsBarChart } from "@/app/components/campaign/overview/charts/SignupsPaymentsBarChart";
 import { MetricStatCardAccent } from "@/app/components/shared/MetricStatCard";
 import { Skeleton } from "@/app/components/skeleton";
-import { useAnalyticsOverview } from "@/app/hooks/use-analytics-overview";
 import { useAnalyticsOverviewMonthly } from "@/app/hooks/use-analytics-overview-monthly";
-import { useFunnelEventStats } from "@/app/hooks/use-funnel-event-stats";
 import { useFunnelStatsMonthly } from "@/app/hooks/use-funnel-stats-monthly";
 import { formatCents } from "@/app/lib/money";
 import { funnelPanelItem, funnelPanelStagger, standardEase } from "@/app/lib/motion";
 import { panelCardClass, panelCardPaddingClass } from "@/app/lib/panel-styles";
 import { OVERVIEW_CHART_COLORS } from "@/app/components/campaign/overview/charts/overview-chart-config";
+import {
+  buildMockAnalyticsMonthlyPoints,
+  buildMockStatsMonthlyPoints,
+  mergeAnalyticsWithMockPreview,
+  mergeStatsWithMockPreview,
+} from "@/app/components/campaign/overview/charts/overview-mock-monthly-data";
 
 function OverviewSkeleton() {
   return (
@@ -107,13 +115,6 @@ export function FunnelOverviewPanel({
   funnelId?: number | null;
   isFunnelIdLoading?: boolean;
 }) {
-  const { stats, isLoading: isStatsLoading, error } =
-    useFunnelEventStats(funnelId);
-  const {
-    overview: analyticsOverview,
-    isLoading: isAnalyticsLoading,
-    error: analyticsError,
-  } = useAnalyticsOverview(funnelId);
   const {
     monthly: statsMonthly,
     isLoading: isStatsMonthlyLoading,
@@ -128,88 +129,118 @@ export function FunnelOverviewPanel({
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [alertDismissed, setAlertDismissed] = useState(false);
 
-  const isWaitingForStats =
-    funnelId != null && stats == null && error == null;
   const showSkeleton =
-    isFunnelIdLoading ||
-    isStatsLoading ||
-    isWaitingForStats ||
-    isAnalyticsLoading ||
-    isStatsMonthlyLoading ||
-    isAnalyticsMonthlyLoading;
+    isFunnelIdLoading || isStatsMonthlyLoading || isAnalyticsMonthlyLoading;
   const showNoFunnelMessage = !showSkeleton && funnelId == null;
-  const showNoRecords =
-    !showSkeleton &&
-    !error &&
-    !analyticsError &&
-    funnelId != null &&
-    (stats == null ||
-      (stats.signups === 0 && stats.payments === 0 && stats.revenue === 0));
+
+  const statsMerge = useMemo(() => {
+    if (showSkeleton || funnelId == null) {
+      return { points: null as FunnelStatsMonthlyPoint[] | null, usedMock: false };
+    }
+    if (statsMonthly?.data?.length) {
+      return mergeStatsWithMockPreview(statsMonthly.data);
+    }
+    return { points: buildMockStatsMonthlyPoints(), usedMock: true };
+  }, [showSkeleton, funnelId, statsMonthly]);
+
+  const analyticsMerge = useMemo(() => {
+    if (showSkeleton || funnelId == null) {
+      return {
+        points: null as FunnelAnalyticsMonthlyPoint[] | null,
+        usedMock: false,
+      };
+    }
+    if (analyticsMonthly?.data?.length) {
+      return mergeAnalyticsWithMockPreview(analyticsMonthly.data);
+    }
+    return { points: buildMockAnalyticsMonthlyPoints(), usedMock: true };
+  }, [showSkeleton, funnelId, analyticsMonthly]);
+
+  const statsPoints = statsMerge.points;
+  const analyticsPoints = analyticsMerge.points;
+  const usingMockStats = statsMerge.usedMock;
+  const usingMockAnalytics = analyticsMerge.usedMock;
+
+  const showNoRecords = false;
 
   useEffect(() => {
     if (showSkeleton) return;
 
-    const message =
-      error ??
-      statsMonthlyError ??
-      analyticsError ??
-      analyticsMonthlyError;
+    const message = statsMonthlyError ?? analyticsMonthlyError;
     if (message && !alertDismissed) {
       setAlertMessage(message);
     }
-  }, [
-    error,
-    statsMonthlyError,
-    analyticsError,
-    analyticsMonthlyError,
-    showSkeleton,
-    alertDismissed,
-  ]);
+  }, [statsMonthlyError, analyticsMonthlyError, showSkeleton, alertDismissed]);
 
   useEffect(() => {
     setAlertDismissed(false);
     setAlertMessage(null);
   }, [funnelId]);
 
+  const monthlyStatsTotals = useMemo(
+    () => (statsPoints ? sumStatsFromMonthly(statsPoints) : null),
+    [statsPoints],
+  );
+
   const conversionRate = useMemo(
-    () => (stats ? computeConversionRate(stats) : 0),
-    [stats],
+    () => (statsPoints ? computeConversionRateFromMonthly(statsPoints) : 0),
+    [statsPoints],
   );
 
   const signupsPaymentsMonthly = useMemo(
     () =>
-      statsMonthly?.data
-        ? buildSignupsPaymentsMonthlyData(statsMonthly.data)
-        : [],
-    [statsMonthly],
+      statsPoints ? buildSignupsPaymentsMonthlyData(statsPoints) : [],
+    [statsPoints],
   );
 
   const signupBreakdownMonthly = useMemo(
     () =>
-      statsMonthly?.data
-        ? buildSignupBreakdownFromMonthly(statsMonthly.data)
-        : [],
-    [statsMonthly],
+      statsPoints ? buildSignupBreakdownFromMonthly(statsPoints) : [],
+    [statsPoints],
+  );
+
+  const analyticsTotals = useMemo(
+    () =>
+      analyticsPoints ? sumAnalyticsFromMonthly(analyticsPoints) : null,
+    [analyticsPoints],
   );
 
   const pageViewsMonthly = useMemo(
     () =>
-      analyticsMonthly?.data
-        ? buildAnalyticsMonthlySeries(analyticsMonthly.data, "pageViews")
+      analyticsPoints
+        ? buildAnalyticsMonthlySeries(analyticsPoints, "pageViews")
         : [],
-    [analyticsMonthly],
+    [analyticsPoints],
   );
 
   const buttonClicksMonthly = useMemo(
     () =>
-      analyticsMonthly?.data
-        ? buildAnalyticsMonthlySeries(analyticsMonthly.data, "buttonClicks")
+      analyticsPoints
+        ? buildAnalyticsMonthlySeries(analyticsPoints, "buttonClicks")
         : [],
-    [analyticsMonthly],
+    [analyticsPoints],
+  );
+
+  const uniqueVisitorsMonthly = useMemo(
+    () =>
+      analyticsPoints
+        ? buildAnalyticsMonthlySeries(analyticsPoints, "uniqueVisitors")
+        : [],
+    [analyticsPoints],
+  );
+
+  const sessionsMonthly = useMemo(
+    () =>
+      analyticsPoints
+        ? buildAnalyticsMonthlySeries(analyticsPoints, "sessions")
+        : [],
+    [analyticsPoints],
   );
 
   const displayName = campaignName?.trim() ? campaignName : "Campaign";
   const hasMonthlyCharts = signupsPaymentsMonthly.length > 0;
+  const hasAnalyticsMonthly = (analyticsPoints?.length ?? 0) > 0;
+  const showingMockPreview = usingMockStats || usingMockAnalytics;
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-zinc-50 via-white to-zinc-100/70">
@@ -240,6 +271,11 @@ export function FunnelOverviewPanel({
               Conversion metrics and live funnel behavior analytics — month
               view (last {OVERVIEW_MONTH_COUNT} months).
             </p>
+            {showingMockPreview ? (
+              <p className="mt-3 inline-flex rounded-full border border-amber-200/90 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-900">
+                Showing sample data for preview
+              </p>
+            ) : null}
           </div>
         </motion.header>
 
@@ -261,7 +297,7 @@ export function FunnelOverviewPanel({
 
         {showNoRecords ? <NoRecordsFoundCard /> : null}
 
-        {stats && !showSkeleton && !showNoRecords ? (
+        {monthlyStatsTotals && !showSkeleton && !showNoRecords ? (
           <motion.div
             key="overview-content"
             className="space-y-8"
@@ -276,7 +312,7 @@ export function FunnelOverviewPanel({
               <motion.div className="h-full" variants={funnelPanelItem}>
                 <MetricStatCardAccent
                   label="Signups"
-                  value={stats.signups}
+                  value={monthlyStatsTotals.signups}
                   icon={UserPlus}
                   tone="emerald"
                 />
@@ -284,16 +320,19 @@ export function FunnelOverviewPanel({
               <motion.div className="h-full" variants={funnelPanelItem}>
                 <MetricStatCardAccent
                   label="Payments"
-                  value={stats.payments}
+                  value={monthlyStatsTotals.payments}
                   icon={Users}
                   tone="blue"
-                  highlight={stats.payments > 0}
+                  highlight={monthlyStatsTotals.payments > 0}
                 />
               </motion.div>
               <motion.div className="h-full" variants={funnelPanelItem}>
                 <MetricStatCardAccent
                   label="Revenue"
-                  value={formatCents(stats.revenue, stats.currency ?? "usd")}
+                  value={formatCents(
+                    monthlyStatsTotals.revenue,
+                    statsMonthly?.currency ?? "usd",
+                  )}
                   icon={DollarSign}
                   tone="violet"
                 />
@@ -323,7 +362,7 @@ export function FunnelOverviewPanel({
               </motion.div>
             ) : null}
 
-            {analyticsOverview ? (
+            {analyticsTotals && hasAnalyticsMonthly ? (
               <motion.div className="space-y-5" variants={funnelPanelItem}>
                 <div>
                   <h3 className="text-sm font-semibold text-zinc-900">
@@ -341,7 +380,7 @@ export function FunnelOverviewPanel({
                   <motion.div className="h-full" variants={funnelPanelItem}>
                     <MetricStatCardAccent
                       label="Page views"
-                      value={analyticsOverview.pageViews}
+                      value={analyticsTotals.pageViews}
                       icon={Eye}
                       tone="blue"
                     />
@@ -349,7 +388,7 @@ export function FunnelOverviewPanel({
                   <motion.div className="h-full" variants={funnelPanelItem}>
                     <MetricStatCardAccent
                       label="Button clicks"
-                      value={analyticsOverview.buttonClicks}
+                      value={analyticsTotals.buttonClicks}
                       icon={MousePointerClick}
                       tone="violet"
                     />
@@ -357,7 +396,7 @@ export function FunnelOverviewPanel({
                   <motion.div className="h-full" variants={funnelPanelItem}>
                     <MetricStatCardAccent
                       label="Unique visitors"
-                      value={analyticsOverview.uniqueVisitors}
+                      value={analyticsTotals.uniqueVisitors}
                       icon={Users}
                       tone="emerald"
                     />
@@ -365,38 +404,54 @@ export function FunnelOverviewPanel({
                   <motion.div className="h-full" variants={funnelPanelItem}>
                     <MetricStatCardAccent
                       label="Sessions"
-                      value={analyticsOverview.sessions}
+                      value={analyticsTotals.sessions}
                       icon={Activity}
                       tone="zinc"
                     />
                   </motion.div>
                 </motion.div>
 
-                {analyticsMonthly?.data?.length ? (
-                  <motion.div
-                    className="grid auto-rows-fr gap-5 lg:grid-cols-2"
-                    variants={funnelPanelStagger}
-                  >
-                    <motion.div className="h-full" variants={funnelPanelItem}>
-                      <AnalyticsMetricMiniChart
-                        title="Page views by month"
-                        subtitle="Total page views"
-                        total={analyticsOverview.pageViews}
-                        data={pageViewsMonthly}
-                        strokeColor={OVERVIEW_CHART_COLORS.blue}
-                      />
-                    </motion.div>
-                    <motion.div className="h-full" variants={funnelPanelItem}>
-                      <AnalyticsMetricMiniChart
-                        title="Button clicks by month"
-                        subtitle="Total button clicks"
-                        total={analyticsOverview.buttonClicks}
-                        data={buttonClicksMonthly}
-                        strokeColor={OVERVIEW_CHART_COLORS.violet}
-                      />
-                    </motion.div>
+                <motion.div
+                  className="grid auto-rows-fr gap-5 lg:grid-cols-2"
+                  variants={funnelPanelStagger}
+                >
+                  <motion.div className="h-full" variants={funnelPanelItem}>
+                    <AnalyticsMetricMiniChart
+                      title="Page views by month"
+                      subtitle="Monthly page views"
+                      total={analyticsTotals.pageViews}
+                      data={pageViewsMonthly}
+                      strokeColor={OVERVIEW_CHART_COLORS.blue}
+                    />
                   </motion.div>
-                ) : null}
+                  <motion.div className="h-full" variants={funnelPanelItem}>
+                    <AnalyticsMetricMiniChart
+                      title="Button clicks by month"
+                      subtitle="Monthly button clicks"
+                      total={analyticsTotals.buttonClicks}
+                      data={buttonClicksMonthly}
+                      strokeColor={OVERVIEW_CHART_COLORS.violet}
+                    />
+                  </motion.div>
+                  <motion.div className="h-full" variants={funnelPanelItem}>
+                    <AnalyticsMetricMiniChart
+                      title="Unique visitors by month"
+                      subtitle="Monthly unique visitors"
+                      total={analyticsTotals.uniqueVisitors}
+                      data={uniqueVisitorsMonthly}
+                      strokeColor={OVERVIEW_CHART_COLORS.emerald}
+                    />
+                  </motion.div>
+                  <motion.div className="h-full" variants={funnelPanelItem}>
+                    <AnalyticsMetricMiniChart
+                      title="Sessions by month"
+                      subtitle="Monthly sessions"
+                      total={analyticsTotals.sessions}
+                      data={sessionsMonthly}
+                      strokeColor={OVERVIEW_CHART_COLORS.zinc}
+                    />
+                  </motion.div>
+                </motion.div>
               </motion.div>
             ) : null}
           </motion.div>

@@ -30,8 +30,8 @@ export function SignupsPaymentsBarChart({
       subtitle={`Month view · last ${OVERVIEW_MONTH_COUNT} months`}
       minHeightClass="min-h-[280px]"
     >
-      <div className="h-full w-full min-h-[240px] flex-1">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="h-[260px] w-full min-w-0">
+        <ResponsiveContainer width="100%" height={260}>
           <BarChart data={data} margin={{ ...OVERVIEW_CHART_MARGIN, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
             <XAxis
