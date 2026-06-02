@@ -68,7 +68,6 @@ import type {
 
 const ICON_STROKE = 2.25;
 
-/** Column widths tuned so headers line up with row content (no oversized gaps). */
 const RUNS_TABLE_GRID =
   "grid grid-cols-[minmax(12rem,1.35fr)_minmax(11rem,1.15fr)_7.25rem_8.5rem_5.5rem_minmax(9.5rem,1fr)] items-center gap-x-3";
 const RUNS_CELL = "min-w-0 justify-self-start";
@@ -333,7 +332,6 @@ export function AutomationExecutionsPanel({
   automationId: number;
   automationActive?: boolean;
   showRunButton?: boolean;
-  /** Cron-first flows: pause/resume the schedule instead of manual Run. */
   showPauseButton?: boolean;
   onExecutionStarted?: (id: number) => void;
 }) {

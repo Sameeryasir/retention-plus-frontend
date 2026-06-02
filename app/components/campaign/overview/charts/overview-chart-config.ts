@@ -30,7 +30,23 @@ export const OVERVIEW_CHART_COLORS = {
   zinc: "#52525b",
 } as const;
 
-export const OVERVIEW_CHART_MARGIN = { top: 8, right: 12, left: 0, bottom: 0 };
+export const OVERVIEW_MINI_LINE_CHART_MARGIN = {
+  top: 16,
+  right: 8,
+  left: 8,
+  bottom: 0,
+};
+
+export const OVERVIEW_BAR_CHART_MARGIN = {
+  top: 8,
+  right: 12,
+  left: 8,
+  bottom: 8,
+};
+
+export function shortenMonthAxisLabel(label: string): string {
+  return label.split(" ")[0] ?? label;
+}
 
 export function formatMonthLabel(monthKey: string): string {
   const [yearRaw, monthRaw] = monthKey.split("-");

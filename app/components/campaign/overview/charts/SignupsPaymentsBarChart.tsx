@@ -13,9 +13,10 @@ import {
 import { OverviewChartShell } from "@/app/components/campaign/overview/charts/OverviewChartShell";
 import { OverviewChartTooltip } from "@/app/components/campaign/overview/charts/OverviewChartTooltip";
 import {
+  OVERVIEW_BAR_CHART_MARGIN,
   OVERVIEW_CHART_COLORS,
-  OVERVIEW_CHART_MARGIN,
   OVERVIEW_MONTH_COUNT,
+  shortenMonthAxisLabel,
   type MonthlySignupsPaymentsPoint,
 } from "@/app/components/campaign/overview/charts/overview-chart-config";
 
@@ -32,7 +33,7 @@ export function SignupsPaymentsBarChart({
     >
       <div className="h-[260px] w-full min-w-0">
         <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={data} margin={{ ...OVERVIEW_CHART_MARGIN, bottom: 8 }}>
+          <BarChart data={data} margin={OVERVIEW_BAR_CHART_MARGIN}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
             <XAxis
               dataKey="label"
@@ -40,9 +41,8 @@ export function SignupsPaymentsBarChart({
               axisLine={{ stroke: "#e4e4e7" }}
               tickLine={false}
               interval={0}
-              angle={-25}
-              textAnchor="end"
-              height={56}
+              tickFormatter={shortenMonthAxisLabel}
+              height={32}
             />
             <YAxis
               allowDecimals={false}

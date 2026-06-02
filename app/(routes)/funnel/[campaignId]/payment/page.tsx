@@ -6,6 +6,7 @@ import { FunnelPreviewSkeleton } from "@/app/components/crm-template-editor/Funn
 import { useFunnelTemplatePagesFromStorage } from "@/app/components/crm-template-editor/funnel-template-storage";
 import { TemplatePreview } from "@/app/components/crm-template-editor/TemplatePreview";
 import type { FunnelStripePaymentContext } from "@/app/components/funnel/FunnelStripePaymentForm";
+import { FunnelGuestPageShell } from "@/app/components/funnel/FunnelGuestPageShell";
 import { useCampaignPricing } from "@/app/hooks/use-campaign-pricing";
 import { useFunnelGuestRoute } from "@/app/hooks/use-funnel-guest-route";
 import { getFunnelCheckoutEmail } from "@/app/lib/funnel-checkout-storage";
@@ -53,47 +54,38 @@ function FunnelCampaignPaymentPageInner() {
     paymentStripeCheckout == null &&
     funnelIdSegment.length > 0;
 
+  if (isLoading) {
+    return <FunnelPreviewSkeleton />;
+  }
+
   return (
-    <div className="flex min-h-dvh flex-col bg-zinc-100">
-      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        <div className="mx-auto w-full max-w-[390px] flex-none px-3 py-6 pb-12 sm:px-4">
-          {showSetupHint ? (
-            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-              {!checkoutEmail?.trim()
-                ? "Complete signup first so we have your email."
-                : "Add ?restaurantId=… to the URL or set NEXT_PUBLIC_FUNNEL_PAYMENT_RESTAURANT_ID."}
-            </div>
-          ) : null}
-          {isLoading ? (
-            <FunnelPreviewSkeleton />
-          ) : (
-            <TemplatePreview
-              page={payment}
-              landingPage={landing}
-              interactiveForms
-              paymentStripeCheckout={paymentStripeCheckout}
-              campaignPricing={campaignPricing}
-              trackingFunnelId={funnelId}
-            />
-          )}
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+      {showSetupHint ? (
+        <div className="shrink-0 border-b border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-950">
+          {!checkoutEmail?.trim()
+            ? "Complete signup first so we have your email."
+            : "Add ?restaurantId=… to the URL or set NEXT_PUBLIC_FUNNEL_PAYMENT_RESTAURANT_ID."}
         </div>
-      </main>
+      ) : null}
+      <TemplatePreview
+        page={payment}
+        landingPage={landing}
+        interactiveForms
+        fullPageShellChrome
+        paymentStripeCheckout={paymentStripeCheckout}
+        campaignPricing={campaignPricing}
+        trackingFunnelId={funnelId}
+      />
     </div>
   );
 }
 
 export default function FunnelCampaignPaymentPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-dvh flex-col bg-zinc-100 px-3 py-6 sm:px-4">
-          <div className="mx-auto w-full max-w-[390px] flex-none">
-            <FunnelPreviewSkeleton />
-          </div>
-        </div>
-      }
-    >
-      <FunnelCampaignPaymentPageInner />
-    </Suspense>
+    <FunnelGuestPageShell>
+      <Suspense fallback={<FunnelPreviewSkeleton />}>
+        <FunnelCampaignPaymentPageInner />
+      </Suspense>
+    </FunnelGuestPageShell>
   );
 }

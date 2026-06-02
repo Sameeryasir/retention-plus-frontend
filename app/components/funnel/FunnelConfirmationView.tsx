@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { TemplatePreview } from "@/app/components/crm-template-editor/TemplatePreview";
 import { FunnelPreviewSkeleton } from "@/app/components/crm-template-editor/FunnelPreviewSkeleton";
 import { useFunnelTemplatePagesFromStorage } from "@/app/components/crm-template-editor/funnel-template-storage";
+import { FunnelGuestPageShell } from "@/app/components/funnel/FunnelGuestPageShell";
 import { PaymentConfirmedSprinkles } from "@/app/components/funnel/PaymentConfirmedSprinkles";
 import {
   getFunnelCheckoutCustomerId,
@@ -54,23 +55,20 @@ export function FunnelConfirmationView({
   }, [celebrate, funnelId]);
 
   return (
-    <div className="relative flex min-h-dvh flex-col bg-zinc-100">
+    <>
       <PaymentConfirmedSprinkles active={celebrate} />
-      <main className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto">
-        <div className="flex flex-1 flex-col justify-center px-3 py-8 sm:px-4">
-          <div className="mx-auto w-full max-w-[390px] shrink-0">
-            {isLoading ? (
-              <FunnelPreviewSkeleton />
-            ) : (
-              <TemplatePreview
-                page={pages.confirmation}
-                landingPage={pages.landing}
-                trackingFunnelId={funnelId}
-              />
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
+      <FunnelGuestPageShell>
+        {isLoading ? (
+          <FunnelPreviewSkeleton />
+        ) : (
+          <TemplatePreview
+            page={pages.confirmation}
+            landingPage={pages.landing}
+            fullPageShellChrome
+            trackingFunnelId={funnelId}
+          />
+        )}
+      </FunnelGuestPageShell>
+    </>
   );
 }

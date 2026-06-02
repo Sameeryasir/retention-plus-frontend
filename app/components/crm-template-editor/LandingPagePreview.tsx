@@ -203,6 +203,7 @@ export function LandingPagePreview({
   landingCtaHref,
   showTopHero,
   onButtonClick,
+  fillViewport = false,
 }: {
   page: TemplatePage;
   layoutType: string;
@@ -213,6 +214,7 @@ export function LandingPagePreview({
   landingCtaHref: string | null;
   showTopHero: boolean;
   onButtonClick?: (elementName: string) => void;
+  fillViewport?: boolean;
 }) {
   const style = getLandingDesignStyle(landingDesign);
   const heroStyle = getHeroDesignStyle(heroDesign);
@@ -307,15 +309,6 @@ export function LandingPagePreview({
     ),
   };
 
-  const content = (
-    <div
-      className={`flex flex-col gap-4 ${align} px-5 pb-8 pt-6 sm:px-6`}
-      style={pageBackgroundStyle(page.backgroundColor, style.backgroundDefault)}
-    >
-      {sectionOrder.map((sectionId) => sectionNodes[sectionId])}
-    </div>
-  );
-
   const hero = showTopHero ? (
     <LandingHero
       url={heroImageUrl}
@@ -326,9 +319,22 @@ export function LandingPagePreview({
     />
   ) : null;
 
+  const content = (
+    <div
+      className={`flex flex-col gap-4 ${align} px-5 pb-8 pt-6 sm:px-6 ${fillViewport ? "flex-1" : ""}`}
+      style={pageBackgroundStyle(page.backgroundColor, style.backgroundDefault)}
+    >
+      {sectionOrder.map((sectionId) => sectionNodes[sectionId])}
+    </div>
+  );
+
+  const rootClass = fillViewport
+    ? "flex min-h-full flex-1 flex-col overflow-hidden"
+    : "flex min-h-0 flex-col overflow-hidden";
+
   if (layoutType === "split") {
     return (
-      <div className="flex min-h-0 flex-col overflow-hidden">
+      <div className={rootClass}>
         {hero}
         {content}
       </div>
@@ -336,7 +342,7 @@ export function LandingPagePreview({
   }
 
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden">
+    <div className={rootClass}>
       {hero}
       {content}
     </div>

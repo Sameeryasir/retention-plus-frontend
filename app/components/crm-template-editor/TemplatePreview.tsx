@@ -41,9 +41,15 @@ function layoutShellClass(_layoutType: string) {
   return "max-w-full";
 }
 
-function previewOuterChrome(_pageId: string, editorChrome: boolean): string {
-  if (editorChrome) {
-    return "min-w-0 overflow-x-hidden bg-white";
+function previewOuterChrome(
+  _pageId: string,
+  options: { editorChrome?: boolean; fullPageShell?: boolean },
+): string {
+  if (options.fullPageShell) {
+    return "flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto";
+  }
+  if (options.editorChrome) {
+    return "flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-white";
   }
   return "overflow-hidden rounded-2xl bg-white shadow-sm";
 }
@@ -131,6 +137,7 @@ export function TemplatePreview({
   interactiveForms = false,
   submitCustomerOnSignupNext = false,
   editorStepPreviewChrome = false,
+  fullPageShellChrome = false,
   paymentStripeCheckout = null,
   trackingFunnelId = null,
   campaignPricing,
@@ -143,6 +150,7 @@ export function TemplatePreview({
   interactiveForms?: boolean;
   submitCustomerOnSignupNext?: boolean;
   editorStepPreviewChrome?: boolean;
+  fullPageShellChrome?: boolean;
   paymentStripeCheckout?: FunnelStripePaymentContext | null;
   trackingFunnelId?: number | null;
   campaignPricing?: CampaignPricing | null;
@@ -163,10 +171,10 @@ export function TemplatePreview({
     : page.imageScale;
 
   const shell = `${layoutShellClass(layoutType)} mx-auto w-full`;
-  const previewFrameClass = previewOuterChrome(
-    page.id,
-    editorStepPreviewChrome,
-  );
+  const previewFrameClass = previewOuterChrome(page.id, {
+    editorChrome: editorStepPreviewChrome,
+    fullPageShell: fullPageShellChrome,
+  });
   const align = textAlign(layoutType);
   const signup =
     page.id === "signup" ? (page as SignUpTemplatePage) : null;
@@ -260,11 +268,15 @@ export function TemplatePreview({
     </div>
   );
 
+  const fullPageLayoutClass = fullPageShellChrome
+    ? "flex min-h-full min-w-0 flex-1 flex-col"
+    : "";
+
   if (page.id === "payment") {
     return (
-      <div className={`${shell} w-full min-w-0`}>
+      <div className={`${shell} w-full min-w-0 ${fullPageLayoutClass}`}>
         <div
-          className={`w-full min-w-0 overflow-hidden ${previewFrameClass}`}
+          className={`w-full min-w-0 ${fullPageShellChrome ? "flex min-h-full flex-1 flex-col" : "overflow-hidden"} ${previewFrameClass}`}
         >
           <PaymentPagePreview
             page={page}
@@ -272,6 +284,7 @@ export function TemplatePreview({
             interactive={interactiveForms}
             stripeCheckout={paymentStripeCheckout}
             campaignPricing={campaignPricing}
+            fillViewport={fullPageShellChrome}
           />
         </div>
       </div>
@@ -280,11 +293,15 @@ export function TemplatePreview({
 
   if (page.id === "confirmation" && isLandingTemplatePage(landingPage)) {
     return (
-      <div className={`${shell} w-full min-w-0`}>
+      <div className={`${shell} w-full min-w-0 ${fullPageLayoutClass}`}>
         <div
-          className={`w-full min-w-0 overflow-hidden ${previewFrameClass}`}
+          className={`w-full min-w-0 ${fullPageShellChrome ? "flex min-h-full flex-1 flex-col" : "overflow-hidden"} ${previewFrameClass}`}
         >
-          <ConfirmationPagePreview page={page} landingPage={landingPage} />
+          <ConfirmationPagePreview
+            page={page}
+            landingPage={landingPage}
+            fillViewport={fullPageShellChrome}
+          />
         </div>
       </div>
     );
@@ -292,8 +309,10 @@ export function TemplatePreview({
 
   if (page.id === "signup" && signup && isLandingTemplatePage(landingPage)) {
     return (
-      <div className={shell}>
-        <div className={`overflow-hidden ${previewFrameClass}`}>
+      <div className={`${shell} ${fullPageLayoutClass}`}>
+        <div
+          className={`${fullPageShellChrome ? "flex min-h-full flex-1 flex-col" : "overflow-hidden"} ${previewFrameClass}`}
+        >
           <SignupPagePreview
             signupPage={signup}
             landingPage={landingPage}
@@ -306,6 +325,7 @@ export function TemplatePreview({
             signupSubmitting={signupSubmitting}
             onSignupSubmit={onSignupCustomerSubmit}
             onButtonClick={trackButtonClick}
+            fillViewport={fullPageShellChrome}
           />
         </div>
       </div>
@@ -314,8 +334,10 @@ export function TemplatePreview({
 
   if (page.id === "landing") {
     return (
-      <div className={shell}>
-        <div className={`overflow-hidden ${previewFrameClass}`}>
+      <div className={`${shell} ${fullPageLayoutClass}`}>
+        <div
+          className={`${fullPageShellChrome ? "flex min-h-full flex-1 flex-col" : "overflow-hidden"} ${previewFrameClass}`}
+        >
           <LandingPagePreview
             page={page}
             layoutType={layoutType}
@@ -334,6 +356,7 @@ export function TemplatePreview({
             landingCtaHref={landingCtaAsLink}
             showTopHero={showTopHero}
             onButtonClick={trackButtonClick}
+            fillViewport={fullPageShellChrome}
           />
         </div>
       </div>

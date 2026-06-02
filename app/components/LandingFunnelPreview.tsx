@@ -30,7 +30,7 @@ export function LandingFunnelPreview() {
       : undefined;
 
   return (
-    <div className="w-full min-w-0">
+    <>
       {isLoading ? (
         <FunnelPreviewSkeleton />
       ) : (
@@ -38,9 +38,10 @@ export function LandingFunnelPreview() {
           page={landing}
           landingPage={landing}
           landingCtaHref={landingCtaHref}
+          fullPageShellChrome
           trackingFunnelId={funnelId}
         />
       )}
-    </div>
+    </>
   );
 }

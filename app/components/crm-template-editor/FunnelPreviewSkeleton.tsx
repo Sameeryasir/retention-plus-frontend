@@ -5,7 +5,7 @@ import { Skeleton } from "@/app/components/skeleton";
 export function FunnelPreviewSkeleton() {
   return (
     <div
-      className="mx-auto w-full min-w-0 overflow-hidden bg-white"
+      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white"
       aria-busy="true"
       aria-label="Loading funnel preview"
     >

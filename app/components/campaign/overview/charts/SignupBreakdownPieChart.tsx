@@ -20,7 +20,6 @@ import {
 
 const SLICE_COLORS = [OVERVIEW_CHART_COLORS.amber, OVERVIEW_CHART_COLORS.emerald];
 
-/** Room for legend below the donut without clipping slice labels. */
 const PIE_CHART_MARGIN = { top: 8, right: 16, bottom: 36, left: 16 };
 
 export function SignupBreakdownPieChart({ data }: { data: ChartNameValue[] }) {

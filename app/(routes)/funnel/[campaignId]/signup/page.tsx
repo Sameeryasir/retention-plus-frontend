@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { FunnelPreviewSkeleton } from "@/app/components/crm-template-editor/FunnelPreviewSkeleton";
 import { useFunnelTemplatePagesFromStorage } from "@/app/components/crm-template-editor/funnel-template-storage";
 import { TemplatePreview } from "@/app/components/crm-template-editor/TemplatePreview";
+import { FunnelGuestPageShell } from "@/app/components/funnel/FunnelGuestPageShell";
 import { useCampaignPricing } from "@/app/hooks/use-campaign-pricing";
 import { useFunnelGuestRoute } from "@/app/hooks/use-funnel-guest-route";
 import { buildFunnelPublicPath } from "@/app/lib/funnel-public-path";
@@ -41,43 +42,30 @@ function FunnelCampaignSignupInner() {
         })
       : undefined;
 
+  if (isLoading) {
+    return <FunnelPreviewSkeleton />;
+  }
+
   return (
-    <div className="flex min-h-dvh flex-col bg-zinc-100">
-      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        <div className="flex flex-1 flex-col justify-center px-3 py-8 sm:px-4">
-          <div className="mx-auto w-full max-w-[390px] shrink-0">
-            {isLoading ? (
-              <FunnelPreviewSkeleton />
-            ) : (
-              <TemplatePreview
-                page={signup}
-                landingPage={landing}
-                signupNextHref={signupNextHref}
-                signupBackHref={signupBackHref}
-                interactiveForms
-                submitCustomerOnSignupNext
-                trackingFunnelId={funnelId}
-              />
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
+    <TemplatePreview
+      page={signup}
+      landingPage={landing}
+      signupNextHref={signupNextHref}
+      signupBackHref={signupBackHref}
+      interactiveForms
+      submitCustomerOnSignupNext
+      fullPageShellChrome
+      trackingFunnelId={funnelId}
+    />
   );
 }
 
 export default function FunnelCampaignSignupPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-dvh flex-col bg-zinc-100 px-3 py-8 sm:px-4">
-          <div className="mx-auto w-full max-w-[390px] shrink-0">
-            <FunnelPreviewSkeleton />
-          </div>
-        </div>
-      }
-    >
-      <FunnelCampaignSignupInner />
-    </Suspense>
+    <FunnelGuestPageShell>
+      <Suspense fallback={<FunnelPreviewSkeleton />}>
+        <FunnelCampaignSignupInner />
+      </Suspense>
+    </FunnelGuestPageShell>
   );
 }

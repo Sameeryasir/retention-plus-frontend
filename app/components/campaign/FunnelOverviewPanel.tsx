@@ -158,8 +158,6 @@ export function FunnelOverviewPanel({
 
   const statsPoints = statsMerge.points;
   const analyticsPoints = analyticsMerge.points;
-  const usingMockStats = statsMerge.usedMock;
-  const usingMockAnalytics = analyticsMerge.usedMock;
 
   const showNoRecords = false;
 
@@ -240,7 +238,6 @@ export function FunnelOverviewPanel({
   const displayName = campaignName?.trim() ? campaignName : "Campaign";
   const hasMonthlyCharts = signupsPaymentsMonthly.length > 0;
   const hasAnalyticsMonthly = (analyticsPoints?.length ?? 0) > 0;
-  const showingMockPreview = usingMockStats || usingMockAnalytics;
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-zinc-50 via-white to-zinc-100/70">
@@ -271,11 +268,6 @@ export function FunnelOverviewPanel({
               Conversion metrics and live funnel behavior analytics — month
               view (last {OVERVIEW_MONTH_COUNT} months).
             </p>
-            {showingMockPreview ? (
-              <p className="mt-3 inline-flex rounded-full border border-amber-200/90 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-900">
-                Showing sample data for preview
-              </p>
-            ) : null}
           </div>
         </motion.header>
 

@@ -42,9 +42,11 @@ function ConfirmationBody({
 export function ConfirmationPagePreview({
   page,
   landingPage,
+  fillViewport = false,
 }: {
   page: TemplatePageBase & { id: "confirmation" };
   landingPage: LandingTemplatePage;
+  fillViewport?: boolean;
 }) {
   const landingDesign = normalizeLandingDesign(landingPage.landingDesign);
   const landingStyle = getLandingDesignStyle(landingDesign);
@@ -60,6 +62,7 @@ export function ConfirmationPagePreview({
       landingPage={landingPage}
       heroImageUrl={landingPage.imageUrl}
       heroImageScale={landingPage.imageScale}
+      fillViewport={fillViewport}
     >
       <span
         className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] ${landingStyle.badgeClass} ${centered ? "mx-auto" : ""}`}

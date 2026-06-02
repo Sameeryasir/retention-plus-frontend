@@ -53,6 +53,7 @@ export function SignupPagePreview({
   signupSubmitting = false,
   onSignupSubmit,
   onButtonClick,
+  fillViewport = false,
 }: {
   signupPage: SignUpTemplatePage;
   landingPage: LandingTemplatePage;
@@ -65,6 +66,7 @@ export function SignupPagePreview({
   signupSubmitting?: boolean;
   onSignupSubmit?: (e: FormEvent<HTMLFormElement>) => void;
   onButtonClick?: (elementName: string) => void;
+  fillViewport?: boolean;
 }) {
   const landingDesign = normalizeLandingDesign(landingPage.landingDesign);
   const landingStyle = getLandingDesignStyle(landingDesign);
@@ -198,6 +200,7 @@ export function SignupPagePreview({
       landingPage={landingPage}
       heroImageUrl={heroImageUrl}
       heroImageScale={heroImageScale}
+      fillViewport={fillViewport}
     >
       {content}
     </LandingFunnelStepShell>

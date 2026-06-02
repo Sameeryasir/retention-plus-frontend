@@ -46,12 +46,14 @@ export function PaymentPagePreview({
   interactive = false,
   stripeCheckout = null,
   campaignPricing,
+  fillViewport = false,
 }: {
   page: TemplatePage;
   landingPage: TemplatePage;
   interactive?: boolean;
   stripeCheckout?: FunnelStripePaymentContext | null;
   campaignPricing?: CampaignPricing | null;
+  fillViewport?: boolean;
 }) {
   const pricing = campaignPricing ?? EMPTY_CAMPAIGN_PRICING;
   const payment = normalizePaymentPage(page as PaymentTemplatePage);
@@ -102,6 +104,7 @@ export function PaymentPagePreview({
       landingPage={landingPage}
       heroImageUrl={landingPage.imageUrl}
       heroImageScale={landingPage.imageScale}
+      fillViewport={fillViewport}
     >
       {checkout}
     </LandingFunnelStepShell>

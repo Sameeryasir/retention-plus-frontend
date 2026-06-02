@@ -18,11 +18,13 @@ export function LandingFunnelStepShell({
   landingPage,
   heroImageUrl,
   heroImageScale,
+  fillViewport = false,
   children,
 }: {
   landingPage: LandingTemplatePage;
   heroImageUrl: string;
   heroImageScale: number;
+  fillViewport?: boolean;
   children: ReactNode;
 }) {
   const landingDesign = normalizeLandingDesign(landingPage.landingDesign);
@@ -33,7 +35,13 @@ export function LandingFunnelStepShell({
     landingPage.backgroundColor?.trim() || landingStyle.backgroundDefault;
 
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden">
+    <div
+      className={
+        fillViewport
+          ? "flex min-h-full flex-1 flex-col overflow-hidden"
+          : "flex min-h-0 flex-col overflow-hidden"
+      }
+    >
       <LandingHero
         url={heroImageUrl}
         scale={normalizeImageScale(heroImageScale)}
@@ -42,13 +50,15 @@ export function LandingFunnelStepShell({
         heroStyle={heroStyle}
       />
       <div
-        className={`flex w-full flex-col items-stretch px-5 pb-8 pt-6 sm:px-6 ${centered ? "text-center" : "text-left"}`}
+        className={`flex w-full flex-col items-stretch px-5 pb-8 pt-6 sm:px-6 ${fillViewport ? "flex-1" : ""} ${centered ? "text-center" : "text-left"}`}
         style={pageBackgroundStyle(
           landingPage.backgroundColor,
           landingStyle.backgroundDefault,
         )}
       >
-        <div className="w-full min-w-0">{children}</div>
+        <div className={`w-full min-w-0 ${fillViewport ? "flex-1" : ""}`}>
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -17,7 +17,6 @@ function buildRecentMonthKeys(monthCount: number): string[] {
   return keys;
 }
 
-/** Sample funnel stats for the last 6 months — preview only. */
 export function buildMockStatsMonthlyPoints(): FunnelStatsMonthlyPoint[] {
   const months = buildRecentMonthKeys(OVERVIEW_MONTH_COUNT);
 
@@ -37,7 +36,6 @@ export function buildMockStatsMonthlyPoints(): FunnelStatsMonthlyPoint[] {
   }));
 }
 
-/** Sample behavior analytics for the last 6 months — preview only. */
 export function buildMockAnalyticsMonthlyPoints(): FunnelAnalyticsMonthlyPoint[] {
   const months = buildRecentMonthKeys(OVERVIEW_MONTH_COUNT);
 
@@ -86,7 +84,6 @@ function statsMonthIsEmpty(row: FunnelStatsMonthlyPoint): boolean {
   );
 }
 
-/** Fill zero months with sample values so charts show a full 6-month preview. */
 export function mergeAnalyticsWithMockPreview(
   real: FunnelAnalyticsMonthlyPoint[],
 ): { points: FunnelAnalyticsMonthlyPoint[]; usedMock: boolean } {
@@ -114,7 +111,6 @@ export function mergeAnalyticsWithMockPreview(
   return { points, usedMock };
 }
 
-/** Fill zero months with sample values so charts show a full 6-month preview. */
 export function mergeStatsWithMockPreview(
   real: FunnelStatsMonthlyPoint[],
 ): { points: FunnelStatsMonthlyPoint[]; usedMock: boolean } {

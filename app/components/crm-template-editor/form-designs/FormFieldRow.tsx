@@ -33,7 +33,6 @@ export function FormFieldRow({
   inputName?: string;
   inputType?: string;
   autoComplete?: string;
-  /** When set, a Lucide icon is shown before the label (signup preview polish). */
   fieldId?: FormFieldId;
   inputTextClassName?: string;
 }) {
