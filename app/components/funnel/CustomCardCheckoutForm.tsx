@@ -21,6 +21,7 @@ import {
 } from "@/app/lib/funnel-checkout-storage";
 import { getOrCreateVisitorId } from "@/app/lib/funnel-visitor-id";
 import { buildFunnelPaymentConfirmationPath } from "@/app/lib/funnel-public-path";
+import { waitForPaymentPaid } from "@/app/lib/wait-for-payment-paid";
 import { trackFunnelEvent } from "@/app/services/funnel/track-funnel-event";
 import { checkoutFormRootClass } from "@/app/components/payment-templates/shared/checkout-form-classes";
 import type { CheckoutFormStyles } from "@/app/components/payment-templates/shared/checkout-form-styles";
@@ -37,9 +38,15 @@ export type CustomCardCheckoutFormProps = {
   submitLabel?: string;
 };
 
-async function trackPaymentSuccess(funnelId: number): Promise<void> {
+async function trackPaymentSuccessWhenConfirmed(
+  funnelId: number,
+): Promise<void> {
   const funnelPaymentId = getFunnelPaymentId();
   if (funnelPaymentId == null) return;
+
+  const paid = await waitForPaymentPaid(funnelPaymentId);
+  if (!paid) return;
+
   const customerId = getFunnelCheckoutCustomerId();
   await trackFunnelEvent({
     eventType: "payment",
@@ -127,14 +134,34 @@ export function CustomCardCheckoutForm({
         },
       );
 
-      if (error?.message) {
+      if (error) {
+        const alreadyPaid =
+          error.code === "payment_intent_unexpected_state" ||
+          /already succeeded/i.test(error.message ?? "");
+        if (alreadyPaid) {
+          window.location.href = returnUrl.toString();
+          return;
+        }
         setFormError(error.message);
         return;
       }
 
       if (paymentIntent?.status === "succeeded") {
+        setFormError(null);
+        const funnelPaymentId = getFunnelPaymentId();
+        if (funnelPaymentId != null) {
+          const confirmed = await waitForPaymentPaid(funnelPaymentId, {
+            maxAttempts: 20,
+          });
+          if (!confirmed) {
+            setFormError(
+              "Payment is processing. Please wait a moment and refresh, or check your email for confirmation.",
+            );
+            return;
+          }
+        }
         try {
-          await trackPaymentSuccess(funnelId);
+          await trackPaymentSuccessWhenConfirmed(funnelId);
         } catch (trackErr) {
           console.warn("[Funnel] payment track failed", trackErr);
         }

@@ -165,35 +165,27 @@ export function CampaignGuestsPanel() {
             transition={{ duration: 0.35, ease: standardEase }}
           >
             <ReportTable
-              className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_12px_40px_rgba(88,28,135,0.08)] ring-1 ring-violet-100/80"
+              className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.1)] ring-1 ring-zinc-200/80"
               header={
                 <motion.div
                   initial={{ opacity: 0, y: -16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, ease: standardEase }}
-                  className="relative overflow-hidden border-b border-violet-100/80 bg-gradient-to-br from-violet-600 via-indigo-600 to-violet-700 px-5 py-5 sm:px-6"
+                  className="border-b border-zinc-200/90 bg-white px-5 py-5 sm:px-6"
                 >
-                  <div
-                    className="pointer-events-none absolute -right-8 -top-10 size-40 rounded-full bg-white/10 blur-2xl"
-                    aria-hidden
-                  />
-                  <div
-                    className="pointer-events-none absolute -bottom-12 left-1/3 size-32 rounded-full bg-indigo-400/20 blur-2xl"
-                    aria-hidden
-                  />
-                  <div className="relative flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
-                      <span className="flex size-11 items-center justify-center rounded-2xl bg-white/15 text-white shadow-lg shadow-violet-900/20 ring-1 ring-white/20 backdrop-blur-sm">
+                      <span className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-md ring-1 ring-zinc-200/80">
                         <Users className="size-5" aria-hidden />
                       </span>
                       <div>
-                        <h3 className="text-lg font-bold tracking-tight text-white">
+                        <h3 className="text-lg font-bold tracking-tight text-zinc-900">
                           Guests
                         </h3>
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-sm font-bold tabular-nums text-violet-700 shadow-lg shadow-violet-900/10 ring-1 ring-white/60">
-                      <Users className="size-4 text-violet-600" aria-hidden />
+                    <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-bold tabular-nums text-zinc-900 shadow-sm">
+                      <Users className="size-4 text-indigo-600" aria-hidden />
                       {meta?.total ?? customers.length} total
                     </span>
                   </div>
@@ -220,7 +212,7 @@ export function CampaignGuestsPanel() {
                       variants={tableHeaderReveal}
                       initial="hidden"
                       animate="show"
-                      className="border-b border-zinc-200/90 bg-gradient-to-b from-zinc-50 via-white to-white"
+                      className="border-b border-zinc-200/90 bg-white"
                     >
                       <th className={`${thClass} w-16`}>
                         <TableColumnHeader
@@ -285,10 +277,10 @@ export function CampaignGuestsPanel() {
                         <motion.tr
                           key={customer.id}
                           variants={tableRowReveal}
-                          className="group border-b border-zinc-100/90 bg-white transition-[background-color,box-shadow] duration-200 last:border-0 hover:bg-violet-50/50 hover:shadow-[inset_4px_0_0_0_rgb(124_58_237)]"
+                          className="group border-b border-zinc-100/90 bg-white transition-[background-color,box-shadow] duration-200 last:border-0 hover:bg-zinc-50 hover:shadow-[inset_4px_0_0_0_rgb(9_9_11)]"
                         >
                           <td className={tdClass}>
-                            <span className="inline-flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-100 to-indigo-100 text-xs font-bold tabular-nums text-violet-700 ring-1 ring-violet-200/70 transition group-hover:from-violet-200 group-hover:to-indigo-200">
+                            <span className="inline-flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 text-xs font-bold tabular-nums text-zinc-800 ring-1 ring-zinc-300/70 transition group-hover:from-zinc-200 group-hover:to-zinc-300">
                               {rowNumber}
                             </span>
                           </td>
@@ -331,7 +323,7 @@ export function CampaignGuestsPanel() {
                             )}
                           </td>
                           <td className={`${tdClass} whitespace-nowrap`}>
-                            <span className="inline-flex items-center gap-2 rounded-full bg-zinc-100/90 px-3 py-1.5 text-xs font-medium text-zinc-600 ring-1 ring-zinc-200/80 transition group-hover:bg-white group-hover:ring-violet-200/80">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-zinc-100/90 px-3 py-1.5 text-xs font-medium text-zinc-600 ring-1 ring-zinc-200/80 transition group-hover:bg-white group-hover:ring-zinc-300/80">
                               <Calendar
                                 className="size-3.5 shrink-0 text-orange-500"
                                 aria-hidden

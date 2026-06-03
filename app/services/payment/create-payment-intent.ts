@@ -4,7 +4,6 @@ import { isPositiveInt } from "@/app/lib/numbers";
 export type CreatePaymentIntentPayload = {
   funnelId: number;
   restaurantId: number;
-  applicationFeeAmount: number;
   currency: string;
   customerEmail: string;
 };
@@ -16,12 +15,14 @@ export type CreatePaymentIntentResponse = {
   paymentId?: number;
   status?: string;
   stripeAccountId?: string;
+  reused?: boolean;
+  /** Payment already succeeded in Stripe — do not call confirmCardPayment again. */
+  alreadyCompleted?: boolean;
 };
 
 type CreatePaymentIntentRequestBody = {
   funnelId: number;
   restaurantId: number;
-  applicationFeeAmount: number;
   currency: string;
   customerEmail: string;
 };
@@ -36,18 +37,14 @@ function readPaymentIntentId(
   );
 }
 
-function assertPayload(payload: CreatePaymentIntentPayload): CreatePaymentIntentRequestBody {
+function assertPayload(
+  payload: CreatePaymentIntentPayload,
+): CreatePaymentIntentRequestBody {
   if (!isPositiveInt(payload.funnelId)) {
     throw new Error("Funnel id is required.");
   }
   if (!isPositiveInt(payload.restaurantId)) {
     throw new Error("Restaurant is required.");
-  }
-  if (
-    !Number.isFinite(payload.applicationFeeAmount) ||
-    payload.applicationFeeAmount < 0
-  ) {
-    throw new Error("Application fee amount is required.");
   }
   const currency = payload.currency?.trim().toLowerCase();
   if (!currency) {
@@ -61,12 +58,12 @@ function assertPayload(payload: CreatePaymentIntentPayload): CreatePaymentIntent
   return {
     funnelId: payload.funnelId,
     restaurantId: payload.restaurantId,
-    applicationFeeAmount: payload.applicationFeeAmount,
     currency,
     customerEmail,
   };
 }
 
+/** Platform fee and charge amount are calculated on the server only. */
 export async function createPaymentIntent(
   payload: CreatePaymentIntentPayload,
   accessToken?: string,

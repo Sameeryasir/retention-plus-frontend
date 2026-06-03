@@ -10,7 +10,7 @@ import { FunnelGuestPageShell } from "@/app/components/funnel/FunnelGuestPageShe
 import { useCampaignPricing } from "@/app/hooks/use-campaign-pricing";
 import { useFunnelGuestRoute } from "@/app/hooks/use-funnel-guest-route";
 import { getFunnelCheckoutEmail } from "@/app/lib/funnel-checkout-storage";
-import { parseNonNegativeInt, parsePositiveInt } from "@/app/lib/numbers";
+import { parsePositiveInt } from "@/app/lib/numbers";
 
 function FunnelCampaignPaymentPageInner() {
   const searchParams = useSearchParams();
@@ -30,19 +30,12 @@ function FunnelCampaignPaymentPageInner() {
       return null;
     }
 
-    const applicationFeeAmount =
-      parsePositiveInt(searchParams.get("applicationFeeAmount")) ??
-      parseNonNegativeInt(
-        process.env.NEXT_PUBLIC_FUNNEL_PAYMENT_APPLICATION_FEE,
-        200,
-      );
     const currency =
       searchParams.get("currency")?.trim().toLowerCase() || "usd";
 
     return {
       funnelId,
       restaurantId,
-      applicationFeeAmount,
       currency,
       customerEmail: email,
       campaignId,

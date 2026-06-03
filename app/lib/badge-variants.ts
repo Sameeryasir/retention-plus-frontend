@@ -39,6 +39,9 @@ export function paymentStatusBadgeClass(status: string): string {
   if (s === "paid" || s === "succeeded") return "bg-zinc-900 text-white";
   if (s === "failed") return "bg-red-100 text-red-800";
   if (s === "cancelled" || s === "canceled") return "bg-zinc-100 text-zinc-600";
+  if (s === "refunded" || s === "partially_refunded")
+    return "bg-violet-100 text-violet-900";
+  if (s === "disputed") return "bg-orange-100 text-orange-900";
   return "bg-amber-100 text-amber-900";
 }
 

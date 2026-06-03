@@ -9,13 +9,13 @@ import type { PaymentTemplatePage } from "@/app/components/crm-template-editor/t
 import type { CheckoutFormStyles } from "@/app/components/payment-templates/shared/checkout-form-styles";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
 import { setFunnelPaymentId } from "@/app/lib/funnel-checkout-storage";
+import { buildFunnelPaymentConfirmationPath } from "@/app/lib/funnel-public-path";
 import { createPaymentIntent } from "@/app/services/payment/create-payment-intent";
 import { isPositiveInt } from "@/app/lib/numbers";
 
 export type FunnelStripePaymentContext = {
   funnelId: number;
   restaurantId: number;
-  applicationFeeAmount: number;
   currency: string;
   customerEmail: string;
   campaignId?: number | null;
@@ -58,7 +58,6 @@ export function FunnelStripePaymentForm({
   }, [
     context.funnelId,
     context.restaurantId,
-    context.applicationFeeAmount,
     context.currency,
     context.customerEmail,
   ]);
@@ -72,20 +71,31 @@ export function FunnelStripePaymentForm({
         {
           funnelId: context.funnelId,
           restaurantId: context.restaurantId,
-          applicationFeeAmount: context.applicationFeeAmount,
           currency: context.currency,
           customerEmail: context.customerEmail,
         },
         getSetupAccessToken(),
       );
+      if (isPositiveInt(res.paymentId)) {
+        setFunnelPaymentId(res.paymentId);
+      }
+      if (res.alreadyCompleted) {
+        const confirmationPath = buildFunnelPaymentConfirmationPath(
+          context.funnelId,
+          {
+            campaignId: context.campaignId,
+            restaurantId: context.restaurantId,
+          },
+          { redirectStatus: "succeeded", paymentConfirmed: true },
+        );
+        window.location.href = confirmationPath;
+        return;
+      }
       const secret = res.clientSecret?.trim();
       if (!secret) {
         throw new Error(
           "The server did not return a payment session. Please try again.",
         );
-      }
-      if (isPositiveInt(res.paymentId)) {
-        setFunnelPaymentId(res.paymentId);
       }
       setClientSecret(secret);
       setStripeAccountId(res.stripeAccountId?.trim() ?? null);

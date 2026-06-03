@@ -8,12 +8,14 @@ export function TableColumnHeader({
   variant = "inline",
   iconClassName = "text-zinc-400",
   iconBoxClassName = "border-zinc-200/80 bg-white",
+  labelClassName = "text-zinc-900",
 }: {
   icon?: LucideIcon;
   label: string;
   variant?: "inline" | "boxed";
   iconClassName?: string;
   iconBoxClassName?: string;
+  labelClassName?: string;
 }) {
   if (!label) return <span aria-hidden />;
 
@@ -29,7 +31,9 @@ export function TableColumnHeader({
             aria-hidden
           />
         </span>
-        <span className="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-zinc-900">
+        <span
+          className={`text-[0.65rem] font-bold uppercase tracking-[0.08em] ${labelClassName}`}
+        >
           {label}
         </span>
       </span>

@@ -22,7 +22,7 @@ import {
   parseCampaignPrice,
   type CampaignPricing,
 } from "@/app/lib/campaign-price";
-import { parseNonNegativeInt, parsePositiveInt } from "@/app/lib/numbers";
+import { parsePositiveInt } from "@/app/lib/numbers";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
 import type { FunnelStripePaymentContext } from "@/app/components/funnel/FunnelStripePaymentForm";
 import { mergePagesForSave } from "@/app/lib/merge-funnel-pages";
@@ -212,10 +212,6 @@ export function CrmTemplateEditor({
     return {
       funnelId,
       restaurantId: previewRestaurantId,
-      applicationFeeAmount: parseNonNegativeInt(
-        process.env.NEXT_PUBLIC_FUNNEL_PAYMENT_APPLICATION_FEE,
-        200,
-      ),
       currency:
         process.env.NEXT_PUBLIC_FUNNEL_PAYMENT_CURRENCY?.trim().toLowerCase() ||
         "usd",
