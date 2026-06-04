@@ -25,7 +25,7 @@ export async function connectFacebook(
   }
 
   const res = await authenticatedFetch(
-    `${getApiBaseUrl()}/meta/connect/${encodeURIComponent(String(restaurantId))}`,
+    `${getApiBaseUrl()}/facebook/connect/${encodeURIComponent(String(restaurantId))}`,
     { method: "POST" },
   );
 

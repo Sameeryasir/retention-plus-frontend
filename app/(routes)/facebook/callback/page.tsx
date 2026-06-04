@@ -4,8 +4,10 @@ import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { getApiBaseUrl } from "@/app/lib/api";
 
-/** @deprecated Use /facebook/callback — kept so old Meta redirect URIs still work. */
-function LegacyFacebookCallbackRedirectInner() {
+/**
+ * Public OAuth redirect (e.g. ngrok). Forwards ?code= to backend /facebook/callback/oauth.
+ */
+function FacebookCallbackRedirectInner() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -24,7 +26,7 @@ function LegacyFacebookCallbackRedirectInner() {
   );
 }
 
-export default function LegacyFacebookCallbackPage() {
+export default function FacebookCallbackPage() {
   return (
     <Suspense
       fallback={
@@ -33,7 +35,7 @@ export default function LegacyFacebookCallbackPage() {
         </main>
       }
     >
-      <LegacyFacebookCallbackRedirectInner />
+      <FacebookCallbackRedirectInner />
     </Suspense>
   );
 }

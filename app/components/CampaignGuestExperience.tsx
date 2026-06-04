@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
   Check,
-  ExternalLink,
   LayoutTemplate,
   Loader2,
   MessageSquare,
@@ -13,7 +12,16 @@ import {
 } from "lucide-react";
 import type { Funnel } from "@/app/services/funnel/get-campaigns-by-restaurant";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
+import {
+  formatMetaDailyBudget,
+  formatMetaDeliveryStatus,
+  formatMetaSpend,
+} from "@/app/lib/format-meta-ads";
 import { connectFacebook } from "@/app/services/facebook/connect-facebook";
+import {
+  getFacebookAdCampaignStats,
+  type FacebookAdCampaignStats,
+} from "@/app/services/facebook/get-facebook-ad-campaign-stats";
 import { getFacebookConnectionStatus } from "@/app/services/facebook/get-facebook-connection-status";
 
 export type CampaignGuestExperienceProps = {
@@ -38,9 +46,13 @@ export default function CampaignGuestExperience({
   funnelEditorHref,
 }: CampaignGuestExperienceProps) {
   const [metaConnected, setMetaConnected] = useState(false);
+  const [metaAdAccountId, setMetaAdAccountId] = useState<string | null>(null);
   const [metaLoading, setMetaLoading] = useState(true);
   const [metaConnectLoading, setMetaConnectLoading] = useState(false);
   const [metaError, setMetaError] = useState<string | null>(null);
+  const [adStats, setAdStats] = useState<FacebookAdCampaignStats | null>(null);
+  const [adStatsLoading, setAdStatsLoading] = useState(false);
+  const [adStatsError, setAdStatsError] = useState<string | null>(null);
 
   const refreshMetaStatus = useCallback(async () => {
     setMetaLoading(true);
@@ -53,6 +65,8 @@ export default function CampaignGuestExperience({
       }
       const status = await getFacebookConnectionStatus(token, restaurantId);
       setMetaConnected(status.connected);
+      setMetaAdAccountId(status.metaAdAccountId);
+      return status;
     } catch (e) {
       setMetaError(
         e instanceof Error ? e.message : "Could not check Facebook connection.",
@@ -62,9 +76,30 @@ export default function CampaignGuestExperience({
     }
   }, [restaurantId]);
 
+  const loadAdCampaignStats = useCallback(async () => {
+    setAdStatsLoading(true);
+    setAdStatsError(null);
+    try {
+      const stats = await getFacebookAdCampaignStats(restaurantId);
+      setAdStats(stats);
+    } catch (e) {
+      setAdStats(null);
+      setAdStatsError(
+        e instanceof Error ? e.message : "Could not load Meta campaign stats.",
+      );
+    } finally {
+      setAdStatsLoading(false);
+    }
+  }, [restaurantId]);
+
   useEffect(() => {
-    void refreshMetaStatus();
-  }, [refreshMetaStatus]);
+    void (async () => {
+      const status = await refreshMetaStatus();
+      if (status?.connected && status.metaAdAccountId) {
+        void loadAdCampaignStats();
+      }
+    })();
+  }, [refreshMetaStatus, loadAdCampaignStats]);
 
   const handleConnectFacebook = async () => {
     setMetaConnectLoading(true);
@@ -218,28 +253,127 @@ export default function CampaignGuestExperience({
               </span>
             </div>
             <p className="mt-2 text-sm font-normal leading-relaxed text-zinc-600">
-              Connect your Facebook (Meta) account to run ads that send guests
-              to your funnel.
+              Link Facebook to see your ads here, then send people to your funnel.
             </p>
           </div>
-          <div className="flex min-h-0 flex-1 flex-col justify-start">
-            {metaConnected ? (
-              <p className="flex items-center gap-2 text-sm text-emerald-800">
-                <Check className="size-4 shrink-0" aria-hidden />
-                Facebook is connected. Use your tracking link when you run Meta
-                ads.
+          <div className="flex min-h-0 flex-1 flex-col justify-start gap-3">
+            {metaLoading ? (
+              <p className="text-sm text-zinc-500">Checking Facebook…</p>
+            ) : null}
+
+            {!metaLoading && !metaConnected ? (
+              <p className="text-sm text-zinc-600">
+                Not linked yet. Tap the button below to connect.
               </p>
-            ) : (
-              <p className="text-sm font-normal leading-relaxed text-zinc-600">
-                Sign in with Facebook to link your ad account.
-              </p>
-            )}
-            {metaError ? (
+            ) : null}
+
+            {!metaLoading && metaConnected && !metaAdAccountId ? (
+              <>
+                <p className="flex items-center gap-2 text-sm font-medium text-emerald-800">
+                  <Check className="size-4 shrink-0" aria-hidden />
+                  Facebook is linked
+                </p>
+                <p className="text-sm text-zinc-600">
+                  Choose which Meta ad account belongs to this restaurant.
+                </p>
+                <Link
+                  href={`/facebook/select-ad-account?restaurantId=${restaurantId}`}
+                  className="inline-flex rounded-xl bg-[#1877F2] px-4 py-2.5 text-sm font-semibold text-white no-underline hover:bg-[#166fe5]"
+                >
+                  Choose ad account
+                </Link>
+              </>
+            ) : null}
+
+            {!metaLoading && metaConnected && metaAdAccountId ? (
+              <>
+                <p className="flex items-center gap-2 text-sm font-medium text-emerald-800">
+                  <Check className="size-4 shrink-0" aria-hidden />
+                  Facebook is linked
+                </p>
+
+                {adStatsLoading ? (
+                  <p className="flex items-center gap-2 text-sm text-zinc-500">
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                    Loading your Facebook ads…
+                  </p>
+                ) : null}
+
+                {!adStatsLoading &&
+                adStats &&
+                adStats.campaigns.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-zinc-500">
+                      Your Meta campaigns (last 30 days)
+                      {adStats.adAccountName
+                        ? ` · ${adStats.adAccountName}`
+                        : ""}
+                    </p>
+                    <ul className="space-y-2">
+                      {adStats.campaigns.map((c) => (
+                        <li
+                          key={c.id}
+                          className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5"
+                        >
+                          <p className="truncate text-sm font-semibold text-zinc-900">
+                            {c.name}
+                          </p>
+                          <dl className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-zinc-600">
+                            <dt>Status</dt>
+                            <dd className="text-right font-medium text-zinc-800">
+                              {formatMetaDeliveryStatus(c.effectiveStatus)}
+                            </dd>
+                            <dt>Spent</dt>
+                            <dd className="text-right font-medium text-zinc-800">
+                              {formatMetaSpend(
+                                c.insights?.spend,
+                                adStats.currency,
+                              )}
+                            </dd>
+                            {c.dailyBudget ? (
+                              <>
+                                <dt>Budget</dt>
+                                <dd className="text-right font-medium text-zinc-800">
+                                  {formatMetaDailyBudget(
+                                    c.dailyBudget,
+                                    adStats.currency,
+                                  )}
+                                </dd>
+                              </>
+                            ) : null}
+                          </dl>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {!adStatsLoading &&
+                adStats &&
+                adStats.campaigns.length === 0 ? (
+                  <p className="text-sm text-zinc-600">
+                    No campaigns in your Meta ad account yet. Create one in Ads
+                    Manager.
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+
+            {adStatsError ? (
               <p
-                className="mt-2 flex items-start gap-2 text-xs text-red-700"
+                className="flex items-start gap-2 text-sm text-red-700"
                 role="alert"
               >
-                <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+                {adStatsError}
+              </p>
+            ) : null}
+            {metaError ? (
+              <p
+                className="flex items-start gap-2 text-sm text-red-700"
+                role="alert"
+              >
+                <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
                 {metaError}
               </p>
             ) : null}

@@ -124,6 +124,7 @@ export default function RestaurantSettingsDialog({
   const [stripeError, setStripeError] = useState<string | null>(null);
 
   const [metaConnected, setMetaConnected] = useState(false);
+  const [metaAdAccountId, setMetaAdAccountId] = useState<string | null>(null);
   const [metaStatusLoading, setMetaStatusLoading] = useState(false);
   const [metaConnectStatus, setMetaConnectStatus] = useState<ConnectStatus>("idle");
   const [metaError, setMetaError] = useState<string | null>(null);
@@ -167,6 +168,7 @@ export default function RestaurantSettingsDialog({
       }
       const status = await getFacebookConnectionStatus(token, restaurantId);
       setMetaConnected(status.connected);
+      setMetaAdAccountId(status.metaAdAccountId);
     } catch (e) {
       setMetaError(
         e instanceof Error ? e.message : "Could not check Facebook connection.",
@@ -441,6 +443,14 @@ export default function RestaurantSettingsDialog({
                         </p>
                       </div>
 
+                      {metaConnected && !metaAdAccountId && restaurantId != null ? (
+                        <a
+                          href={`/facebook/select-ad-account?restaurantId=${restaurantId}`}
+                          className="inline-flex h-9 shrink-0 cursor-pointer items-center rounded-lg border border-zinc-600 bg-zinc-800 px-3.5 text-xs font-semibold text-zinc-100 no-underline transition-colors hover:border-zinc-500 hover:bg-zinc-700"
+                        >
+                          Choose ad account
+                        </a>
+                      ) : null}
                       {!metaConnected ? (
                         <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
                           <button

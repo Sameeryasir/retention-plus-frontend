@@ -5,6 +5,7 @@ export type MetaConnectionStatus = {
   connected: boolean;
   metaUserId: string | null;
   metaConnectedAt: string | null;
+  metaAdAccountId: string | null;
 };
 
 export async function getFacebookConnectionStatus(
@@ -16,7 +17,7 @@ export async function getFacebookConnectionStatus(
   }
 
   const res = await authenticatedFetch(
-    `${getApiBaseUrl()}/meta/status/${encodeURIComponent(String(restaurantId))}`,
+    `${getApiBaseUrl()}/facebook/status/${encodeURIComponent(String(restaurantId))}`,
     { method: "GET" },
   );
 
