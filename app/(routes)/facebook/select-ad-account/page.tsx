@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Check, Loader2 } from "lucide-react";
@@ -9,6 +8,7 @@ import {
   type FacebookAdAccount,
 } from "@/app/services/facebook/get-facebook-ad-accounts";
 import { setFacebookAdAccount } from "@/app/services/facebook/set-facebook-ad-account";
+import { notifyFacebookOAuthComplete } from "@/app/lib/facebook-oauth-popup";
 
 function SelectAdAccountInner() {
   const router = useRouter();
@@ -53,12 +53,22 @@ function SelectAdAccountInner() {
     void loadAccounts();
   }, [loadAccounts]);
 
+  const handleSkip = () => {
+    if (restaurantId != null && notifyFacebookOAuthComplete(restaurantId)) {
+      return;
+    }
+    router.push(campaignsHref);
+  };
+
   const handleSave = async () => {
     if (restaurantId == null || !selectedId) return;
     setSaving(true);
     setError(null);
     try {
       await setFacebookAdAccount(restaurantId, selectedId);
+      if (notifyFacebookOAuthComplete(restaurantId)) {
+        return;
+      }
       router.push(campaignsHref);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save ad account.");
@@ -149,12 +159,13 @@ function SelectAdAccountInner() {
           {saving ? "Saving…" : "Save ad account"}
         </button>
 
-        <Link
-          href={campaignsHref}
-          className="mt-3 block text-center text-sm text-zinc-500 underline underline-offset-2"
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="mt-3 block w-full text-center text-sm text-zinc-500 underline underline-offset-2"
         >
           Skip for now
-        </Link>
+        </button>
       </div>
     </main>
   );

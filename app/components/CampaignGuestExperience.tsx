@@ -17,7 +17,7 @@ import {
   formatMetaDeliveryStatus,
   formatMetaSpend,
 } from "@/app/lib/format-meta-ads";
-import { connectFacebook } from "@/app/services/facebook/connect-facebook";
+import { connectFacebookInPopup } from "@/app/lib/facebook-oauth-popup";
 import {
   getFacebookAdCampaignStats,
   type FacebookAdCampaignStats,
@@ -109,13 +109,19 @@ export default function CampaignGuestExperience({
       if (!token) {
         throw new Error("You're signed out. Sign in again.");
       }
-      const { url } = await connectFacebook(token, restaurantId);
-      window.location.href = url;
+      const result = await connectFacebookInPopup(token, restaurantId);
+      if (result.status === "connected") {
+        const status = await refreshMetaStatus();
+        if (status?.connected && status.metaAdAccountId) {
+          void loadAdCampaignStats();
+        }
+      }
     } catch (e) {
-      setMetaConnectLoading(false);
       setMetaError(
         e instanceof Error ? e.message : "Could not connect to Facebook.",
       );
+    } finally {
+      setMetaConnectLoading(false);
     }
   };
 

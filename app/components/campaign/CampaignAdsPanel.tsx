@@ -13,7 +13,7 @@ import {
   formatMetaSpend,
 } from "@/app/lib/format-meta-ads";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
-import { connectFacebook } from "@/app/services/facebook/connect-facebook";
+import { connectFacebookInPopup } from "@/app/lib/facebook-oauth-popup";
 import {
   getFacebookAdCampaignStats,
   type FacebookAdCampaignStats,
@@ -95,13 +95,20 @@ export function CampaignAdsPanel({ restaurantId }: CampaignAdsPanelProps) {
     try {
       const token = getSetupAccessToken().trim();
       if (!token) throw new Error("Sign in again to connect Facebook.");
-      const { url } = await connectFacebook(token, restaurantId);
-      window.location.href = url;
+      const result = await connectFacebookInPopup(token, restaurantId);
+      if (result.status === "connected") {
+        const { connected, metaAdAccountId: accountId } =
+          await refreshConnection();
+        if (connected && accountId) {
+          await loadStats();
+        }
+      }
     } catch (e) {
-      setConnectLoading(false);
       setMetaError(
         e instanceof Error ? e.message : "Could not connect Facebook.",
       );
+    } finally {
+      setConnectLoading(false);
     }
   };
 

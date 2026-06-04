@@ -17,7 +17,7 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
-import { connectFacebook } from "@/app/services/facebook/connect-facebook";
+import { connectFacebookInPopup } from "@/app/lib/facebook-oauth-popup";
 import { getFacebookConnectionStatus } from "@/app/services/facebook/get-facebook-connection-status";
 import { fetchRestaurantById } from "@/app/services/restaurant/get-my-restaurant";
 import { connectStripe } from "@/app/services/stripe/connect-stripe";
@@ -221,8 +221,11 @@ export default function RestaurantSettingsDialog({
           "Open this from a restaurant page so we know which one to connect.",
         );
       }
-      const { url } = await connectFacebook(token, restaurantId);
-      window.location.href = url;
+      const result = await connectFacebookInPopup(token, restaurantId);
+      if (result.status === "connected") {
+        await refreshMetaStatus();
+      }
+      setMetaConnectStatus("idle");
     } catch (e) {
       setMetaConnectStatus("error");
       setMetaError(
@@ -439,7 +442,9 @@ export default function RestaurantSettingsDialog({
                           ) : null}
                         </div>
                         <p className="mt-0.5 text-xs leading-relaxed text-zinc-400">
-                          Connect Meta to run ads and send guests to your funnel.
+                          Link Meta to pull ad spend, impressions, reach, clicks,
+                          and campaign stats into Feastalytics. A small Facebook
+                          window opens — you stay on this page.
                         </p>
                       </div>
 
