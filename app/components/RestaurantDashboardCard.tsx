@@ -1,6 +1,7 @@
 "use client";
 
 import type { AdminRestaurant } from "@/app/services/restaurant/get-my-restaurant";
+import { isScannerUser } from "@/app/lib/is-scanner-user";
 import {
   ArrowUpRight,
   Building2,
@@ -54,7 +55,9 @@ export default function RestaurantDashboardCard({ restaurant }: Props) {
   const logoSrc = logoUrl?.trim() ?? "";
   const dashboardHref =
     typeof restaurant.id === "number" && restaurant.id >= 1
-      ? `/restaurant/${restaurant.id}/dashboard`
+      ? isScannerUser()
+        ? `/restaurant/${restaurant.id}/dashboard/scanning`
+        : `/restaurant/${restaurant.id}/dashboard`
       : "/dashboard";
 
   const cuisine = cuisineType?.trim();

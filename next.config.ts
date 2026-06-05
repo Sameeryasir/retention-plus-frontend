@@ -4,7 +4,7 @@ import type { NextConfig } from "next";
 const ngrokHost =
   process.env.NGROK_DEV_HOST?.trim() ||
   process.env.NEXT_PUBLIC_NGROK_HOST?.trim() ||
-  "00de-182-185-34-34.ngrok-free.app";
+  "2238-182-185-34-34.ngrok-free.app";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: [ngrokHost],

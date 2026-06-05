@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { isRestaurantSidebarChromeMinimal } from "@/app/lib/restaurant-dashboard-pathname";
+import { isScannerUser } from "@/app/lib/is-scanner-user";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useLayoutEffect, useMemo, useState } from "react";
@@ -31,6 +32,7 @@ export default function AdminPanelSidebar() {
   const pathname = usePathname();
   const params = useParams();
   const [collapsed, setCollapsed] = useState(false);
+  const scannerUser = isScannerUser();
 
   const sidebarChromeMinimal = isRestaurantSidebarChromeMinimal(pathname);
 
@@ -77,7 +79,9 @@ export default function AdminPanelSidebar() {
         activeMatch: "prefix",
       },
       {
-        href: "/dashboard/scanning",
+        href: restaurantId
+          ? `${restaurantHomeHref}/scanning`
+          : "/dashboard/scanning",
         label: "Scanning",
         icon: ScanLine,
         activeMatch: "prefix",
@@ -172,6 +176,35 @@ export default function AdminPanelSidebar() {
             activeMatch === "exact"
               ? pathname === href
               : pathname === href || pathname.startsWith(`${href}/`);
+          const disabled = scannerUser && label !== "Scanning";
+
+          if (disabled) {
+            if (collapsed) {
+              return (
+                <span
+                  key={href}
+                  aria-disabled="true"
+                  aria-label={`${label} (disabled)`}
+                  className="flex h-10 w-10 shrink-0 cursor-not-allowed items-center justify-center rounded-xl text-zinc-300"
+                >
+                  <Icon className="h-4 w-4" aria-hidden strokeWidth={2} />
+                </span>
+              );
+            }
+
+            return (
+              <span
+                key={href}
+                aria-disabled="true"
+                className="flex cursor-not-allowed items-center gap-3 rounded-xl py-2.5 pl-3 pr-3 text-sm font-medium text-zinc-300"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-zinc-300">
+                  <Icon className="h-4 w-4" aria-hidden strokeWidth={2} />
+                </span>
+                {label}
+              </span>
+            );
+          }
 
           if (collapsed) {
             return (
