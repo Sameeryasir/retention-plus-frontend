@@ -24,7 +24,24 @@ export type RedeemableReward = {
 
 export type ScanPreviewSuccess = {
   success: true;
+  customer: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  coupon: {
+    id: number;
+    status: string;
+    paymentStatus: string;
+    expiresAt: string | null;
+    redeemedAt: string | null;
+  };
+  campaign: {
+    id: number;
+    name: string;
+  };
   customerName: string;
+  customerEmail: string;
   campaignName: string;
   totalVisits: number;
   rewardsAvailable: number;
@@ -36,6 +53,9 @@ export type ScanPreviewSuccess = {
   }>;
   canRedeem: boolean;
   redeemBlockedReason: string | null;
+  paymentStatus: string;
+  couponStatus: string;
+  couponExpired: boolean;
   qrToken: string;
   scannedCouponId: number;
   availableRewards: RedeemableReward[];
@@ -57,12 +77,20 @@ export type ScanRedemptionResponse =
   | ScanRedemptionSuccess
   | ScanRedemptionFailure;
 
+function createRedemptionIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `redeem-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 async function postScanPayload(
   restaurantId: number,
   qrToken: string,
   pathSuffix: "" | "/preview",
   couponIds?: number[],
   orderSubtotal?: number,
+  idempotencyKey?: string,
 ): Promise<Response> {
   if (!hasAuthSession()) {
     throw new Error("Missing access token. Sign in again.");
@@ -86,6 +114,7 @@ async function postScanPayload(
         qrToken: qrToken.trim(),
         couponIds: couponIds?.length ? couponIds : undefined,
         orderSubtotal,
+        idempotencyKey,
         deviceInfo:
           typeof navigator !== "undefined" ? navigator.userAgent : undefined,
       }),
@@ -113,6 +142,7 @@ export async function scanRedemptionQr(
   qrToken: string,
   couponIds?: number[],
   orderSubtotal?: number,
+  idempotencyKey: string = createRedemptionIdempotencyKey(),
 ): Promise<ScanRedemptionResponse> {
   const res = await postScanPayload(
     restaurantId,
@@ -120,6 +150,7 @@ export async function scanRedemptionQr(
     "",
     couponIds,
     orderSubtotal,
+    idempotencyKey,
   );
 
   if (!res.ok) {
@@ -230,6 +261,27 @@ export async function getGuestCouponByPayment(
 ): Promise<GuestCouponResponse> {
   const res = await fetch(
     `${getApiBaseUrl()}/redemption/coupon/payment/${encodeURIComponent(String(funnelPaymentId))}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      await parseApiErrorMessage(res, "Could not load your pass."),
+    );
+  }
+
+  return (await res.json()) as GuestCouponResponse;
+}
+
+export async function getGuestCouponByCustomerAndFunnel(
+  customerId: number,
+  funnelId: number,
+): Promise<GuestCouponResponse> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/redemption/coupon/customer/${encodeURIComponent(String(customerId))}/funnel/${encodeURIComponent(String(funnelId))}`,
     {
       method: "GET",
       headers: { Accept: "application/json" },

@@ -8,7 +8,10 @@ import { CustomCardCheckoutForm } from "@/app/components/funnel/CustomCardChecko
 import type { PaymentTemplatePage } from "@/app/components/crm-template-editor/template-types";
 import type { CheckoutFormStyles } from "@/app/components/payment-templates/shared/checkout-form-styles";
 import { getSetupAccessToken } from "@/app/lib/setup-access-token";
-import { setFunnelPaymentId } from "@/app/lib/funnel-checkout-storage";
+import {
+  getFunnelCheckoutCustomerId,
+  setFunnelPaymentId,
+} from "@/app/lib/funnel-checkout-storage";
 import { buildFunnelPaymentConfirmationPath } from "@/app/lib/funnel-public-path";
 import { createPaymentIntent } from "@/app/services/payment/create-payment-intent";
 import { isPositiveInt } from "@/app/lib/numbers";
@@ -67,12 +70,14 @@ export function FunnelStripePaymentForm({
     setIntentError(null);
     setCreating(true);
     try {
+      const customerId = getFunnelCheckoutCustomerId();
       const res = await createPaymentIntent(
         {
           funnelId: context.funnelId,
           restaurantId: context.restaurantId,
           currency: context.currency,
           customerEmail: context.customerEmail,
+          ...(customerId != null ? { customerId } : {}),
         },
         getSetupAccessToken(),
       );

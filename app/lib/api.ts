@@ -1,8 +1,30 @@
 export const API_REQUEST_TIMEOUT_MS = 5_000;
 export const API_MIN_LOADING_MS = 500;
 
+function configuredApiUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL?.trim() || "http://localhost:4001";
+}
+
+/**
+ * On mobile via ngrok, localhost points at the phone — not your Mac.
+ * Use the Next.js /backend proxy so API calls stay on the same ngrok host.
+ */
 export function getApiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4001";
+  const ngrokHost = process.env.NEXT_PUBLIC_NGROK_HOST?.trim();
+
+  if (typeof window === "undefined") {
+    return configuredApiUrl();
+  }
+
+  if (ngrokHost && window.location.hostname === ngrokHost) {
+    return "/backend";
+  }
+
+  if (process.env.NEXT_PUBLIC_USE_API_PROXY === "true") {
+    return "/backend";
+  }
+
+  return configuredApiUrl();
 }
 
 export function delay(ms: number): Promise<void> {

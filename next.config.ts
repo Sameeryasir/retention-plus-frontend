@@ -4,10 +4,23 @@ import type { NextConfig } from "next";
 const ngrokHost =
   process.env.NGROK_DEV_HOST?.trim() ||
   process.env.NEXT_PUBLIC_NGROK_HOST?.trim() ||
-  "2238-182-185-34-34.ngrok-free.app";
+  "fdf9-203-99-184-85.ngrok-free.app";
+
+const backendUrl =
+  process.env.BACKEND_URL?.trim() ||
+  process.env.NEXT_PUBLIC_API_URL?.trim() ||
+  "http://localhost:4001";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: [ngrokHost],
+  async rewrites() {
+    return [
+      {
+        source: "/backend/:path*",
+        destination: `${backendUrl.replace(/\/$/, "")}/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

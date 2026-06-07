@@ -51,6 +51,7 @@ export function ScannerScanCodePanel({
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannedRef = useRef(false);
   const pendingTokenRef = useRef("");
+  const idempotencyKeyRef = useRef("");
   const [scanState, setScanState] = useState<ScanState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [previewResult, setPreviewResult] = useState<ScanPreviewSuccess | null>(
@@ -128,14 +129,23 @@ export function ScannerScanCodePanel({
       setConfirmingRedemption(true);
       setErrorMessage(null);
 
+      if (!idempotencyKeyRef.current) {
+        idempotencyKeyRef.current =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `redeem-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+      }
+
       try {
         const result = await scanRedemptionQr(
           restaurantId,
           pendingTokenRef.current,
           couponIds,
           orderSubtotal,
+          idempotencyKeyRef.current,
         );
         if (result.success) {
+          idempotencyKeyRef.current = "";
           setPreviewResult(null);
           setDialogStep("confirm");
           setPendingCouponIds([]);
@@ -237,6 +247,7 @@ export function ScannerScanCodePanel({
     setDialogStep("confirm");
     setPendingCouponIds([]);
     pendingTokenRef.current = "";
+    idempotencyKeyRef.current = "";
     scannedRef.current = false;
   };
 

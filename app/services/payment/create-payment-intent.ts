@@ -6,6 +6,7 @@ export type CreatePaymentIntentPayload = {
   restaurantId: number;
   currency: string;
   customerEmail: string;
+  customerId?: number;
 };
 
 export type CreatePaymentIntentResponse = {
@@ -25,6 +26,7 @@ type CreatePaymentIntentRequestBody = {
   restaurantId: number;
   currency: string;
   customerEmail: string;
+  customerId?: number;
 };
 
 function readPaymentIntentId(
@@ -60,6 +62,9 @@ function assertPayload(
     restaurantId: payload.restaurantId,
     currency,
     customerEmail,
+    ...(isPositiveInt(payload.customerId)
+      ? { customerId: payload.customerId }
+      : {}),
   };
 }
 

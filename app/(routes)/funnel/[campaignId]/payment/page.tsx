@@ -9,7 +9,11 @@ import type { FunnelStripePaymentContext } from "@/app/components/funnel/FunnelS
 import { FunnelGuestPageShell } from "@/app/components/funnel/FunnelGuestPageShell";
 import { useCampaignPricing } from "@/app/hooks/use-campaign-pricing";
 import { useFunnelGuestRoute } from "@/app/hooks/use-funnel-guest-route";
-import { getFunnelCheckoutEmail } from "@/app/lib/funnel-checkout-storage";
+import { GuestCouponQrCard } from "@/app/components/funnel/GuestCouponQrCard";
+import {
+  getFunnelCheckoutCustomerId,
+  getFunnelCheckoutEmail,
+} from "@/app/lib/funnel-checkout-storage";
 import { parsePositiveInt } from "@/app/lib/numbers";
 
 function FunnelCampaignPaymentPageInner() {
@@ -17,6 +21,7 @@ function FunnelCampaignPaymentPageInner() {
   const { funnelIdSegment, funnelId, campaignId, restaurantId } =
     useFunnelGuestRoute();
   const [checkoutEmail] = useState(() => getFunnelCheckoutEmail());
+  const [checkoutCustomerId] = useState(() => getFunnelCheckoutCustomerId());
 
   const campaignPricing = useCampaignPricing(campaignId, restaurantId);
 
@@ -51,8 +56,19 @@ function FunnelCampaignPaymentPageInner() {
     return <FunnelPreviewSkeleton />;
   }
 
+  const showSignupPass =
+    funnelId != null &&
+    checkoutCustomerId != null &&
+    checkoutEmail?.trim().length;
+
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+      {showSignupPass ? (
+        <GuestCouponQrCard
+          customerId={checkoutCustomerId}
+          funnelId={funnelId}
+        />
+      ) : null}
       {showSetupHint ? (
         <div className="shrink-0 border-b border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-950">
           {!checkoutEmail?.trim()
