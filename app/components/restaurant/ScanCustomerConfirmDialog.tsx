@@ -25,13 +25,25 @@ type ScanCustomerConfirmDialogProps = {
 };
 
 function canEnableRedeem(preview: ScanPreviewSuccess): boolean {
-  return (
-    preview.paymentStatus === "PAID" &&
-    preview.couponStatus === "ACTIVE" &&
-    !preview.couponExpired &&
-    (preview.canRedeem ||
-      preview.availableRewards?.some((reward) => reward.canSelect))
-  );
+  const activeAndValid =
+    preview.couponStatus === "ACTIVE" && !preview.couponExpired;
+
+  if (!activeAndValid) return false;
+
+  if (preview.paymentStatus === "PAID") {
+    return (
+      preview.canRedeem ||
+      preview.availableRewards?.some((reward) => reward.canSelect) === true
+    );
+  }
+
+  if (preview.requiresWalkInPayment) {
+    return (
+      preview.availableRewards?.some((reward) => reward.canSelect) === true
+    );
+  }
+
+  return false;
 }
 
 function customerInitials(name: string): string {
@@ -251,14 +263,22 @@ export function ScanCustomerConfirmDialog({
               Are they redeeming an offer/reward today?
             </p>
 
-            {preview.redeemBlockedReason ? (
+            {preview.requiresWalkInPayment && !preview.canRedeem ? (
+              <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-900">
+                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-amber-500" />
+                <p>
+                  {preview.redeemBlockedReason ??
+                    "Guest has not paid online — you will enter the order amount on the next step."}
+                </p>
+              </div>
+            ) : preview.redeemBlockedReason ? (
               <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-800">
                 <span className="mt-1.5 size-2 shrink-0 rounded-full bg-red-500" />
                 <p>{preview.redeemBlockedReason}</p>
               </div>
             ) : (
               <p className="mt-2 text-sm text-zinc-500">
-                Confirm only if the guest is redeeming a prepaid reward right now.
+                Confirm only if the guest is redeeming a reward right now.
               </p>
             )}
 

@@ -18,7 +18,8 @@ import { TableColumnHeader } from "@/app/components/TableColumnHeader";
 import { Skeleton } from "@/app/components/skeleton";
 import { useRestaurantFunnelEvents } from "@/app/hooks/use-restaurant-registrations";
 import { formatDateTimeShort } from "@/app/lib/datetime";
-import { formatCents } from "@/app/lib/money";
+import { formatDollars } from "@/app/lib/money";
+import type { RestaurantFunnelEvent } from "@/app/services/funnel-event/get-restaurant-registrations";
 import { standardEase } from "@/app/lib/motion";
 import { RESTAURANT_FUNNEL_EVENTS_PAGE_SIZE } from "@/app/services/funnel-event/get-restaurant-registrations";
 import { useEffect, useMemo, useState } from "react";
@@ -105,7 +106,7 @@ function OrdersTableSkeleton() {
 }
 
 function displayName(event: {
-  customer: { name: string } | null;
+  customer: { name: string; email?: string } | null;
   customerEmail: string | null;
 }): string {
   const name = event.customer?.name?.trim();
@@ -115,14 +116,45 @@ function displayName(event: {
   return "Guest";
 }
 
-function paymentStatusLabel(eventType: "signup" | "payment"): string {
-  return eventType === "payment" ? "Paid" : "Not paid";
+function orderStatusLabel(
+  orderStatus: RestaurantFunnelEvent["orderStatus"],
+): string {
+  return orderStatus === "not_paid" ? "Not paid" : "Paid";
 }
 
-function paymentStatusBadgeClass(eventType: "signup" | "payment"): string {
-  return eventType === "payment"
-    ? "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200"
-    : "bg-amber-100 text-amber-900 ring-1 ring-amber-200";
+function orderStatusBadgeClass(
+  orderStatus: RestaurantFunnelEvent["orderStatus"],
+): string {
+  return orderStatus === "not_paid"
+    ? "bg-amber-100 text-amber-900 ring-1 ring-amber-200"
+    : "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200";
+}
+
+function OrderAmountDisplay({ event }: { event: RestaurantFunnelEvent }) {
+  const currency = event.currency ?? "USD";
+
+  if (event.orderStatus === "not_paid") {
+    return <span className="text-zinc-300">—</span>;
+  }
+
+  if (
+    event.orderStatus === "paid_walk_in" ||
+    event.orderStatus === "paid_both"
+  ) {
+    return (
+      <span className="font-medium text-zinc-900">
+        {event.restaurantAmount != null
+          ? formatDollars(event.restaurantAmount, currency)
+          : "—"}
+      </span>
+    );
+  }
+
+  return (
+    <span className="font-medium text-zinc-900">
+      {formatDollars(0, currency)}
+    </span>
+  );
 }
 
 function guestInitials(name: string): string {
@@ -179,7 +211,8 @@ export function RestaurantOrdersPanel({
           All funnel activity across {meta?.campaignCount ?? 0} campaign
           {(meta?.campaignCount ?? 0) === 1 ? "" : "s"} and{" "}
           {meta?.funnelCount ?? 0} funnel
-          {(meta?.funnelCount ?? 0) === 1 ? "" : "s"} — signups and payments.
+          {(meta?.funnelCount ?? 0) === 1 ? "" : "s"} — online payments and
+          in-restaurant visits.
         </p>
       </div>
 
@@ -327,9 +360,9 @@ export function RestaurantOrdersPanel({
                           </td>
                           <td className={`${tdClass} whitespace-nowrap`}>
                             <span
-                              className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${paymentStatusBadgeClass(event.eventType)}`}
+                              className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${orderStatusBadgeClass(event.orderStatus)}`}
                             >
-                              {paymentStatusLabel(event.eventType)}
+                              {orderStatusLabel(event.orderStatus)}
                             </span>
                           </td>
                           <td className={tdClass}>
@@ -353,13 +386,7 @@ export function RestaurantOrdersPanel({
                             </span>
                           </td>
                           <td className={`${tdClass} whitespace-nowrap tabular-nums`}>
-                            {event.eventType === "payment" &&
-                            event.amount != null &&
-                            event.currency ? (
-                              formatCents(event.amount, event.currency)
-                            ) : (
-                              <span className="text-zinc-300">—</span>
-                            )}
+                            <OrderAmountDisplay event={event} />
                           </td>
                           <td className={`${tdClass} whitespace-nowrap text-zinc-600`}>
                             <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm">

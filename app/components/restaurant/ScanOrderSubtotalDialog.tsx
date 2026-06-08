@@ -4,6 +4,8 @@ import { useState } from "react";
 
 type ScanOrderSubtotalDialogProps = {
   confirming: boolean;
+  /** When true, amount must be greater than zero (walk-in payment for unpaid guests). */
+  requirePositiveAmount?: boolean;
   onBack: () => void;
   onDone: (orderSubtotal: number) => void;
   onDismiss: () => void;
@@ -21,13 +23,16 @@ function parseSubtotal(value: string): number | null {
 
 export function ScanOrderSubtotalDialog({
   confirming,
+  requirePositiveAmount = false,
   onBack,
   onDone,
   onDismiss,
 }: ScanOrderSubtotalDialogProps) {
   const [subtotalInput, setSubtotalInput] = useState("");
   const parsedSubtotal = parseSubtotal(subtotalInput);
-  const canSubmit = parsedSubtotal !== null;
+  const canSubmit =
+    parsedSubtotal !== null &&
+    (!requirePositiveAmount || parsedSubtotal > 0);
 
   return (
     <div
@@ -46,7 +51,9 @@ export function ScanOrderSubtotalDialog({
           id="scan-order-subtotal-title"
           className="text-2xl font-semibold tracking-tight text-zinc-900"
         >
-          Enter the subtotal of their entire order (exclude tax &amp; tip)
+          {requirePositiveAmount
+            ? "Enter the amount the guest paid today (exclude tax & tip)"
+            : "Enter the subtotal of their entire order (exclude tax & tip)"}
         </h2>
 
         <div className="relative mt-8">
@@ -66,6 +73,12 @@ export function ScanOrderSubtotalDialog({
             Entire Order Subtotal ($)
           </label>
         </div>
+
+        {requirePositiveAmount && parsedSubtotal === 0 ? (
+          <p className="mt-3 text-sm text-amber-700">
+            Enter an amount greater than zero to complete walk-in payment.
+          </p>
+        ) : null}
 
         <div className="mt-8 flex items-center justify-between gap-3">
           <button

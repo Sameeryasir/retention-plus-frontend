@@ -5,6 +5,12 @@ import { isPositiveInt } from "@/app/lib/numbers";
 
 export const RESTAURANT_FUNNEL_EVENTS_PAGE_SIZE = 10;
 
+export type RestaurantOrderPaymentStatus =
+  | "not_paid"
+  | "paid_online"
+  | "paid_walk_in"
+  | "paid_both";
+
 export type RestaurantFunnelEvent = {
   id: number;
   eventType: "signup" | "payment";
@@ -23,6 +29,10 @@ export type RestaurantFunnelEvent = {
   currency: string | null;
   paymentStatus: string | null;
   receiptUrl: string | null;
+  orderStatus: RestaurantOrderPaymentStatus;
+  onlineAmountCents: number | null;
+  restaurantAmount: number | null;
+  restaurantVisitedAt: string | null;
 };
 
 export type PaginatedRestaurantFunnelEventsResponse = {

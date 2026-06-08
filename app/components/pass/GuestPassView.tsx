@@ -3,12 +3,17 @@
 import { CheckCircle2, Loader2, QrCode, ScanLine } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
+  getGuestCouponByCustomerAndFunnel,
   getGuestCouponByPayment,
   type GuestCouponResponse,
 } from "@/app/services/redemption/scan-redemption";
 import { formatDateTimeShort } from "@/app/lib/datetime";
 
-export function GuestPassView({ paymentId }: { paymentId: number }) {
+type GuestPassViewProps =
+  | { paymentId: number; customerId?: never; funnelId?: never }
+  | { paymentId?: never; customerId: number; funnelId: number };
+
+export function GuestPassView(props: GuestPassViewProps) {
   const [coupon, setCoupon] = useState<GuestCouponResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +25,13 @@ export function GuestPassView({ paymentId }: { paymentId: number }) {
     const load = async () => {
       attempts += 1;
       try {
-        const data = await getGuestCouponByPayment(paymentId);
+        const data =
+          props.paymentId != null
+            ? await getGuestCouponByPayment(props.paymentId)
+            : await getGuestCouponByCustomerAndFunnel(
+                props.customerId,
+                props.funnelId,
+              );
         if (!cancelled) {
           setCoupon(data);
           setLoading(false);
@@ -40,7 +51,7 @@ export function GuestPassView({ paymentId }: { paymentId: number }) {
     return () => {
       cancelled = true;
     };
-  }, [paymentId]);
+  }, [props.paymentId, props.customerId, props.funnelId]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-stone-100 via-zinc-100 to-stone-100 px-4 py-10">

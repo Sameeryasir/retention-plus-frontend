@@ -116,7 +116,7 @@ export function ScanRewardSelectDialog({
 
         {selectableCount === 0 && rewards.length > 0 ? (
           <p className="mt-3 text-sm text-red-600">
-            Only prepaid rewards can be redeemed right now.
+            No rewards are available to redeem right now.
           </p>
         ) : null}
 

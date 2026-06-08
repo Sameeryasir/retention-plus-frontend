@@ -52,6 +52,7 @@ export type ScanPreviewSuccess = {
     redeemedAt: string;
   }>;
   canRedeem: boolean;
+  requiresWalkInPayment: boolean;
   redeemBlockedReason: string | null;
   paymentStatus: string;
   couponStatus: string;

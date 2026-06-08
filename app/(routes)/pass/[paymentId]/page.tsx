@@ -14,7 +14,7 @@ export default function GuestPassPage() {
   );
 
   if (paymentId == null) {
-    return <InvalidRouteMessage />;
+    return <InvalidRouteMessage message="Invalid pass link." backHref="/" backLabel="Go home" />;
   }
 
   return <GuestPassView paymentId={paymentId} />;

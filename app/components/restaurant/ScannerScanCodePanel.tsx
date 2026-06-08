@@ -301,6 +301,12 @@ export function ScannerScanCodePanel({
       dialogStep === "enterSubtotal" ? (
         <ScanOrderSubtotalDialog
           confirming={confirmingRedemption}
+          requirePositiveAmount={pendingCouponIds.some((couponId) => {
+            const reward = previewResult.availableRewards?.find(
+              (item) => item.couponId === couponId,
+            );
+            return reward?.paymentLabel === "UNPAID";
+          })}
           onBack={() => setDialogStep("completeOrder")}
           onDone={(orderSubtotal) =>
             void handleConfirmRedeem(pendingCouponIds, orderSubtotal)
