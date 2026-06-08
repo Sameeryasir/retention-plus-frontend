@@ -1,6 +1,18 @@
 "use client";
 
-import { ArrowLeft, Check, Circle, Copy, Link2, Pencil, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Circle,
+  Copy,
+  ExternalLink,
+  Hash,
+  Info,
+  Link2,
+  Megaphone,
+  Pencil,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EditCampaignModal } from "@/app/components/campaign/EditCampaignModal";
@@ -25,7 +37,6 @@ function formatPrice(amount: number): string {
 export type CampaignHeaderProps = {
   restaurantId: number;
   campaignId?: number;
-  /** Funnel record id from GET /funnel/campaign/:campaignId — used in public guest URLs. */
   funnelId?: number | null;
   offer?: string;
   price?: number | string;
@@ -242,7 +253,7 @@ export default function CampaignHeader({
 
     {trackingDialogOpen ? (
       <div
-        className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center"
+        className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-sm sm:items-center"
         role="presentation"
         onClick={() => setTrackingDialogOpen(false)}
       >
@@ -250,106 +261,162 @@ export default function CampaignHeader({
           role="dialog"
           aria-modal="true"
           aria-labelledby="tracking-link-dialog-title"
-          className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl"
+          className="w-full max-w-lg overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2
-                id="tracking-link-dialog-title"
-                className="text-base font-semibold text-zinc-900"
-              >
-                Tracking link
-              </h2>
-              <p className="mt-1 text-sm text-zinc-600">
-                Use this URL as the website destination in Facebook / Meta ads
-                (landing step).
-              </p>
-            </div>
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={() => setTrackingDialogOpen(false)}
-              className="shrink-0 rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
-            >
-              <X className="size-5" strokeWidth={2} aria-hidden />
-            </button>
-          </div>
-          {campaignId != null && landingTrackingUrl ? (
-            <div className="mt-4 space-y-2">
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-600">
-                <span>
-                  Campaign ID:{" "}
-                  <span className="font-mono font-semibold text-zinc-900">
-                    {campaignId}
-                  </span>
+          {/* --- Black header --- */}
+          <div className="relative bg-black px-6 pb-6 pt-6 text-white">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">
+                  <Megaphone className="size-3" strokeWidth={2.5} aria-hidden />
+                  Meta ads
                 </span>
-                {funnelId != null && funnelId >= 1 ? (
-                  <span>
-                    Funnel ID:{" "}
-                    <span className="font-mono font-semibold text-zinc-900">
-                      {funnelId}
-                    </span>
+                <div className="mt-4 flex items-center gap-3.5">
+                  <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-white text-black">
+                    <Link2 className="size-5" strokeWidth={2.25} aria-hidden />
                   </span>
-                ) : null}
+                  <div className="min-w-0">
+                    <h2
+                      id="tracking-link-dialog-title"
+                      className="text-xl font-bold tracking-tight"
+                    >
+                      Tracking link
+                    </h2>
+                    <p className="mt-1 text-sm leading-relaxed text-white/60">
+                      Paste as the website destination in your Facebook / Meta
+                      ad landing step.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <label
-                htmlFor="tracking-landing-url"
-                className="block text-xs font-medium text-zinc-500"
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => setTrackingDialogOpen(false)}
+                className="shrink-0 rounded-xl border border-white/15 p-2 text-white/60 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
               >
-                Landing URL
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="tracking-landing-url"
-                  readOnly
-                  value={landingTrackingUrl}
-                  className="min-w-0 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-900"
-                />
-                <button
-                  type="button"
-                  onClick={() => void handleCopyLandingUrl()}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-50"
-                >
-                  {copyDone ? (
-                    <Check className="size-4 text-emerald-600" strokeWidth={2} />
-                  ) : (
-                    <Copy className="size-4" strokeWidth={2} />
-                  )}
-                  {copyDone ? "Copied" : "Copy"}
-                </button>
-              </div>
-              <p className="text-[0.65rem] leading-relaxed text-zinc-500">
-                Dev server runs on port{" "}
-                <span className="font-mono text-zinc-700">3002</span> — link
-                uses your current origin (
-                <span className="font-mono">{trackingOrigin || "—"}</span>).
-              </p>
+                <X className="size-5" strokeWidth={2} aria-hidden />
+              </button>
             </div>
-          ) : (
-            <p className="mt-4 text-sm text-amber-800">
-              This campaign has no id in the URL, so a tracking link cannot be
-              built.
-            </p>
-          )}
-          <div className="mt-5 flex justify-end gap-2">
+          </div>
+
+          {/* --- White body --- */}
+          <div className="bg-white px-6 py-6">
             {campaignId != null && landingTrackingUrl ? (
-              <Link
-                href={landingTrackingPath}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50"
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                    <div className="flex items-center gap-1.5 text-zinc-500">
+                      <Hash className="size-3.5" strokeWidth={2.5} aria-hidden />
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em]">
+                        Campaign
+                      </p>
+                    </div>
+                    <p className="mt-2 font-mono text-2xl font-bold tabular-nums tracking-tight text-zinc-900">
+                      {campaignId}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                    <div className="flex items-center gap-1.5 text-zinc-500">
+                      <Hash className="size-3.5" strokeWidth={2.5} aria-hidden />
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em]">
+                        Funnel
+                      </p>
+                    </div>
+                    <p className="mt-2 font-mono text-2xl font-bold tabular-nums tracking-tight text-zinc-900">
+                      {funnelId != null && funnelId >= 1 ? funnelId : "—"}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="tracking-landing-url"
+                    className="mb-2.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500"
+                  >
+                    <Link2 className="size-3.5" strokeWidth={2.5} aria-hidden />
+                    Landing URL
+                  </label>
+                  <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 shadow-sm">
+                    <div className="px-4 py-4">
+                      <input
+                        id="tracking-landing-url"
+                        readOnly
+                        value={landingTrackingUrl}
+                        className="w-full cursor-text select-all border-0 bg-transparent font-mono text-[13px] leading-relaxed text-zinc-900 outline-none sm:text-sm"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-3 border-t border-zinc-200 bg-white px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="min-w-0 text-[11px] leading-relaxed text-zinc-500">
+                        Origin
+                        <span className="mt-0.5 block break-all font-mono text-zinc-700">
+                          {trackingOrigin || "—"}
+                        </span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyLandingUrl()}
+                        className={`inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wide transition sm:w-auto ${
+                          copyDone
+                            ? "bg-zinc-900 text-white"
+                            : "border border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800"
+                        }`}
+                      >
+                        {copyDone ? (
+                          <Check className="size-4" strokeWidth={2.5} aria-hidden />
+                        ) : (
+                          <Copy className="size-4" strokeWidth={2} aria-hidden />
+                        )}
+                        {copyDone ? "Copied" : "Copy link"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5">
+                  <Info
+                    className="mt-0.5 size-4 shrink-0 text-zinc-400"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                  <p className="text-xs leading-relaxed text-zinc-600">
+                    Dev server on port{" "}
+                    <span className="font-mono font-semibold text-zinc-900">
+                      3002
+                    </span>
+                    . Uses your current browser origin — works with ngrok and
+                    local testing.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-sm text-zinc-700">
+                This campaign has no id in the URL, so a tracking link cannot be
+                built.
+              </p>
+            )}
+
+            <div className="mt-7 flex flex-col-reverse gap-2.5 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setTrackingDialogOpen(false)}
+                className="rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
               >
-                Open preview
-              </Link>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setTrackingDialogOpen(false)}
-              className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
-            >
-              Done
-            </button>
+                Done
+              </button>
+              {campaignId != null && landingTrackingUrl ? (
+                <Link
+                  href={landingTrackingPath}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-black px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+                >
+                  <ExternalLink className="size-4" strokeWidth={2.25} aria-hidden />
+                  Open preview
+                </Link>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
